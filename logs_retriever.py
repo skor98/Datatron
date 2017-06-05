@@ -12,6 +12,8 @@ class LogsRetriever:
             return self._get_session_logs(user_id, time_delta)
         elif kind == 'info':
             return self._get_all_info_logs()
+        elif kind == 'warning':
+            return self._get_all_warning_logs()
         else:
             return self._get_request_logs(user_id)
 
@@ -89,6 +91,20 @@ class LogsRetriever:
 
             try:
                 if line[1] not in ('DEBUG', 'ERROR') and len(line) > 3:
+                    logs.append('\t'.join(line))
+            except IndexError:
+                pass
+
+        return '\n'.join(logs)
+
+    def _get_all_warning_logs(self):
+        logs = []
+
+        for line in list(open(self.path_to_log_file, encoding='utf-8')):
+            line = line.split('\t')
+
+            try:
+                if line[1] == 'WARNING':
                     logs.append('\t'.join(line))
             except IndexError:
                 pass

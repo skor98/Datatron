@@ -15,29 +15,30 @@ class TextPreprocessing:
         self.norming_style = norming_style
         self.language = 'russian'
 
-    def normalization(self, text):
+    def normalization(self, text, delete_repeating_tokens=True):
         # TODO: обработка направильного спеллинга
-        stemmer = SnowballStemmer(self.language)  # Стеммер
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
-        tokens = nltk.word_tokenize(text)
+        tokens = nltk.word_tokenize(text.lower())
 
         # TODO: продолжать работу над стоп-словами
         stop_words = stopwords.words(self.language)
         stop_words.remove('не')
-        stop_words += "также иной г. год года году".split()
+        stop_words += "также иной г. год года году да нет".split()
 
         # Убираем знаки пунктуации и стоп слова
         tokens = [t for t in tokens if (t not in stop_words) and (t not in list(pct) + ["«", "»"])]
+        # Убираем цифры
+        tokens = [t for t in tokens if not t.isdigit()]
+        # Убираем нижние подчеркивания
+        tokens = [t for t in tokens if '_' not in t]
 
-        if self.norming_style == 'stem':
-            # Стемминг
-            tokens = [stemmer.stem(t) for t in tokens]
-        else:
-            # Лемматизация
-            tokens = [morph.parse(t)[0].normal_form for t in tokens]
+        # Лемматизация
+        tokens = [morph.parse(t)[0].normal_form for t in tokens]
 
-        tokens = TextPreprocessing._delete_repeating_with_saving_order(tokens)
+        if delete_repeating_tokens:
+            # Удаление повторяющихся токенов
+            tokens = TextPreprocessing._delete_repeating_with_saving_order(tokens)
 
         normalized_request = ' '.join(tokens)
 

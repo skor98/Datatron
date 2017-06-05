@@ -10,15 +10,15 @@ import subprocess
 import datetime
 
 
-class DocsGenerationAlternative:
+class DocsGeneration:
     def __init__(self, core):
         self.file_name = 'kb\data_for_indexing.json'
         self.core = core
 
     def generate_docs(self):
-        data = DocsGenerationAlternative._create_values() + \
-               DocsGenerationAlternative._create_cubes() + \
-               DocsGenerationAlternative._create_measures()
+        data = DocsGeneration._create_values() + \
+               DocsGeneration._create_cubes() + \
+               DocsGeneration._create_measures()
 
         self._write_to_file(data)
 
@@ -56,13 +56,14 @@ class DocsGenerationAlternative:
                       ),
                  ])
         c.perform()
+        print('Документы для кубов проиндексированы через CURL')
 
     def index_created_documents_via_cmd(self, path_to_post_jar_file):
         path_to_json_data_file = '{}\\{}'.format(getcwd(), self.file_name)
         command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(self.core, path_to_post_jar_file,
                                                                            path_to_json_data_file)
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
-        print('Документы проиндексированы')
+        print('Документы для кубов проиндексированы через JAR файл')
 
     def _write_to_file(self, docs):
         json_data = json.dumps(docs)

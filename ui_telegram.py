@@ -44,54 +44,94 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['getlog'])
 def get_all_logs(message):
-    # bot.send_message(message.chat.id, logsRetriever.get_log(kind='all'))
     log_file = open('logs.log', 'rb')
     bot.send_document(message.chat.id, data=log_file)
+    log_file.close()
 
 
 @bot.message_handler(commands=['getsessionlog'])
 def get_session_logs(message):
-    time_span = None
     try:
-        time_span = int(message.text.split()[1])
-    except IndexError:
-        pass
-    if time_span:
-        logs = logsRetriever.get_log(kind='session', user_id=message.chat.id, time_delta=time_span)
-    else:
-        logs = logsRetriever.get_log(kind='session', user_id=message.chat.id)
+        time_span = None
+        try:
+            time_span = int(message.text.split()[1])
+        except IndexError:
+            pass
+        if time_span:
+            logs = logsRetriever.get_log(kind='session', user_id=message.chat.id, time_delta=time_span)
+        else:
+            logs = logsRetriever.get_log(kind='session', user_id=message.chat.id)
 
-    if logs:
-        bot.send_message(message.chat.id, logs)
-    else:
-        bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+        if logs:
+            bot.send_message(message.chat.id, logs)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        MessengerManager.log_data('Команда /getsessionlog не сработала', level='warning')
 
 
 @bot.message_handler(commands=['getrequestlog'])
 def get_request_logs(message):
-    logs = logsRetriever.get_log(kind='request', user_id=message.chat.id)
-    if logs:
-        bot.send_message(message.chat.id, logs)
-    else:
-        bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    try:
+        logs = logsRetriever.get_log(kind='request', user_id=message.chat.id)
+        if logs:
+            bot.send_message(message.chat.id, logs)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        MessengerManager.log_data('Команда /getrequestlog не сработала', level='warning')
 
 
 @bot.message_handler(commands=['getinfolog'])
 def get_all_info_logs(message):
-    logs = logsRetriever.get_log(kind='info')
-    if logs:
-        rnd_str = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-        file_name = '{}_{}_{}.log'.format(rnd_str, message.chat.username, datetime.datetime.now().strftime("%d-%m-%Y"))
-        with open(file_name, 'w') as file:
-            file.write(logs)
-        try:
-            log_file = open(file_name, 'rb')
-            bot.send_document(message.chat.id, data=log_file)
-        finally:
-            log_file.close()
-            os.remove(file_name)
-    else:
-        bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    try:
+        logs = logsRetriever.get_log(kind='info')
+        if logs:
+            rnd_str = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+            file_name = '{}_{}_{}_{}.log'.format('info',
+                                                 rnd_str,
+                                                 message.chat.username,
+                                                 datetime.datetime.now().strftime("%d-%m-%Y"))
+            with open(file_name, 'w') as file:
+                file.write(logs)
+            try:
+                log_file = open(file_name, 'rb')
+                bot.send_document(message.chat.id, data=log_file)
+            finally:
+                log_file.close()
+                os.remove(file_name)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        MessengerManager.log_data('Команда /getinfolog не сработала', level='warning')
+
+
+@bot.message_handler(commands=['getwarninglog'])
+def get_all_info_logs(message):
+    try:
+        logs = logsRetriever.get_log(kind='warning')
+        if logs:
+            rnd_str = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+            file_name = '{}_{}_{}_{}.log'.format('warning',
+                                                 rnd_str,
+                                                 message.chat.username,
+                                                 datetime.datetime.now().strftime("%d-%m-%Y"))
+            with open(file_name, 'w') as file:
+                file.write(logs)
+            try:
+                log_file = open(file_name, 'rb')
+                bot.send_document(message.chat.id, data=log_file)
+            finally:
+                log_file.close()
+                os.remove(file_name)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        MessengerManager.log_data('Команда /getwarninglog не сработала', level='warning')
 
 
 @bot.message_handler(commands=['search'])
@@ -131,11 +171,27 @@ def get_user_feedbacks(message):
 def get_minfin_questions(message):
     msg = message.text[2:].strip()
     if msg:
-        try:
-            short, long = MessengerManager.make_minfin_request(msg)
-            bot.send_message(message.chat.id, long)
-            bot.send_voice(message.chat.id, text_to_speech(short))
-        except TypeError:
+        result = MessengerManager.make_minfin_request(msg)
+        if result.status:
+            bot.send_message(message.chat.id,
+                             'Datatron понял ваш вопрос как <b>"{}"</b>'.format(result.question),
+                             parse_mode='HTML')
+            if result.full_answer:
+                bot.send_message(message.chat.id,
+                                 '<b>Ответ:</b> {}'.format(result.full_answer),
+                                 parse_mode='HTML')
+            if result.link_name:
+                bot.send_message(message.chat.id, '{}: {}'.format(result.link_name, result.link))
+            if result.picture:
+                photo = open('data/minfin/img/{}'.format(result.picture), 'rb')
+                bot.send_photo(message.chat.id, photo)
+                photo.close()
+            if result.document:
+                document = open('data/minfin/doc/{}'.format(result.document), 'rb')
+                bot.send_document(message.chat.id, document)
+                document.close()
+            bot.send_voice(message.chat.id, text_to_speech(result.short_answer))
+        else:
             bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
     else:
         bot.send_message(message.chat.id, 'Запрос пустой')

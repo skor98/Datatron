@@ -84,8 +84,6 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
         text, 'mp3', lang, speaker, YANDEX_API_KEY, emotion, '1.0')
 
-    print('{}: {}-{}-{}'.format(__name__, text, speaker, emotion))
-
     r = requests.get(url)
     if r.status_code == 200:
         response_content = r.content

@@ -124,35 +124,35 @@ class Solr:
         solr_response = requests.get(req_str.format(SETTINGS.SOLR_MINFIN_CORE, user_request))
         docs = json.loads(solr_response.text)
 
-        if docs['response']['numFound']:
-            fa = docs['response']['docs'][0]['full_answer'][0]
-            sa = docs['response']['docs'][0]['short_answer'][0]
-            return sa, fa
-        else:
-            return None
+        res = DrSolrMinfinResult()
 
-            # @staticmethod
-            # def _cube_defenition():
-            #     if cube_by_search:
-            #         if cube_by_score not in cube_by_search:
-            #             cube_by_search.append(cube_by_score)
-            #
-            #         cube_stats = []
-            #
-            #         for idx, cube in enumerate(cube_by_search):
-            #             cube_stats.append([get_cube_dimensions(cube), cube, 0])
-            #
-            #             if year:
-            #                 if 'Years' in cube_stats[idx][0]:
-            #                     cube_stats[idx][2] += 1
-            #
-            #             if territory:
-            #                 if 'Territories' in cube_stats[idx][0]:
-            #                     cube_stats[idx][2] += 1
-            #
-            #             best_cube_stats = max(cube_stats, key=lambda item: item[2])
-            #             cube_by_score = best_cube_stats[1]
-            #             reference_cube_dimensions = best_cube_stats[0]
+        if docs['response']['numFound']:
+            res.status = True
+            best_document = docs['response']['docs'][0]
+            res.question = best_document['question'][0]
+            res.short_answer = best_document['short_answer'][0]
+            try:
+                res.full_answer = best_document['full_answer'][0]
+            except KeyError:
+                pass
+
+            try:
+                res.link_name = best_document['link_name'][0]
+                res.link = best_document['link'][0]
+            except KeyError:
+                pass
+
+            try:
+                res.picture = best_document['picture'][0]
+            except KeyError:
+                pass
+
+            try:
+                res.document = best_document['document'][0]
+            except KeyError:
+                pass
+
+        return res
 
 
 class DrSolrResult:
@@ -161,3 +161,15 @@ class DrSolrResult:
         self.id_query = id_query
         self.mdx_query = mdx_query
         self.error = error
+
+
+class DrSolrMinfinResult:
+    def __init__(self, status=False):
+        self.status = status
+        self.question = ''
+        self.short_answer = ''
+        self.full_answer = None
+        self.link_name = None
+        self.link = None
+        self.picture = None
+        self.document = None

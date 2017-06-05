@@ -80,8 +80,11 @@ class MessengerManager:
             return greets
 
     @staticmethod
-    def log_data(_logging_str):
-        logging.info(_logging_str)
+    def log_data(_logging_str, level='info'):
+        if level == 'info':
+            logging.info(_logging_str)
+        elif level == 'warning':
+            logging.warning(_logging_str)
 
     @staticmethod
     def _querying(user_request_string, request_id):

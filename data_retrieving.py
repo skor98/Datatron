@@ -19,9 +19,9 @@ class DataRetrieving:
         Принимает на вход запрос пользователя.
         Возвращает объект класса M2Result."""
 
-        cntk_result = [{'tagmeaning': 'Нет тега', 'word': 'Нет слова'}]
+        cntk_result = [{'tagmeaning': 'Нет значения тега', 'word': 'Нет слова'}]
         # try:
-        #    cntk_result = CNTK.get_data(user_request)
+        #    cntk_result = CNTK.text_to_tags(user_request)
         # except:
         #   pass
 
@@ -29,7 +29,7 @@ class DataRetrieving:
         solr = Solr(SETTINGS.SOLR_MAIN_CORE)
 
         tp = TextPreprocessing(request_id)
-        normalized_user_request = tp.normalization(user_request.lower())
+        normalized_user_request = tp.normalization(user_request)
 
         solr_result = solr.get_data(normalized_user_request)
         if solr_result.status:
