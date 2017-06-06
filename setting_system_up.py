@@ -37,6 +37,7 @@ set_up_solr_cube_data()
 set_up_minfin_core('jar_file')
 
 
+
 # import os
 # import subprocess
 # def start_solr():
