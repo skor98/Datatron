@@ -32,7 +32,7 @@ def _read_data():
 
 
 def _write_data(data):
-    with open(path_to_folder_file.format(output_file), 'w') as file:
+    with open(path_to_folder_file.format(output_file), 'w', encoding='utf-8') as file:
         data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
         file.write(data_to_str)
 
@@ -49,7 +49,9 @@ def _refactor_data(data):
             doc.lem_short_answer = tp.normalization(row.short_answer)
             if row.full_answer:
                 doc.full_answer = row.full_answer
-                doc.lem_full_answer = tp.normalization(row.full_answer, delete_repeating_tokens=False)
+                doc.lem_full_answer = tp.normalization(row.full_answer,
+                                                        delete_digits=True,
+                                                       delete_repeating_tokens=False)
             doc.lem_key_words = tp.normalization(row.key_words)
             if row.link_name:
                 doc.link_name = row.link_name

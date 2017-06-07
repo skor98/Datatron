@@ -28,13 +28,9 @@ def set_up_solr_cube_data(index_way='curl'):
         dga.index_created_documents_via_cmd(SETTINGS.PATH_TO_SOLR_POST_JAR_FILE)  # Индексация документов
 
 
-def set_up_solr_minfin_data(index_way='curl'):
-    set_up_minfin_core(index_way=index_way)
-
-
-set_up_db()
-set_up_solr_cube_data()
-set_up_minfin_core('jar_file')
+# set_up_db()
+# set_up_solr_cube_data()
+set_up_minfin_core()
 
 
 

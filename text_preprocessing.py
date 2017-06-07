@@ -15,7 +15,7 @@ class TextPreprocessing:
         self.norming_style = norming_style
         self.language = 'russian'
 
-    def normalization(self, text, delete_repeating_tokens=True):
+    def normalization(self, text, delete_digits=False, delete_repeating_tokens=True):
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -29,7 +29,8 @@ class TextPreprocessing:
         # Убираем знаки пунктуации и стоп слова
         tokens = [t for t in tokens if (t not in stop_words) and (t not in list(pct) + ["«", "»"])]
         # Убираем цифры
-        tokens = [t for t in tokens if not t.isdigit()]
+        if delete_digits:
+           tokens = [t for t in tokens if not t.isdigit()]
         # Убираем нижние подчеркивания
         tokens = [t for t in tokens if '_' not in t]
 
