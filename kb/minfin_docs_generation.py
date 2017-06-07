@@ -32,7 +32,7 @@ def _read_data():
 
 
 def _write_data(data):
-    with open(path_to_folder_file.format(output_file), 'w') as file:
+    with open(path_to_folder_file.format(output_file), 'w',encoding='utf-8') as file:
         data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
         file.write(data_to_str)
 

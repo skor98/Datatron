@@ -32,9 +32,9 @@ def set_up_solr_minfin_data(index_way='curl'):
     set_up_minfin_core(index_way=index_way)
 
 
-set_up_db()
-set_up_solr_cube_data()
-set_up_minfin_core('jar_file')
+# set_up_db()
+# set_up_solr_cube_data()
+set_up_solr_minfin_data('curl')
 
 
 
