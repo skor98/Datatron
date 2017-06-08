@@ -27,7 +27,7 @@ class TextPreprocessing:
         stop_words += "также иной г. год года году да нет".split()
 
         # Убираем знаки пунктуации и стоп слова
-        tokens = [t for t in tokens if (t not in stop_words) and (t not in list(pct) + ["«", "»"])]
+        tokens = [t for t in tokens if (t not in stop_words) and (t not in list(pct) + ["«", "»", "``", "''"])]
         # Убираем цифры
         if delete_digits:
            tokens = [t for t in tokens if not t.isdigit()]

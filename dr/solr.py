@@ -63,10 +63,10 @@ class Solr:
         solr_docs = solr_docs['response']['docs']
         for doc in solr_docs:
             if doc['type'][0] == 'dimension':
-                if doc['name'][0] in dim_list:
+                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in dim_list:
                     continue
                 else:
-                    dim_list.append(doc['name'][0])
+                    dim_list.append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
                     dim_list.append(doc)
             elif doc['type'][0] == 'year_dimension':
                 year = int(doc['fvalue'][0])
@@ -85,17 +85,22 @@ class Solr:
         # Очистка от ненужных элементов
         dim_list = list(filter(lambda elem: type(elem) is not str, dim_list))
 
+        if year:
+            dim_list = [item for item in dim_list if 'Years' in get_cube_dimensions(item['cube'][0])]
+
+        if territory:
+            dim_list = [item for item in dim_list if 'Territories' in get_cube_dimensions(item['cube'][0])]
         # TODO: доработать определение куба
-        cube_by_score = dim_list[0]['cube'][0]
+        reference_cube = dim_list[0]['cube'][0]
 
         # Максимальная группа измерений от куба лучшего элемента
-        dim_list = [doc for doc in dim_list if doc['cube'][0] == cube_by_score]
+        dim_list = [doc for doc in dim_list if doc['cube'][0] == reference_cube]
 
         dim_tmp, dim_str = "[{}].[{}]", []
         for doc in dim_list:
             dim_str.append(dim_tmp.format(doc['name'][0], doc['fvalue'][0]))
 
-        reference_cube_dimensions = get_cube_dimensions(cube_by_score)
+        reference_cube_dimensions = get_cube_dimensions(reference_cube)
 
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
@@ -106,16 +111,16 @@ class Solr:
 
         # TODO: подправить на капс
         if 'Territories' in reference_cube_dimensions and territory:
-            dim_str.append(dim_tmp.format('TERRITORIES', territory[cube_by_score][0]))
+            dim_str.append(dim_tmp.format('TERRITORIES', territory[reference_cube][0]))
             dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
 
-        measure = get_default_dimension(cube_by_score)
+        measure = get_default_dimension(reference_cube)
         if measure_list:
-            measure_list = [item for item in measure_list if item['cube'][0] == cube_by_score]
+            measure_list = [item for item in measure_list if item['cube'][0] == reference_cube]
             if measure_list:
                 measure = measure_list[0]['formal'][0]
 
-        mdx_filled_template = mdx_template.format(measure, cube_by_score, ','.join(dim_str))
+        mdx_filled_template = mdx_template.format(measure, reference_cube, ','.join(dim_str))
         return mdx_filled_template
 
     @staticmethod
