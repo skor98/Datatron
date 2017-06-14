@@ -192,7 +192,9 @@ def create_automative_cube_description(cube_name):
                     values.append(value.lem_index_value)
 
     values = ' '.join(values).split()
-    return TextPreprocessing.frequency_destribution(values)
+    popular_words = TextPreprocessing.frequency_destribution(values)
+    popular_words_repeatition = sorted(popular_words*3)
+    return ' '.join(popular_words_repeatition)
 
 
 def get_classification_for_dimension(cube_name, dimension_name):

@@ -21,9 +21,9 @@ class DataRetrieving:
 
         cntk_result = [{'tagmeaning': 'Нет значения тега', 'word': 'Нет слова'}]
         # try:
-        #    cntk_result = CNTK.text_to_tags(user_request)
+        #    cntk_result = CNTK.get_data(user_request)
         # except:
-        #   pass
+        #   print('DataRetrieving: CNTK не работает')
 
         result = M2Result()
         solr = Solr(SETTINGS.SOLR_MAIN_CORE)
@@ -33,7 +33,6 @@ class DataRetrieving:
 
         solr_result = solr.get_data(normalized_user_request)
         if solr_result.status:
-            # api_response, cube = '{"cells":[[{"value":"11111"}], "smth"]}', 'Куб'
             api_response, cube = DataRetrieving._send_request_to_server(solr_result.mdx_query)
             api_response = api_response.text
             feedback = DataRetrieving._form_feedback(solr_result.mdx_query, cube, cntk_result, user_request)

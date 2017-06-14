@@ -19,6 +19,8 @@ class TextPreprocessing:
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
+        # Замена нижнего подчеркивания встречающегося в caption в метаданных куба на пробел
+        text = text.replace('_', ' ')
         tokens = nltk.word_tokenize(text.lower())
 
         # TODO: продолжать работу над стоп-словами
@@ -93,5 +95,4 @@ class TextPreprocessing:
         most_popular_words = fq.most_common(num)
         print('{}: {}'.format(__name__, most_popular_words))
         popular_words = [i[0] for i in most_popular_words]
-        final_str = ' '.join(popular_words)
-        return final_str
+        return popular_words
