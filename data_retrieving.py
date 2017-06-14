@@ -146,6 +146,9 @@ class DataRetrieving:
             str_num = str_num.split('.')[0]
         num_len = len(str_num)
 
+        if '-' in str_num:
+            num_len -= 1
+
         if num_len < 6:
             return str_num
         elif 6 < num_len <= 9:
