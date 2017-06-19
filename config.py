@@ -10,6 +10,7 @@ class ServerSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'new_minfin'
     ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713)
+    HOST = '0.0.0.0'
 
 
 class DimaSettings:
@@ -23,10 +24,11 @@ class DimaSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (65305591, )
+    HOST = 'localhost'
 
 
 ss, ds = ServerSettings, DimaSettings
-SETTINGS = ss
+SETTINGS = ds
 
 FFMPEG_PATH_MASHA = r'C:\Users\The Cat Trex\PycharmProjects\OpenFinData\ffmpeg\bin\ffmpeg.exe'
 CNTK_SERVER_PATH = r'C:/Users/imon/Documents/Git/Datatron 2.0/OpenFinData/cntk'

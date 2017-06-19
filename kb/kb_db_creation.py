@@ -13,6 +13,7 @@ class Value(BaseModel):
     full_value = CharField()
     lem_index_value = CharField()
     cube_value = CharField()
+    hierarchy_level = BigIntegerField()
 
 
 class Measure(BaseModel):
@@ -36,8 +37,10 @@ class Dimension_Value(BaseModel):
 
 class Cube(BaseModel):
     name = CharField()
-    lem_description = CharField()
-    default_measure = ForeignKeyField(Measure, null=True)
+    auto_lem_description = CharField()
+    manual_description = CharField()
+    manual_lem_description = CharField()
+    default_measure = ForeignKeyField(Measure)
 
 
 class Cube_Dimension(BaseModel):

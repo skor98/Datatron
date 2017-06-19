@@ -1,5 +1,4 @@
 from kb.kb_support_library import get_cube_dimensions, check_dimension_value_in_cube, get_default_dimension
-import re
 import json
 import requests
 import datetime
@@ -41,21 +40,23 @@ class Solr:
         Принимает на вход JSON-объект.
         Возвращает MDX"""
         mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
-        cube_by_search = []
+        minfin_docs = []
+        cubes = []
         territory = None
         year = None
-        dim_list = []
-        measure_list = []
+        dimensions = []
+        measures = []
 
         solr_docs = solr_docs['response']['docs']
 
         for doc in solr_docs:
             if doc['type'][0] == 'dimension':
-                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in dim_list:
+                # TODO: реализовать для смотри также
+                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in dimensions:
                     continue
                 else:
-                    dim_list.append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
-                    dim_list.append(doc)
+                    dimensions.append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
+                    dimensions.append(doc)
             elif doc['type'][0] == 'year_dimension':
                 year = int(doc['fvalue'][0])
                 # managing two number years
@@ -66,26 +67,28 @@ class Solr:
             elif doc['type'][0] == 'territory_dimension':
                 territory = doc
             elif doc['type'][0] == 'cube':
-                cube_by_search.append(doc['cube'][0])
+                cubes.append(doc['cube'][0])
             elif doc['type'][0] == 'measure':
-                measure_list.append(doc)
+                measures.append(doc)
+            elif doc['type'][0] == 'minfin':
+                minfin_docs.append(doc)
 
         # Очистка от ненужных элементов
-        dim_list = list(filter(lambda elem: type(elem) is not str, dim_list))
+        dimensions = list(filter(lambda elem: type(elem) is not str, dimensions))
 
         if year:
-            dim_list = [item for item in dim_list if 'Years' in get_cube_dimensions(item['cube'][0])]
+            dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'][0])]
 
         if territory:
-            dim_list = [item for item in dim_list if 'Territories' in get_cube_dimensions(item['cube'][0])]
+            dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'][0])]
         # TODO: доработать определение куба
-        reference_cube = dim_list[0]['cube'][0]
+        reference_cube = dimensions[0]['cube'][0]
 
         # Максимальная группа измерений от куба лучшего элемента
-        dim_list = [doc for doc in dim_list if doc['cube'][0] == reference_cube]
+        dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
 
         dim_tmp, dim_str = "[{}].[{}]", []
-        for doc in dim_list:
+        for doc in dimensions:
             dim_str.append(dim_tmp.format(doc['name'][0], doc['fvalue'][0]))
 
         reference_cube_dimensions = get_cube_dimensions(reference_cube)
@@ -103,10 +106,10 @@ class Solr:
             dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
 
         measure = get_default_dimension(reference_cube)
-        if measure_list:
-            measure_list = [item for item in measure_list if item['cube'][0] == reference_cube]
-            if measure_list:
-                measure = measure_list[0]['formal'][0]
+        if measures:
+            measures = [item for item in measures if item['cube'][0] == reference_cube]
+            if measures:
+                measure = measures[0]['formal'][0]
 
         mdx_filled_template = mdx_template.format(measure, reference_cube, ','.join(dim_str))
         return mdx_filled_template

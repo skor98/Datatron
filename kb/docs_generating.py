@@ -67,14 +67,14 @@ class DocsGeneration:
 
     def _write_to_file(self, docs):
         json_data = json.dumps(docs)
-        with open(self.file_name, 'a') as file:
+        with open(self.file_name, 'a', encoding='utf-8') as file:
             file.write(json_data)
 
     @staticmethod
     def _create_values():
         current_year = datetime.datetime.now().year
-        year_values = [i for i in range(2007, current_year + 1)]
-        year_values.extend([i for i in range(7, current_year-1999)])
+        year_values = [str(i) for i in range(2007, current_year + 1)]
+        year_values.extend([str(i) for i in range(7, current_year - 1999)])
         for i in range(len(year_values)):
             year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
 
@@ -123,7 +123,8 @@ class DocsGeneration:
                                     'cube': cube.name,
                                     'name': dimension.label,
                                     'verbal': value.lem_index_value,
-                                    'fvalue': value.cube_value})
+                                    'fvalue': value.cube_value,
+                                    'hierarchy_level': value.hierarchy_level})
 
         return year_values + territory_values + values
 
@@ -131,16 +132,21 @@ class DocsGeneration:
     def _create_cubes():
         cubes = []
         for cube in Cube.select():
+            cube_description = cube.auto_lem_description
+            if cube.manual_lem_description:
+                cube_description += cube.manual_lem_description
+
             cubes.append({
                 'type': 'cube',
                 'cube': cube.name,
-                'description': cube.lem_description})
+                'description': cube_description})
         return cubes
 
     @staticmethod
     def _create_measures():
         measures = []
         for measure in Measure.select():
+            # TODO: доработать итерирование - исключить все дефолтные меры
             if measure.cube_value != 'VALUE':
                 for cube_measure in Cube_Measure.select().where(Cube_Measure.measure_id == measure.id):
                     for cube in Cube.select().where(Cube.id == cube_measure.cube_id):

@@ -193,7 +193,7 @@ def create_automative_cube_description(cube_name):
 
     values = ' '.join(values).split()
     popular_words = TextPreprocessing.frequency_destribution(values)
-    popular_words_repeatition = sorted(popular_words*3)
+    popular_words_repeatition = sorted(popular_words * 3)
     return ' '.join(popular_words_repeatition)
 
 
@@ -218,3 +218,12 @@ def get_representation_format(mdx_query):
 def get_default_dimension(cube_name):
     default_measure_id = Cube.get(Cube.name == cube_name).default_measure
     return Measure.get(Measure.id == default_measure_id).cube_value
+
+
+def create_lem_manual_description(cube_name):
+    tp = TextPreprocessing('Creating lemmatized manual description')
+    manual_description = Cube.get(Cube.name == cube_name).manual_description
+    lem_manual_description = tp.normalization(manual_description, delete_repeating_tokens=False)
+    Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
+
+# create_lem_manual_description('CLMR02')
