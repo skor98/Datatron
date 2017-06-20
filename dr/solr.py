@@ -10,6 +10,11 @@ class Solr:
         self.core = core
 
     def get_data(self, user_request):
+        """API метод для класса Solr
+
+        :param user_request: нормализованный запрос пользователя
+        :return: объект класса DrSolrResult()
+        """
         try:
             docs = self._send_request_to_solr(user_request)
 
@@ -23,10 +28,11 @@ class Solr:
             return DrSolrResult(error=str(e))
 
     def _send_request_to_solr(self, user_request):
-        """Метод для работы с Solr
+        """Метод для отправки запроса к Solr
 
-        Принимает на вход обработанный запрос пользователя и множественны/единичный ожидаемый ответ
-        Возвращает документ (так как rows=1) в виде JSON-объекта"""
+        :param user_request: запрос пользователя
+        :return: ответ от Solr в формате JSON
+        """
 
         request = 'http://localhost:8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
         json_response = requests.get(request.format(self.core, user_request, 20)).text
@@ -39,7 +45,7 @@ class Solr:
 
         Принимает на вход JSON-объект.
         Возвращает MDX"""
-        mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
+
         minfin_docs = []
         cubes = []
         territory = None
@@ -51,12 +57,7 @@ class Solr:
 
         for doc in solr_docs:
             if doc['type'][0] == 'dimension':
-                # TODO: реализовать для смотри также
-                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in dimensions:
-                    continue
-                else:
-                    dimensions.append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
-                    dimensions.append(doc)
+                dimensions.append(doc)
             elif doc['type'][0] == 'year_dimension':
                 year = int(doc['fvalue'][0])
                 # managing two number years
@@ -67,31 +68,68 @@ class Solr:
             elif doc['type'][0] == 'territory_dimension':
                 territory = doc
             elif doc['type'][0] == 'cube':
-                cubes.append(doc['cube'][0])
+                cubes.append(doc)
             elif doc['type'][0] == 'measure':
                 measures.append(doc)
             elif doc['type'][0] == 'minfin':
                 minfin_docs.append(doc)
-
-        # Очистка от ненужных элементов
-        dimensions = list(filter(lambda elem: type(elem) is not str, dimensions))
 
         if year:
             dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'][0])]
 
         if territory:
             dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'][0])]
+
+        # Построение иерархического списка измерений
+        tmp_dimensions, idx = [], 0
+        while dimensions:
+            tmp_dimensions.append([])
+            for doc in list(dimensions):
+                # TODO: реализовать для смотри также
+                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in tmp_dimensions[idx]:
+                    continue
+                else:
+                    tmp_dimensions[idx].append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
+                    tmp_dimensions[idx].append(doc)
+                    dimensions.remove(doc)
+            idx += 1
+
+        dimensions = tmp_dimensions
+        # Очистка от ненужных элементов
+        dimensions = [list(filter(lambda elem: type(elem) is not str, level)) for level in dimensions]
+
         # TODO: доработать определение куба
-        reference_cube = dimensions[0]['cube'][0]
+        reference_cube = cubes[0]['cube'][0]
 
         # Максимальная группа измерений от куба лучшего элемента
-        dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
+        # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
+
+        test1_dimensions = dimensions[0][0]  # первое измерение из верхнего списка измерений
+
+        mdx_request = Solr._build_mdx_request([test1_dimensions], measures, reference_cube, year, territory)
+
+        return mdx_request
+
+    @staticmethod
+    def _build_mdx_request(dimensions, measures, cube, year, territory):
+        """Формирование MDX-запроса, на основе найденных документов
+
+        :param dimensions: список документов измерений
+        :param measures: список документов мер
+        :param cube: имя правильного куба
+        :param year: год
+        :param territory: территория
+        :return: MDX-запрос
+        """
+
+        # шаблон MDX-запроса
+        mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
 
         dim_tmp, dim_str = "[{}].[{}]", []
         for doc in dimensions:
             dim_str.append(dim_tmp.format(doc['name'][0], doc['fvalue'][0]))
 
-        reference_cube_dimensions = get_cube_dimensions(reference_cube)
+        reference_cube_dimensions = get_cube_dimensions(cube)
 
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
@@ -102,20 +140,24 @@ class Solr:
 
         # TODO: подправить на капс
         if 'Territories' in reference_cube_dimensions and territory:
-            dim_str.append(dim_tmp.format('TERRITORIES', territory[reference_cube][0]))
+            dim_str.append(dim_tmp.format('TERRITORIES', territory[cube][0]))
             dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
 
-        measure = get_default_dimension(reference_cube)
+        measure = get_default_dimension(cube)
         if measures:
-            measures = [item for item in measures if item['cube'][0] == reference_cube]
+            measures = [item for item in measures if item['cube'][0] == cube]
             if measures:
                 measure = measures[0]['formal'][0]
 
-        mdx_filled_template = mdx_template.format(measure, reference_cube, ','.join(dim_str))
-        return mdx_filled_template
+        return mdx_template.format(measure, cube, ','.join(dim_str))
 
     @staticmethod
     def get_minfin_docs(user_request):
+        """Работа с документами для вопросов Минфина
+
+        :param user_request: запрос со стороны пользователя к Минфин вопросам
+        :return: объект класса DrSolrMinfinResult()
+        """
         req_str = 'http://localhost:8983/solr/{}/select/?q={}&wt=json'
         solr_response = requests.get(req_str.format(SETTINGS.SOLR_MINFIN_CORE, user_request))
         docs = json.loads(solr_response.text)
