@@ -226,4 +226,22 @@ def create_lem_manual_description(cube_name):
     lem_manual_description = tp.normalization(manual_description, delete_repeating_tokens=False)
     Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
 
-# create_lem_manual_description('CLMR02')
+
+def create_lem_synonyms():
+    tp = TextPreprocessing('Creating lemmatized manual description')
+    for val in Value.select():
+        syn = val.synonyms
+        if syn:
+            lem_syn = tp.normalization(syn, delete_repeating_tokens=False)
+            Value.update(lem_synonyms=lem_syn).where(Value.cube_value == val.cube_value).execute()
+
+
+def get_default_value_for_dimension(cube_name, dimension_name):
+    cube_id = Cube.get(Cube.name == cube_name).id
+    for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
+        for dim in Dimension.select().where(
+                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)):
+            return Value.get(Value.id == dim.default_value).cube_value
+
+
+create_lem_synonyms()

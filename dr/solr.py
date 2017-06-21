@@ -1,4 +1,4 @@
-from kb.kb_support_library import get_cube_dimensions, check_dimension_value_in_cube, get_default_dimension
+from kb.kb_support_library import get_cube_dimensions, get_default_value_for_dimension, get_default_dimension
 import json
 import requests
 import datetime
@@ -98,15 +98,22 @@ class Solr:
         # Очистка от ненужных элементов
         dimensions = [list(filter(lambda elem: type(elem) is not str, level)) for level in dimensions]
 
-        # TODO: доработать определение куба
+        test1_dimensions = []
         reference_cube = cubes[0]['cube'][0]
+        # если какие-то измерения (кроме территории, года) были найдены:
+        if dimensions:
+            # TODO: доработать определение куба
+            if reference_cube != dimensions[0][0]['cube'][0] and cubes[0]['score'] < dimensions[0][0]['score']:
+                reference_cube = dimensions[0][0]['cube'][0]
 
-        # Максимальная группа измерений от куба лучшего элемента
-        # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
+            # Максимальная группа измерений от куба лучшего элемента
+            # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
 
-        test1_dimensions = dimensions[0][0]  # первое измерение из верхнего списка измерений
+            if dimensions[0][0]['cube'][0] == reference_cube:
+                test1_dimensions = [dimensions[0][0]]  # первое измерение из верхнего списка измерений
 
-        mdx_request = Solr._build_mdx_request([test1_dimensions], measures, reference_cube, year, territory)
+        mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
+        print(mdx_request)
 
         return mdx_request
 
@@ -136,12 +143,14 @@ class Solr:
             if year:
                 dim_str.append(dim_tmp.format('YEARS', year))
             else:
-                dim_str.append(dim_tmp.format('YEARS', datetime.datetime.now().year))
+                dim_str.append(dim_tmp.format('YEARS', get_default_value_for_dimension(cube, 'Years')))
 
         # TODO: подправить на капс
         if 'Territories' in reference_cube_dimensions and territory:
             dim_str.append(dim_tmp.format('TERRITORIES', territory[cube][0]))
             dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
+        elif 'Territories' in reference_cube_dimensions:
+            dim_str.append(dim_tmp.format('BGLEVELS', get_default_value_for_dimension(cube, 'BGLevels')))
 
         measure = get_default_dimension(cube)
         if measures:
