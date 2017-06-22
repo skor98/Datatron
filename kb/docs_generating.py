@@ -67,14 +67,14 @@ class DocsGeneration:
 
     def _write_to_file(self, docs):
         json_data = json.dumps(docs)
-        with open(self.file_name, 'a') as file:
+        with open(self.file_name, 'a', encoding='utf-8') as file:
             file.write(json_data)
 
     @staticmethod
     def _create_values():
         current_year = datetime.datetime.now().year
-        year_values = [i for i in range(2007, current_year + 1)]
-        year_values.extend([i for i in range(7, current_year-1999)])
+        year_values = [str(i) for i in range(2007, current_year + 1)]
+        year_values.extend([str(i) for i in range(7, current_year - 1999)])
         for i in range(len(year_values)):
             year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
 
@@ -83,7 +83,10 @@ class DocsGeneration:
         dimension = Dimension.get(Dimension.label == 'Territories')
         for dimension_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dimension.id):
             for value in Value.select().where(Value.id == dimension_value.value_id):
-                territory_values.append(value.lem_index_value)
+                index_value = value.lem_index_value
+                if value.lem_synonyms:
+                    index_value += ' {}'.format(value.lem_synonyms)
+                territory_values.append(index_value)
 
         td = {}
 
@@ -94,12 +97,9 @@ class DocsGeneration:
 
         for key, value in td.items():
             for item in value:
-                for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == item['id']):
-                    for dimension in Dimension.select().where(Dimension.id == dimension_value.dimension_id):
-                        for cube_dimension in Cube_Dimension.select().where(
-                                        Cube_Dimension.dimension_id == dimension.id):
-                            for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
-                                item['cube'] = cube.name
+                dimension_value_dimension_id = Dimension_Value.get(Dimension_Value.value_id == item['id']).dimension_id
+                cube_id = Cube_Dimension.get(Cube_Dimension.dimension_id == dimension_value_dimension_id).cube_id
+                item['cube'] = Cube.get(Cube.id == cube_id).name
                 item.pop('id', None)
 
         territory_values.clear()
@@ -118,12 +118,16 @@ class DocsGeneration:
                         for dimension_value in Dimension_Value.select().where(
                                         Dimension_Value.dimension_id == dimension.id):
                             for value in Value.select().where(Value.id == dimension_value.value_id):
+                                verbal = value.lem_index_value
+                                if value.lem_synonyms:
+                                    verbal += ' {}'.format(value.lem_synonyms)
                                 values.append({
                                     'type': 'dimension',
                                     'cube': cube.name,
                                     'name': dimension.label,
-                                    'verbal': value.lem_index_value,
-                                    'fvalue': value.cube_value})
+                                    'verbal': verbal,
+                                    'fvalue': value.cube_value,
+                                    'hierarchy_level': value.hierarchy_level})
 
         return year_values + territory_values + values
 
@@ -131,17 +135,27 @@ class DocsGeneration:
     def _create_cubes():
         cubes = []
         for cube in Cube.select():
+            cube_description = cube.auto_lem_description
+            if cube.manual_lem_description:
+                cube_description += ' {}'.format(cube.manual_lem_description)
+
             cubes.append({
                 'type': 'cube',
                 'cube': cube.name,
-                'description': cube.lem_description})
+                'description': cube_description})
         return cubes
 
     @staticmethod
     def _create_measures():
         measures = []
+        default_measures_ids = []
+        # TODO: обратить внимание на очень простое обращение по FK!!!!
+        # for cube in Cube.select():
+        #     default_measures_ids.append(cube.default_measure)
+        for cube in Cube.select():
+            default_measures_ids.append(cube.default_measure_id)
         for measure in Measure.select():
-            if measure.cube_value != 'VALUE':
+            if measure.id not in default_measures_ids:
                 for cube_measure in Cube_Measure.select().where(Cube_Measure.measure_id == measure.id):
                     for cube in Cube.select().where(Cube.id == cube_measure.cube_id):
                         measures.append({

@@ -14,26 +14,29 @@ from config import SETTINGS
 class DataRetrieving:
     @staticmethod
     def get_data(user_request, request_id):
-        """Единственный API метод для 2го модуля.
+        """основной API метод для модуля
 
-        Принимает на вход запрос пользователя.
-        Возвращает объект класса M2Result."""
+        :param user_request: запрос от пользователя
+        :param request_id: идентификатор запроса
+        :return: объект класса M2Result()
+        """
 
         cntk_result = [{'tagmeaning': 'Нет значения тега', 'word': 'Нет слова'}]
+
+        # Далее код не готов к использованию из-за неготовности CNTK модуля
         # try:
-        #    cntk_result = CNTK.text_to_tags(user_request)
+        #    cntk_result = CNTK.get_data(user_request)
         # except:
-        #   pass
+        #   print('DataRetrieving: CNTK не работает')
 
         result = M2Result()
         solr = Solr(SETTINGS.SOLR_MAIN_CORE)
-
         tp = TextPreprocessing(request_id)
+
         normalized_user_request = tp.normalization(user_request)
 
         solr_result = solr.get_data(normalized_user_request)
         if solr_result.status:
-            # api_response, cube = '{"cells":[[{"value":"11111"}], "smth"]}', 'Куб'
             api_response, cube = DataRetrieving._send_request_to_server(solr_result.mdx_query)
             api_response = api_response.text
             feedback = DataRetrieving._form_feedback(solr_result.mdx_query, cube, cntk_result, user_request)
@@ -57,13 +60,15 @@ class DataRetrieving:
             else:
                 result.status = True
 
-                # TODO: доработать форматирование
+                # TODO: доработать форматирование для штук
                 value = float(json.loads(api_response)["cells"][0][0]["value"])
-
                 value_format = get_representation_format(solr_result.mdx_query)
+
+                # Если формат для меры - 0, что означает число
                 if not value_format:
                     formatted_value = DataRetrieving._format_numerical(value)
                     result.response = formatted_value
+                # Если формат для меры - 1, что означает процент
                 elif value_format == 1:
                     formatted_value = '{}%'.format(value)
                     result.response = formatted_value
@@ -86,6 +91,13 @@ class DataRetrieving:
 
     @staticmethod
     def get_minfin_data(user_request):
+        """Дополнительный API метод для модуля для работы с Минфин-запросами.
+        В дальнейшем будет убран, так как поиск всех документов должен
+        происходить через единый интерфейс
+
+        :param user_request: запрос к Минфин-документам от пользователя
+        :return: объект класса DrSolrMinfinResult()
+        """
         tp = TextPreprocessing(uuid.uuid4())
         return Solr.get_minfin_docs(tp.normalization(user_request))
 
@@ -93,8 +105,9 @@ class DataRetrieving:
     def _send_request_to_server(mdx_query):
         """Отправка запроса к серверу
 
-        Принимает на вход MDX-запрос
-        Возвращает объект класса request.model.Response и куб"""
+        :param mdx_query: MDX-запрос
+        :return: объект класса request.model.Response, название куба
+        """
 
         # Парсинг строки MDX-запроса для выделения из нее названия куба
         query_by_elements = mdx_query.split(' ')
@@ -109,10 +122,14 @@ class DataRetrieving:
 
     @staticmethod
     def _form_feedback(mdx_query, cube, cntk_result, user_request):
-        """Формироварие обратной связи
+        """Формирование обратной связи
 
-        Принимает на вход MDX-запрос и куб
-        Возвращает cловарь"""
+        :param mdx_query: MDX-запрос
+        :param cube: название куба
+        :param cntk_result: результаты работы CNTK
+        :param user_request: запрос пользователя
+        :return: словарь
+        """
 
         # Разбиваем MDX-запрос на две части
         left_part, right_part = mdx_query.split('(')
@@ -139,6 +156,11 @@ class DataRetrieving:
 
     @staticmethod
     def _format_numerical(number):
+        """Перевод числа в млн, млрд и трл вид. Например, 123 123 123 -> 123 млн
+
+        :param number: число для форматирования
+        :return: отфоратированное число в виде строки
+        """
         str_num = str(number)
 
         # Если число через точку

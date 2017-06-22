@@ -15,14 +15,14 @@ solr_clear_req = 'http://localhost:8983/solr/{}/update?stream.body=%3Cdelete%3E%
 path_to_folder_file = r'{}\{}'.format(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, {})
 
 
-def set_up_minfin_core(index_way='curl'):
+def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CORE):
     minfin_docs = _refactor_data(_read_data())
     _add_automatic_key_words(minfin_docs)
     _write_data(minfin_docs)
     if index_way == 'curl':
-        _index_data_via_curl()
+        _index_data_via_curl(clear=clear, core=core)
     elif index_way == 'jar_file':
-        _index_data_via_cmd()
+        _index_data_via_cmd(clear=clear, core=core)
 
 
 def _read_data():
@@ -50,7 +50,7 @@ def _refactor_data(data):
             if row.full_answer:
                 doc.full_answer = row.full_answer
                 doc.lem_full_answer = tp.normalization(row.full_answer,
-                                                        delete_digits=True,
+                                                       delete_digits=True,
                                                        delete_repeating_tokens=False)
             doc.lem_key_words = tp.normalization(row.key_words)
             if row.link_name:
@@ -65,12 +65,12 @@ def _refactor_data(data):
     return docs
 
 
-def _index_data_via_cmd():
-    core = SETTINGS.SOLR_MINFIN_CORE
+def _index_data_via_cmd(clear, core):
     path_to_json_data_file = path_to_folder_file.format(output_file)
     path_to_solr_jar_file = SETTINGS.PATH_TO_SOLR_POST_JAR_FILE
 
-    requests.get(solr_clear_req.format(core))
+    if clear:
+        requests.get(solr_clear_req.format(core))
 
     command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(core, path_to_solr_jar_file,
                                                                        path_to_json_data_file)
@@ -78,9 +78,9 @@ def _index_data_via_cmd():
     print('Минфин-документы проиндексированы через JAR файл')
 
 
-def _index_data_via_curl():
-    core = SETTINGS.SOLR_MINFIN_CORE
-    requests.get(solr_clear_req.format(core))
+def _index_data_via_curl(clear, core):
+    if clear:
+        requests.get(solr_clear_req.format(core))
 
     c = pycurl.Curl()
     c.setopt(c.URL, 'http://localhost:8983/solr/{}/update?commit=true'.format(core))
@@ -153,6 +153,7 @@ def _key_words_for_doc(document_id, score, top=5):
 
 class ClassicMinfinDocument:
     def __init__(self):
+        self.type = 'minfin'
         self.question = ''
         self.short_answer = ''
         self.full_answer = None
@@ -178,6 +179,7 @@ class ClassicMinfinDocument:
 class ParameterizedMinfinDocument:
     # TODO: доработать поля класса
     def __init__(self):
+        self.type = 'minfin'
         self.question = ''
         self.short_answer = {}
         self.full_answer = {}

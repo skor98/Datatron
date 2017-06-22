@@ -14,6 +14,13 @@ def set_up_db(overwrite=True):
     kbs.set_up_db(overwrite=overwrite)
 
 
+def update_values_in_db(overwrite=False):
+    # 1. Создание и заполнение БД
+    kb_path = SETTINGS.PATH_TO_KNOWLEDGEBASE
+    db_file = kb_path.split('\\')[Counter(kb_path)['\\']]
+    kbs = KnowledgeBaseSupport('cubes_metadata.txt', db_file)
+    kbs.set_up_db(overwrite=overwrite)
+
 def set_up_solr_cube_data(index_way='curl'):
     # 2. Генерация и индексация документов
     dga = DocsGeneration(core=SETTINGS.SOLR_MAIN_CORE)
@@ -28,14 +35,10 @@ def set_up_solr_cube_data(index_way='curl'):
         dga.index_created_documents_via_cmd(SETTINGS.PATH_TO_SOLR_POST_JAR_FILE)  # Индексация документов
 
 
-def set_up_solr_minfin_data(index_way='curl'):
-    set_up_minfin_core(index_way=index_way)
-
-
 # set_up_db()
-# set_up_solr_cube_data()
-set_up_minfin_core('jar_file')
-
+set_up_solr_cube_data('jar_file')
+# set_up_minfin_core('jar_file')
+# update_values_in_db()
 
 
 # import os

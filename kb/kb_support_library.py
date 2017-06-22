@@ -192,7 +192,9 @@ def create_automative_cube_description(cube_name):
                     values.append(value.lem_index_value)
 
     values = ' '.join(values).split()
-    return TextPreprocessing.frequency_destribution(values)
+    popular_words = TextPreprocessing.frequency_destribution(values)
+    popular_words_repeatition = sorted(popular_words * 3)
+    return ' '.join(popular_words_repeatition)
 
 
 def get_classification_for_dimension(cube_name, dimension_name):
@@ -216,3 +218,30 @@ def get_representation_format(mdx_query):
 def get_default_dimension(cube_name):
     default_measure_id = Cube.get(Cube.name == cube_name).default_measure
     return Measure.get(Measure.id == default_measure_id).cube_value
+
+
+def create_lem_manual_description(cube_name):
+    tp = TextPreprocessing('Creating lemmatized manual description')
+    manual_description = Cube.get(Cube.name == cube_name).manual_description
+    lem_manual_description = tp.normalization(manual_description, delete_repeating_tokens=False)
+    Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
+
+
+def create_lem_synonyms():
+    tp = TextPreprocessing('Creating lemmatized manual description')
+    for val in Value.select():
+        syn = val.synonyms
+        if syn:
+            lem_syn = tp.normalization(syn, delete_repeating_tokens=False)
+            Value.update(lem_synonyms=lem_syn).where(Value.cube_value == val.cube_value).execute()
+
+
+def get_default_value_for_dimension(cube_name, dimension_name):
+    cube_id = Cube.get(Cube.name == cube_name).id
+    for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
+        for dim in Dimension.select().where(
+                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)):
+            return Value.get(Value.id == dim.default_value).cube_value
+
+
+create_lem_synonyms()

@@ -24,11 +24,12 @@ class KnowledgeBaseSupport:
             for i in inserts:
                 database.execute_sql(i)
         else:
-            data_set_list = self._read_data()
+            data_set_list = KnowledgeBaseSupport._read_data()
 
             if type(data_set_list) is not list:
                 data_set_list = [data_set_list]
 
+            # KnowledgeBaseSupport._update_value_hierarchy(data_set_list)
             KnowledgeBaseSupport._transfer_data_to_db(data_set_list)
             KnowledgeBaseSupport._create_cube_lem_description(data_set_list)
 
@@ -45,11 +46,11 @@ class KnowledgeBaseSupport:
                 create_tables()
 
     @staticmethod
-    def read_data():
+    def _read_data():
         data_set_list = []
 
         # cube_metadata_file = '{}\\{}\\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
-        cube_metadata_file = '{}\\{}'.format(getcwd(), 'cubes_metadata.txt')
+        cube_metadata_file = r'{}\{}\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
 
         with open(cube_metadata_file, 'r', encoding='utf-8') as file:
             data = file.read()
@@ -79,10 +80,19 @@ class KnowledgeBaseSupport:
                 if not [item for item in ('неуказанный', 'не определить') if item in normalized_elem]:
                     cube_data_set.dimensions[dim_name].append({'full_value': element['caption'],
                                                                'lem_index_value': normalized_elem,
-                                                               'cube_value': element['name']})
+                                                               'cube_value': element['name'],
+                                                               'hierarchy_level': int(element['levelDepth'])})
             data_set_list.append(cube_data_set)
 
         return data_set_list
+
+    @staticmethod
+    def _update_value_hierarchy(data_set):
+        for item in data_set:
+            for dimension_name, dimension_values in item.dimensions.items():
+                for dimension_value in dimension_values:
+                    Value.update(hierarchy_level=dimension_value['hierarchy_level']).where(
+                        Value.cube_value == dimension_value['cube_value']).execute()
 
     @staticmethod
     def _transfer_data_to_db(data_set):

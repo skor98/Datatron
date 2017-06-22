@@ -52,7 +52,7 @@ class MessengerManager:
         return DataRetrieving.get_minfin_data(text)
 
     @staticmethod
-    def make_voice_request(record_bytes, source, user_id, user_name, request_id):
+    def make_voice_request(source, user_id, user_name, request_id, bytes=None, filename=None):
         """Универсальный API метод для обработки голосовых запросов
 
         Принимает на вход набор байтов записи (record_bytes), источник запроса (source),
@@ -61,7 +61,10 @@ class MessengerManager:
         Возвращает объект класса M1Result."""
 
         try:
-            text = speech_to_text(bytes=record_bytes)
+            if filename:
+                text = speech_to_text(filename=filename)
+            else:
+                text = speech_to_text(bytes=bytes)
             logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'voice'))
         except SpeechException:
             return constants.ERROR_CANNOT_UNDERSTAND_VOICE

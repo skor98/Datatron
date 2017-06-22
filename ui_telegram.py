@@ -288,7 +288,7 @@ def process_response(message, format='text', file_content=None):
     if format == 'text':
         result = MessengerManager.make_request(message.text, 'TG', message.chat.id, user_name, request_id)
     else:
-        result = MessengerManager.make_voice_request(file_content, "TG", message.chat.id, user_name, request_id)
+        result = MessengerManager.make_voice_request("TG", message.chat.id, user_name, request_id, bytes=file_content)
 
     if not result.status:
         bot.send_message(message.chat.id, result.error)

@@ -222,7 +222,8 @@ def read_data_from_file(file_name='cubes_metadata.txt'):
         data = file.read()
     return json.loads(data)
 
-# cubes = ['INYR03', 'CLDO01', 'INDO01', 'EXYR03', 'EXDO01', 'FSYR01', 'CLDO02']
-# cube_metadata = get_data(cubes)
-# json_metadata = data_to_json(cube_metadata)
+cubes = ['INYR03', 'CLDO01', 'INDO01', 'EXYR03', 'EXDO01', 'FSYR01', 'CLDO02']
+cube_metadata = get_data(cubes)
+json_metadata = data_to_json(cube_metadata)
+a = 10
 # write_data_to_file(json_metadata)
