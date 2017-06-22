@@ -242,6 +242,3 @@ def get_default_value_for_dimension(cube_name, dimension_name):
         for dim in Dimension.select().where(
                         (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)):
             return Value.get(Value.id == dim.default_value).cube_value
-
-
-create_lem_synonyms()
