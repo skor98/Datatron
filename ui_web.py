@@ -1,6 +1,8 @@
 from messenger_manager import MessengerManager
+from data_retrieving import DataRetrieving
 from bottle import Bottle, request, run, BaseRequest
 import codecs
+import uuid
 import os
 from random import choice
 from string import ascii_lowercase, digits
@@ -16,7 +18,7 @@ def main():
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
 
 
-@app.post('/post')
+@app.post('/text')
 def post_basic():
     # Получение полей
     request_text = request.forms.get('Request')
@@ -33,7 +35,17 @@ def post_basic():
         return MessengerManager.make_request(request_text, source, user_id, user_name, request_id).toJSON()
 
 
-@app.post('/post')
+@app.post('/test')
+def post_basic():
+    request_text = request.forms.get('Request')
+    request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
+
+    if request_text:
+        return DataRetrieving.get_data(request_text, uuid.uuid4(), formatted=False).toJSON()
+
+
+
+@app.post('/audio')
 def post_audio_file():
     # Получение полей
     file = request.files.get('File')

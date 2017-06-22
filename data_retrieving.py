@@ -13,7 +13,7 @@ from config import SETTINGS
 # Module, which is responsible for getting required from user data
 class DataRetrieving:
     @staticmethod
-    def get_data(user_request, request_id):
+    def get_data(user_request, request_id, formatted=True):
         """основной API метод для модуля
 
         :param user_request: запрос от пользователя
@@ -62,16 +62,19 @@ class DataRetrieving:
 
                 # TODO: доработать форматирование для штук
                 value = float(json.loads(api_response)["cells"][0][0]["value"])
-                value_format = get_representation_format(solr_result.mdx_query)
 
-                # Если формат для меры - 0, что означает число
-                if not value_format:
-                    formatted_value = DataRetrieving._format_numerical(value)
-                    result.response = formatted_value
-                # Если формат для меры - 1, что означает процент
-                elif value_format == 1:
-                    formatted_value = '{}%'.format(value)
-                    result.response = formatted_value
+                if formatted:
+                    value_format = get_representation_format(solr_result.mdx_query)
+                    # Если формат для меры - 0, что означает число
+                    if not value_format:
+                        formatted_value = DataRetrieving._format_numerical(value)
+                        result.response = formatted_value
+                    # Если формат для меры - 1, что означает процент
+                    elif value_format == 1:
+                        formatted_value = '{}%'.format(value)
+                        result.response = formatted_value
+                else:
+                    result.response = int(str(value).split('.')[0])
 
                 # Формирование фидбэка
                 result.message = feedback
