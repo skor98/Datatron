@@ -1,9 +1,9 @@
 class ServerSettings:
-    PATH_TO_KNOWLEDGEBASE = r'C:\Users\imon\Documents\Git\Datatron 2.0\Datatron\kb\knowledge_base.db'
-    PATH_TO_USER_DB = r'C:\Users\imon\Documents\Git\Datatron 2.0\Datatron\db\users.db'
+    PATH_TO_KNOWLEDGEBASE = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\kb\knowledge_base.db'
+    PATH_TO_USER_DB = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\db\users.db'
     PATH_TO_SOLR_POST_JAR_FILE = r'"C:\local\solr-6.4.2\example\exampledocs\post.jar"'
-    PATH_TO_FFMPEG = r'C:\Users\imon\Documents\Git\Datatron 2.0\Datatron\ffmpeg\ffmpeg.exe'
-    PATH_TO_MINFIN_ATTACHMENTS = r'C:\Users\imon\Documents\Git\Datatron 2.0\Datatron\data\minfin'
+    PATH_TO_FFMPEG = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\ffmpeg\ffmpeg.exe'
+    PATH_TO_MINFIN_ATTACHMENTS = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\data\minfin'
     TELEGRAM_API_TOKEN = '231161869:AAFpafehgQl9V-5f6-1KvwjPkzhbgdqDflU'  # OpenFinData
     TELEGRAM_API_TOKEN_FINAL = '242536845:AAELC6ay-SVnaw0nIZHCZpsqw_KN8yiaD1U'  # Datatron
     # PATH_TO_SOLR_BIN_FOLDER = r'C:/local/solr-6.4.2/bin'
