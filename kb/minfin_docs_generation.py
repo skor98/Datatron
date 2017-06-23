@@ -3,11 +3,12 @@ import math
 from text_preprocessing import TextPreprocessing
 import uuid
 import subprocess
-from os import getcwd
+from os import getcwd, listdir, path
 from config import SETTINGS
 import requests
 import pycurl
 import pandas as pd
+import numpy as np
 
 input_data_file_name = 'data.xlsx'
 output_file = 'minfin_data_for_indexing_in_solr.json'
@@ -16,6 +17,7 @@ path_to_folder_file = r'{}\{}'.format(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, {})
 
 
 def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CORE):
+    """Главный API метод к этому модулю"""
     minfin_docs = _refactor_data(_read_data())
     _add_automatic_key_words(minfin_docs)
     _write_data(minfin_docs)
@@ -26,8 +28,22 @@ def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CO
 
 
 def _read_data():
-    data = pd.read_excel(open(path_to_folder_file.format(input_data_file_name), 'rb'), sheetname='questions')
-    data = data.fillna(0)
+    files = []
+    file_paths = []
+    for file in listdir(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS):
+        if file.endswith(".xlsx"):
+            file_paths.append(path.join(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, file))
+            files.append(file)
+
+    dfs = []
+    for file_path in file_paths:
+        df = pd.read_excel(open(file_path, 'rb'), sheetname='questions')
+        df = df.fillna(0)
+        dfs.append(df)
+
+    _create_tests(files, dfs)
+
+    data = pd.concat(dfs)
     return data
 
 
@@ -43,23 +59,48 @@ def _refactor_data(data):
     for index, row in data.iterrows():
         if not row.parameterized:
             doc = ClassicMinfinDocument()
+            doc.number = row.id
             doc.question = row.question
-            doc.lem_question = tp.normalization(row.question)
+            doc.lem_question = tp.normalization(row.question,
+                                                delete_digits=True,
+                                                delete_repeating_tokens=False)
             doc.short_answer = row.short_answer
-            doc.lem_short_answer = tp.normalization(row.short_answer)
+            doc.lem_short_answer = tp.normalization(row.short_answer,
+                                                    delete_digits=True,
+                                                    delete_repeating_tokens=False)
             if row.full_answer:
                 doc.full_answer = row.full_answer
                 doc.lem_full_answer = tp.normalization(row.full_answer,
                                                        delete_digits=True,
                                                        delete_repeating_tokens=False)
             doc.lem_key_words = tp.normalization(row.key_words)
+            # Может быть несколько
             if row.link_name:
-                doc.link_name = row.link_name
-                doc.link = row.link
-            if row.picture:
-                doc.picture = row.picture
-            if row.document:
-                doc.document = row.document
+                if ';' in row.link_name:
+                    doc.link_name = row.link_name.split(';')
+                    doc.link = row.link.split(';')
+                else:
+                    doc.link_name = row.link_name
+                    doc.link = row.link
+
+            # Может быть несколько
+            if row.picture_caption:
+                if ';' in row.picture_caption:
+                    doc.picture_caption = row.picture_caption.split(';')
+                    doc.picture = row.picture.split(';')
+                else:
+                    doc.picture_caption = row.picture_caption
+                    doc.picture = row.picture
+
+            # Может быть несколько
+            if row.document_caption:
+                if ';' in row.document_caption:
+                    doc.document_caption = row.document_caption.split(';')
+                    doc.document = row.document.split(';')
+                else:
+                    doc.document_caption = row.document_caption
+                    doc.document = row.document
+
         # TODO: обработка параметризованного случая
         docs.append(doc)
     return docs
@@ -99,7 +140,7 @@ def _add_automatic_key_words(documents):
     matrix = _calculate_matrix(documents)
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)
-        doc.lem_key_words += ' '.join(extra_key_words)
+        doc.lem_key_words += ' {}'.format(' '.join(extra_key_words))
 
 
 def _tf(word, doc):
@@ -151,9 +192,18 @@ def _key_words_for_doc(document_id, score, top=5):
     return key_words
 
 
+def _create_tests(files, data_frames):
+    for f, df in zip(files, data_frames):
+        file_path = r'tests\minfin test for {}.txt'.format(f.split('.')[0])
+        with open(file_path, 'w', encoding='utf-8') as file:
+            output = ['{}:{}'.format(row.question, row.id) for index, row in df[['id', 'question']].iterrows()]
+            file.write('\n'.join(output))
+
+
 class ClassicMinfinDocument:
     def __init__(self):
         self.type = 'minfin'
+        self.number = 0
         self.question = ''
         self.short_answer = ''
         self.full_answer = None
@@ -163,7 +213,9 @@ class ClassicMinfinDocument:
         self.lem_key_words = ''
         self.link_name = None
         self.link = None
+        self.picture_caption = None
         self.picture = None
+        self.document_caption = None
         self.document = None
 
     def toJSON(self):
@@ -174,26 +226,3 @@ class ClassicMinfinDocument:
             return self.lem_question + self.lem_full_answer
         else:
             return self.lem_question + self.lem_short_answer
-
-
-class ParameterizedMinfinDocument:
-    # TODO: доработать поля класса
-    def __init__(self):
-        self.type = 'minfin'
-        self.question = ''
-        self.short_answer = {}
-        self.full_answer = {}
-        self.lem_question = ''
-        self.lem_short_answer = {}
-        self.lem_full_answer = {}
-        self.lem_key_words = ''
-        self.link_name = None
-        self.link = None
-        self.picture = None
-        self.document = None
-
-    def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
-
-    def get_string_representation(self):
-        pass
