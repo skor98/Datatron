@@ -36,7 +36,7 @@ def post_basic():
 
 
 @app.post('/test')
-def post_basic():
+def post_test():
     request_text = request.forms.get('Request')
     request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
 
