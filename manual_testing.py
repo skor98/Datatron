@@ -62,7 +62,7 @@ def minfin_testing(local=True):
     true_answers = 0
 
     for file in listdir(test_path):
-        if file.startswith("minfin"):
+        if file.startswith("minfin_test"):
             test_files_paths.append(r'{}\{}'.format(test_path, file))
 
     for tf in test_files_paths:
@@ -80,18 +80,20 @@ def minfin_testing(local=True):
                 if response:
                     try:
                         assert question_id == response
-                        ars = '{q_id} Запрос "{q_id}" отрабатывает корректно'.format(q_id=question_id)
+                        ars = '{q_id} Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
                         testing_results.append(ars)
                         true_answers += 1
                         print(ars)
                     except AssertionError:
-                        ars = '{q_id} Запрос "{q_id}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
-                        ars = ars.format(q_id=question_id, fl=response)
+                        ars = '{q_id} Запрос "{req}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
+                        ars = ars.format(q_id=question_id, req=req, fl=response)
                         testing_results.append(ars)
                         print(ars)
                 else:
                     # TODO: подправить MSG
-                    ars = '{req} Запрос "{req}" вызвал ошибку: {msg}'.format(req=req, msg='Не определена')
+                    ars = '{q_id} Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
+                                                                              req=req,
+                                                                              msg='Не определена')
                     testing_results.append(ars)
                     print(ars)
 
