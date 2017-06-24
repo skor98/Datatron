@@ -171,6 +171,7 @@ def get_user_feedbacks(message):
 def get_minfin_questions(message):
     msg = message.text[2:].strip()
     if msg:
+        bot.send_chat_action(message.chat.id, 'typing')
         result = MessengerManager.make_minfin_request(msg)
         if result.status:
             bot.send_message(message.chat.id,
@@ -179,14 +180,20 @@ def get_minfin_questions(message):
             if result.full_answer:
                 bot.send_message(message.chat.id,
                                  '<b>Ответ:</b> {}'.format(result.full_answer),
-                                 parse_mode='HTML')
+                                 parse_mode='HTML', reply_to_message_id=message.message_id)
             # может быть несколько
             if result.link_name:
                 if type(result.link_name) is list:
-                    for ln, l in zip(result.link_name, result.link):
-                        bot.send_message(message.chat.id, '{}: {}'.format(ln, l))
+                    link_output_str = []
+                    for idx, (ln, l) in enumerate(zip(result.link_name, result.link)):
+                        link_output_str.append('{}. [{}]({})'.format(idx+1, ln, l))
+                    link_output_str.insert(0, '*Дополнительные результаты* можно посмотреть по ссылкам:')
+                    bot.send_message(message.chat.id, '\n'.join(link_output_str), parse_mode='Markdown')
                 else:
-                    bot.send_message(message.chat.id, '{}: {}'.format(result.link_name, result.link))
+                    link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
+                    bot.send_message(message.chat.id,
+                                     '{}\n[{}]({})'.format(link_output_str, result.link_name, result.link),
+                                     parse_mode='Markdown')
             # может быть несколько
             if result.picture_caption:
                 if type(result.picture_caption) is list:
@@ -206,6 +213,7 @@ def get_minfin_questions(message):
                     with open('data/minfin/doc/{}'.format(result.document), 'rb') as document:
                         bot.send_document(message.chat.id, document, caption=result.document_caption)
 
+            bot.send_chat_action(message.chat.id, 'upload_audio')
             bot.send_voice(message.chat.id, text_to_speech(result.short_answer))
         else:
             bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
