@@ -1,5 +1,6 @@
 YANDEX_API_KEY = 'e05f5a12-8e05-4161-ad05-cf435a4e7d5b'
 
+
 class ServerSettings:
     PATH_TO_KNOWLEDGEBASE = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\kb\knowledge_base.db'
     PATH_TO_USER_DB = r'C:\Users\imon\Documents\Git\Datatron_2.0\Datatron\db\users.db'
@@ -23,7 +24,7 @@ class DimaSettings:
     TELEGRAM_API_TOKEN = '371109250:AAE_0U6v5MKNcNSCZBmzIXVFIM8FPNCPqPc'  # Dimatest_Bot
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
-    ADMIN_TELEGRAM_ID = (65305591, )
+    ADMIN_TELEGRAM_ID = (65305591,)
     HOST = 'localhost'
 
 
@@ -41,4 +42,4 @@ class MashaSettings:
 
 
 ss, ds, ms = ServerSettings, DimaSettings, MashaSettings
-SETTINGS = ms
+SETTINGS = ss
