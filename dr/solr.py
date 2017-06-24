@@ -176,6 +176,7 @@ class Solr:
         if docs['response']['numFound']:
             res.status = True
             best_document = docs['response']['docs'][0]
+            res.number = best_document['number'][0]
             res.question = best_document['question'][0]
             res.short_answer = best_document['short_answer'][0]
             try:
@@ -184,18 +185,34 @@ class Solr:
                 pass
 
             try:
-                res.link_name = best_document['link_name'][0]
-                res.link = best_document['link'][0]
+                if len(best_document['link_name']) > 1:
+                    res.link_name = best_document['link_name']
+                    res.link = best_document['link']
+                else:
+                    res.link_name = best_document['link_name'][0]
+                    res.link = best_document['link'][0]
+
             except KeyError:
                 pass
 
             try:
-                res.picture = best_document['picture'][0]
+                if len(best_document['picture_caption']) > 1:
+                    res.picture_caption = best_document['picture_caption']
+                    res.picture = best_document['picture']
+                else:
+                    res.picture_caption = best_document['picture_caption'][0]
+                    res.picture = best_document['picture'][0]
+
             except KeyError:
                 pass
 
             try:
-                res.document = best_document['document'][0]
+                if len(best_document['document']) > 1:
+                    res.document_caption = best_document['document_caption']
+                    res.document = best_document['document']
+                else:
+                    res.document_caption = best_document['document_caption'][0]
+                    res.document = best_document['document'][0]
             except KeyError:
                 pass
 
@@ -213,6 +230,7 @@ class DrSolrResult:
 class DrSolrMinfinResult:
     def __init__(self, status=False):
         self.status = status
+        self.number = 0
         self.question = ''
         self.short_answer = ''
         self.full_answer = None
@@ -220,3 +238,6 @@ class DrSolrMinfinResult:
         self.link = None
         self.picture = None
         self.document = None
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)

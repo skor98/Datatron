@@ -30,6 +30,7 @@ def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CO
 def _read_data():
     files = []
     file_paths = []
+
     for file in listdir(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS):
         if file.endswith(".xlsx"):
             file_paths.append(path.join(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, file))
