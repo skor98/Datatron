@@ -180,16 +180,32 @@ def get_minfin_questions(message):
                 bot.send_message(message.chat.id,
                                  '<b>Ответ:</b> {}'.format(result.full_answer),
                                  parse_mode='HTML')
+            # может быть несколько
             if result.link_name:
-                bot.send_message(message.chat.id, '{}: {}'.format(result.link_name, result.link))
-            if result.picture:
-                photo = open('data/minfin/img/{}'.format(result.picture), 'rb')
-                bot.send_photo(message.chat.id, photo)
-                photo.close()
-            if result.document:
-                document = open('data/minfin/doc/{}'.format(result.document), 'rb')
-                bot.send_document(message.chat.id, document)
-                document.close()
+                if type(result.link_name) is list:
+                    for ln, l in zip(result.link_name, result.link):
+                        bot.send_message(message.chat.id, '{}: {}'.format(ln, l))
+                else:
+                    bot.send_message(message.chat.id, '{}: {}'.format(result.link_name, result.link))
+            # может быть несколько
+            if result.picture_caption:
+                if type(result.picture_caption) is list:
+                    for pc, p in zip(result.picture_caption, result.picture):
+                        with open('data/minfin/img/{}'.format(p), 'rb') as picture:
+                            bot.send_photo(message.chat.id, picture, caption=pc)
+                else:
+                    with open('data/minfin/img/{}'.format(result.picture), 'rb') as picture:
+                        bot.send_photo(message.chat.id, picture, caption=result.picture_caption)
+            # может быть несколько
+            if result.document_caption:
+                if type(result.document_caption) is list:
+                    for dc, d in zip(result.document_caption, result.document):
+                        with open('data/minfin/doc/{}'.format(d), 'rb') as document:
+                            bot.send_document(message.chat.id, document, caption=dc)
+                else:
+                    with open('data/minfin/doc/{}'.format(result.document), 'rb') as document:
+                        bot.send_document(message.chat.id, document, caption=result.document_caption)
+
             bot.send_voice(message.chat.id, text_to_speech(result.short_answer))
         else:
             bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
@@ -344,28 +360,4 @@ if __name__ == '__main__':
     for _id in admin_id:
         bot.send_message(_id, "ADMIN_INFO: Бот запушен")
 
-    e = None
-    count = 0
-
-    while True:
-        try:
-            # No more than 5 attempts for one exception
-            if count < 900:
-                count += 1
-                bot.polling(none_stop=True)
-            else:
-                err_message = "ADMIN_INFO: Бот упал.\n\nERROR: '{}'.".format(e)
-                for _id in admin_id:
-                    bot.send_message(_id, err_message)
-                break
-        except Exception as e1:
-            os.popen("ipconfig /flushdns")
-            print('There was requests.exceptions.ConnectionError')
-            print(type(e1), type(e))
-            print(count)
-            if type(e) is type(e1):
-                datetime.time.sleep(10)
-            else:
-                e = e1
-                count = 0
-            print(count)
+    bot.polling(none_stop=True)

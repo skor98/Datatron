@@ -222,6 +222,7 @@ class Solr:
 class DrSolrResult:
     def __init__(self, status=False, id_query=0, mdx_query='', error=''):
         self.status = status
+        self.type = 'cube'
         self.id_query = id_query
         self.mdx_query = mdx_query
         self.error = error
@@ -230,13 +231,16 @@ class DrSolrResult:
 class DrSolrMinfinResult:
     def __init__(self, status=False):
         self.status = status
+        self.type = 'minfin'
         self.number = 0
         self.question = ''
         self.short_answer = ''
         self.full_answer = None
         self.link_name = None
         self.link = None
+        self.picture_caption = None
         self.picture = None
+        self.document_caption = None
         self.document = None
 
     def toJSON(self):
