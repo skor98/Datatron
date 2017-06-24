@@ -78,8 +78,8 @@ def _refactor_data(data):
             # Может быть несколько
             if row.link_name:
                 if ';' in row.link_name:
-                    doc.link_name = row.link_name.split(';')
-                    doc.link = row.link.split(';')
+                    doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
+                    doc.link = [elem.strip() for elem in row.link.split(';')]
                 else:
                     doc.link_name = row.link_name
                     doc.link = row.link
@@ -87,8 +87,8 @@ def _refactor_data(data):
             # Может быть несколько
             if row.picture_caption:
                 if ';' in row.picture_caption:
-                    doc.picture_caption = row.picture_caption.split(';')
-                    doc.picture = row.picture.split(';')
+                    doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
+                    doc.picture = [elem.strip() for elem in row.picture.split(';')]
                 else:
                     doc.picture_caption = row.picture_caption
                     doc.picture = row.picture
@@ -96,13 +96,12 @@ def _refactor_data(data):
             # Может быть несколько
             if row.document_caption:
                 if ';' in row.document_caption:
-                    doc.document_caption = row.document_caption.split(';')
-                    doc.document = row.document.split(';')
+                    doc.document_caption = [elem.strip() for elem in row.document_caption.split(';')]
+                    doc.document = [elem.strip() for elem in row.document.split(';')]
                 else:
                     doc.document_caption = row.document_caption
                     doc.document = row.document
 
-        # TODO: обработка параметризованного случая
         docs.append(doc)
     return docs
 
