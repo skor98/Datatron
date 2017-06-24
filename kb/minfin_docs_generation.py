@@ -195,7 +195,7 @@ def _key_words_for_doc(document_id, score, top=5):
 
 def _create_tests(files, data_frames):
     for f, df in zip(files, data_frames):
-        file_path = r'tests\minfin test for {}.txt'.format(f.split('.')[0])
+        file_path = r'tests\minfin_test_auto_for_{}.txt'.format(f.split('.')[0])
         with open(file_path, 'w', encoding='utf-8') as file:
             output = ['{}:{}'.format(row.question, row.id) for index, row in df[['id', 'question']].iterrows()]
             file.write('\n'.join(output))
