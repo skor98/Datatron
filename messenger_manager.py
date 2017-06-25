@@ -52,6 +52,18 @@ class MessengerManager:
         return DataRetrieving.get_minfin_data(text)
 
     @staticmethod
+    def make_minfin_request_voice(bytes=None, filename=None):
+        try:
+            if filename:
+                text = speech_to_text(filename=filename)
+            else:
+                text = speech_to_text(bytes=bytes)
+        except SpeechException:
+            return constants.ERROR_CANNOT_UNDERSTAND_VOICE
+        else:
+            return DataRetrieving.get_minfin_data(text)
+
+    @staticmethod
     def make_voice_request(source, user_id, user_name, request_id, bytes=None, filename=None):
         """Универсальный API метод для обработки голосовых запросов
 

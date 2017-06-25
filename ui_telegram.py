@@ -1,10 +1,13 @@
 from telebot import types
 from logs_retriever import LogsRetriever
-from db.user_support_library import check_user_existence, create_user, create_feedback, get_feedbacks
+from db.user_support_library import check_user_existence, create_user, create_feedback, get_feedbacks, \
+    define_question_mode, define_expert_mode, get_question_mode, get_expert_mode
 from kb.kb_support_library import get_classification_for_dimension
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
+from text_preprocessing import TextPreprocessing
 from config import SETTINGS
+from speechkit import speech_to_text
 
 import telebot
 import requests
@@ -29,6 +32,10 @@ user_name_str = '{} {}'
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.send_message(message.chat.id, constants.TELEGRAM_START_MSG, parse_mode='HTML')
+    if not check_user_existence(message.chat.id):
+        create_user(message.chat.id,
+                    message.chat.username,
+                    ' '.join([message.chat.first_name, message.chat.last_name]))
 
 
 # /help command handler; send hello-message to the user
@@ -167,60 +174,6 @@ def get_user_feedbacks(message):
         bot.send_message(message.chat.id, 'Отзывов нет')
 
 
-@bot.message_handler(commands=['m'])
-def get_minfin_questions(message):
-    msg = message.text[2:].strip()
-    if msg:
-        bot.send_chat_action(message.chat.id, 'typing')
-        result = MessengerManager.make_minfin_request(msg)
-        if result.status:
-            bot.send_message(message.chat.id,
-                             'Datatron понял ваш вопрос как <b>"{}"</b>'.format(result.question),
-                             parse_mode='HTML')
-            if result.full_answer:
-                bot.send_message(message.chat.id,
-                                 '<b>Ответ:</b> {}'.format(result.full_answer),
-                                 parse_mode='HTML', reply_to_message_id=message.message_id)
-            # может быть несколько
-            if result.link_name:
-                if type(result.link_name) is list:
-                    link_output_str = []
-                    for idx, (ln, l) in enumerate(zip(result.link_name, result.link)):
-                        link_output_str.append('{}. [{}]({})'.format(idx+1, ln, l))
-                    link_output_str.insert(0, '*Дополнительные результаты* можно посмотреть по ссылкам:')
-                    bot.send_message(message.chat.id, '\n'.join(link_output_str), parse_mode='Markdown')
-                else:
-                    link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
-                    bot.send_message(message.chat.id,
-                                     '{}\n[{}]({})'.format(link_output_str, result.link_name, result.link),
-                                     parse_mode='Markdown')
-            # может быть несколько
-            if result.picture_caption:
-                if type(result.picture_caption) is list:
-                    for pc, p in zip(result.picture_caption, result.picture):
-                        with open('data/minfin/img/{}'.format(p), 'rb') as picture:
-                            bot.send_photo(message.chat.id, picture, caption=pc)
-                else:
-                    with open('data/minfin/img/{}'.format(result.picture), 'rb') as picture:
-                        bot.send_photo(message.chat.id, picture, caption=result.picture_caption)
-            # может быть несколько
-            if result.document_caption:
-                if type(result.document_caption) is list:
-                    for dc, d in zip(result.document_caption, result.document):
-                        with open('data/minfin/doc/{}'.format(d), 'rb') as document:
-                            bot.send_document(message.chat.id, document, caption=dc)
-                else:
-                    with open('data/minfin/doc/{}'.format(result.document), 'rb') as document:
-                        bot.send_document(message.chat.id, document, caption=result.document_caption)
-
-            bot.send_chat_action(message.chat.id, 'upload_audio')
-            bot.send_voice(message.chat.id, text_to_speech(result.short_answer))
-        else:
-            bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
-    else:
-        bot.send_message(message.chat.id, 'Запрос пустой')
-
-
 @bot.message_handler(commands=['class'])
 def get_classification(message):
     msg = message.text[len('class') + 1:].split()
@@ -247,14 +200,49 @@ def salute(message):
     if greets:
         bot.send_message(message.chat.id, greets)
     else:
+        if not check_user_existence(message.chat.id):
+            create_user(message.chat.id,
+                        message.chat.username,
+                        ' '.join([message.chat.first_name, message.chat.last_name]))
+
         process_response(message)
 
 
 @bot.message_handler(content_types=['voice'])
 def voice_processing(message):
+    if not check_user_existence(message.chat.id):
+        create_user(message.chat.id,
+                    message.chat.username,
+                    ' '.join([message.chat.first_name, message.chat.last_name]))
+
     file_info = bot.get_file(message.voice.file_id)
     file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(API_TOKEN, file_info.file_path))
-    process_response(message, format='voice', file_content=file.content)
+
+    # Госоловое пеперключение
+    stt = speech_to_text(bytes=file.content)
+    print(stt)
+
+    # Голосовое включение экспертной обратной связи
+    tp = TextPreprocessing(uuid.uuid4())
+    stt = tp.normalization(stt)
+    print(stt)
+    if 'экспертный' in stt:
+        if 'включить' in stt:
+            define_expert_mode(message.chat.id, 1)
+            bot.send_message(message.chat.id, 'Режим экспертной обратной связи *включен*', parse_mode='Markdown')
+        elif 'выключить' in stt:
+            define_expert_mode(message.chat.id, 0)
+            bot.send_message(message.chat.id, 'Режим экспертной обратной связи *выключен*', parse_mode='Markdown')
+    # Голосовое включение вопрос министерства финансов
+    elif 'режим' in stt:
+        if 'финансы' in stt:
+            define_question_mode(message.chat.id, 1)
+            bot.send_message(message.chat.id, 'Включен *режим вопросов о Минфине*', parse_mode='Markdown')
+        elif 'знание' in stt:
+            define_question_mode(message.chat.id, 0)
+            bot.send_message(message.chat.id, 'Включен *режим вопросам по базе знаний*', parse_mode='Markdown')
+    else:
+        process_response(message, format='voice', file_content=file.content)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -305,10 +293,19 @@ def query_text(query):
 
 
 def process_response(message, format='text', file_content=None):
+    qm = get_question_mode(message.chat.id)
+    if not qm:
+        process_cube_questions(message, format=format, file_content=file_content)
+    else:
+        process_minfin_questions(message, format=format, file_content=file_content)
+
+
+def process_cube_questions(message, format='text', file_content=None):
     start_time = time.time()
     request_id = uuid.uuid4()
     user_name = user_name_str.format(message.chat.first_name, message.chat.last_name)
 
+    bot.send_chat_action(message.chat.id, 'typing')
     if format == 'text':
         result = MessengerManager.make_request(message.text, 'TG', message.chat.id, user_name, request_id)
     else:
@@ -318,25 +315,76 @@ def process_response(message, format='text', file_content=None):
         bot.send_message(message.chat.id, result.error)
     else:
         if format == 'text':
-            response_str = parse_feedback(result.feedback) + '\n\n<b>Ответ: {}</b>\nID-запроса: {}'
+            # response_str = parse_feedback(result.feedback).format(result.response, request_id)
+            response_str = parse_feedback_for_hackathon(message.chat.id, result.feedback).format(result.response)
         else:
-            response_str = parse_feedback(result.feedback, user_request_notification=True)
-            response_str += '\n\n<b>Ответ: {}</b>\nID-запроса: {}'
+            # response_str = parse_feedback(result.feedback, True).format(result.response, request_id)
+            response_str = parse_feedback_for_hackathon(message.chat.id, result.feedback, True).format(result.response)
 
         bot.send_message(message.chat.id, result.message)
-        bot.send_message(message.chat.id,
-                         response_str.format(result.response, request_id),
-                         parse_mode='HTML',
-                         reply_markup=constants.RESPONSE_QUALITY)
+        # bot.send_message(message.chat.id, response_str, parse_mode='HTML', reply_markup=constants.RESPONSE_QUALITY)
+        bot.send_message(message.chat.id, response_str, parse_mode='Markdown')
+
         before_tts = time.time() - start_time
+        bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(result.response))
         after_tts = time.time() - start_time
 
-        bot.send_message(message.chat.id,
-                         'Без конверсии в речь: {} секунд\nВключая конверсию: {} секунд'.format(before_tts, after_tts))
-
         with open('speed_text.txt', 'a', encoding='utf-8') as file:
             file.write('{}\t{}\t{}\n'.format(message.text, before_tts, after_tts))
+
+
+def process_minfin_questions(message, format='text', file_content=None):
+    bot.send_chat_action(message.chat.id, 'typing')
+    if format == 'text':
+        result = MessengerManager.make_minfin_request(message.text)
+    else:
+        result = MessengerManager.make_minfin_request_voice(bytes=file_content)
+
+    if result.status:
+        bot.send_message(message.chat.id,
+                         'Datatron понял ваш вопрос как *"{}"*'.format(result.question),
+                         parse_mode='Markdown')
+        if result.full_answer:
+            bot.send_message(message.chat.id,
+                             '*Ответ:* {}'.format(result.full_answer),
+                             parse_mode='Markdown', reply_to_message_id=message.message_id)
+        # может быть несколько
+        if result.link_name:
+            if type(result.link_name) is list:
+                link_output_str = []
+                for idx, (ln, l) in enumerate(zip(result.link_name, result.link)):
+                    link_output_str.append('{}. [{}]({})'.format(idx + 1, ln, l))
+                link_output_str.insert(0, '*Дополнительные результаты* можно посмотреть по ссылкам:')
+                bot.send_message(message.chat.id, '\n'.join(link_output_str), parse_mode='Markdown')
+            else:
+                link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
+                bot.send_message(message.chat.id,
+                                 '{}\n[{}]({})'.format(link_output_str, result.link_name, result.link),
+                                 parse_mode='Markdown')
+        # может быть несколько
+        if result.picture_caption:
+            if type(result.picture_caption) is list:
+                for pc, p in zip(result.picture_caption, result.picture):
+                    with open('data/minfin/img/{}'.format(p), 'rb') as picture:
+                        bot.send_photo(message.chat.id, picture, caption=pc)
+            else:
+                with open('data/minfin/img/{}'.format(result.picture), 'rb') as picture:
+                    bot.send_photo(message.chat.id, picture, caption=result.picture_caption)
+        # может быть несколько
+        if result.document_caption:
+            if type(result.document_caption) is list:
+                for dc, d in zip(result.document_caption, result.document):
+                    with open('data/minfin/doc/{}'.format(d), 'rb') as document:
+                        bot.send_document(message.chat.id, document, caption=dc)
+            else:
+                with open('data/minfin/doc/{}'.format(result.document), 'rb') as document:
+                    bot.send_document(message.chat.id, document, caption=result.document_caption)
+
+        bot.send_chat_action(message.chat.id, 'upload_audio')
+        bot.send_voice(message.chat.id, text_to_speech(result.short_answer))
+    else:
+        bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
 
 def parse_feedback(fb, user_request_notification=False):
@@ -358,7 +406,32 @@ def parse_feedback(fb, user_request_notification=False):
         user_request = '<b>Ваш запрос</b>\nДататрон решил, что Вы его спросили следующее: "{}"\n\n'
         user_request = user_request.format(fb['user_request'])
 
-    return '{}{}\n\n{}\n\n{}'.format(user_request, exp, norm, cntk_response)
+    formatted_feedback = '{}{}\n\n{}\n\n{}'.format(user_request, exp, norm, cntk_response)
+    formatted_feedback += '\n\n<b>Ответ: {}</b>\nID-запроса: {}'
+    return formatted_feedback
+
+
+def parse_feedback_for_hackathon(user_id, fb, user_request_notification=False):
+    fb_norm = fb['verbal']
+
+    exp = ''
+    if get_expert_mode(user_id):
+        fb_exp = fb['formal']
+        exp = '*Экспертная обратная связь*\nКуб: {}\nМера: {}\nИзмерения: {}\n'
+        exp = exp.format(fb_exp['cube'], fb_exp['measure'],
+                         ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']]))
+
+    norm = '*Datatron выделил следующие параметры*:\n{}'
+    norm = norm.format('\n'.join([str(idx + 1) + '. ' + i for idx, i in enumerate(fb_norm['dims'])]))
+
+    user_request = ''
+    if user_request_notification:
+        user_request = '*Ваш запрос*\nДататрон решил, что Вы его спросили следующее: "{}"\n\n'
+        user_request = user_request.format(fb['user_request'])
+
+    formatted_feedback = '{}{}\n{}\n\n'.format(user_request, exp, norm)
+    formatted_feedback += '*Ответ:*\n{}'
+    return formatted_feedback
 
 
 # polling cycle
