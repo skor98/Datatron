@@ -74,7 +74,10 @@ def _refactor_data(data):
                 doc.lem_full_answer = tp.normalization(row.full_answer,
                                                        delete_digits=True,
                                                        delete_repeating_tokens=False)
-            doc.lem_key_words = tp.normalization(row.key_words)
+
+            kw = tp.normalization(row.key_words)
+            doc.lem_key_words = ' '.join([kw] * 3)
+
             # Может быть несколько
             if row.link_name:
                 if ';' in row.link_name:

@@ -44,6 +44,14 @@ def post_test():
         return DataRetrieving.get_data(request_text, uuid.uuid4(), formatted=False).toJSON()
 
 
+@app.post('/minfin')
+def post_test():
+    request_text = request.forms.get('Request')
+    request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
+
+    if request_text:
+        return DataRetrieving.get_minfin_data(request_text).toJSON()
+
 
 @app.post('/audio')
 def post_audio_file():

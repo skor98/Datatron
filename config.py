@@ -41,4 +41,4 @@ class MashaSettings:
 
 
 ss, ds, ms = ServerSettings, DimaSettings, MashaSettings
-SETTINGS = ms
+SETTINGS = ss
