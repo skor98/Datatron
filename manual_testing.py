@@ -30,7 +30,6 @@ def cube_testing(local=True):
                 if line.startswith('*'):
                     continue
 
-                print(line)
                 req, answer = line.split(':')
                 if local:
                     result = DataRetrieving.get_data(req, uuid.uuid4(), formatted=False).toJSON()
@@ -42,17 +41,17 @@ def cube_testing(local=True):
                 if response:
                     try:
                         assert int(answer) == response
-                        ars = '{}. Запрос "{}" отрабатывает корректно'.format(idx, req)
+                        ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
                         testing_results.append(ars)
                         true_answers += 1
                         print(ars)
                     except AssertionError:
-                        ars = '{}. Запрос "{}" отрабатывает некорректно (должны получать: {}, получаем: {})'
+                        ars = '{}. - Запрос "{}" отрабатывает некорректно (должны получать: {}, получаем: {})'
                         ars = ars.format(idx, req, int(answer), response)
                         testing_results.append(ars)
                         print(ars)
                 else:
-                    ars = '{}. Запрос "{}" вызвал ошибку: {}'.format(idx, req, system_answer['message'])
+                    ars = '{}. - Запрос "{}" вызвал ошибку: {}'.format(idx, req, system_answer['message'])
                     testing_results.append(ars)
                     print(ars)
 
@@ -94,20 +93,20 @@ def minfin_testing(local=True):
                 if response:
                     try:
                         assert question_id == response
-                        ars = '{q_id} Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
+                        ars = '{q_id}  + Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
                         testing_results.append(ars)
                         true_answers += 1
                         print(ars)
                     except AssertionError:
-                        ars = '{q_id} Запрос "{req}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
+                        ars = '{q_id} - Запрос "{req}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
                         ars = ars.format(q_id=question_id, req=req, fl=response)
                         testing_results.append(ars)
                         print(ars)
                 else:
                     # TODO: подправить MSG
-                    ars = '{q_id} Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
-                                                                              req=req,
-                                                                              msg='Не определена')
+                    ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
+                                                                                 req=req,
+                                                                                 msg='Не определена')
                     testing_results.append(ars)
                     print(ars)
 
