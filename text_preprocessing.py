@@ -4,7 +4,6 @@ import pymorphy2
 import logging
 import json
 from string import punctuation as pct
-from nltk.stem.snowball import SnowballStemmer
 from nltk.corpus import stopwords
 from nltk import FreqDist
 
@@ -98,6 +97,5 @@ class TextPreprocessing:
     def frequency_destribution(word_list, num=5):
         fq = FreqDist(word_list)
         most_popular_words = fq.most_common(num)
-        print('{}: {}'.format(__name__, most_popular_words))
         popular_words = [i[0] for i in most_popular_words]
         return popular_words

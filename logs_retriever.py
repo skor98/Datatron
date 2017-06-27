@@ -90,7 +90,7 @@ class LogsRetriever:
             line = line.split('\t')
 
             try:
-                if line[1] not in ('DEBUG', 'ERROR') and len(line) > 3:
+                if line[1] == 'INFO' and len(line) > 3:
                     logs.append('\t'.join(line))
             except IndexError:
                 pass

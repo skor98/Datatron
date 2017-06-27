@@ -44,7 +44,6 @@ def post_test():
         return DataRetrieving.get_data(request_text, uuid.uuid4(), formatted=False).toJSON()
 
 
-
 @app.post('/audio')
 def post_audio_file():
     # Получение полей

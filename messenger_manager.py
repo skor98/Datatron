@@ -52,6 +52,18 @@ class MessengerManager:
         return DataRetrieving.get_minfin_data(text)
 
     @staticmethod
+    def make_minfin_request_voice(bytes=None, filename=None):
+        try:
+            if filename:
+                text = speech_to_text(filename=filename)
+            else:
+                text = speech_to_text(bytes=bytes)
+        except SpeechException:
+            return constants.ERROR_CANNOT_UNDERSTAND_VOICE
+        else:
+            return DataRetrieving.get_minfin_data(text)
+
+    @staticmethod
     def make_voice_request(source, user_id, user_name, request_id, bytes=None, filename=None):
         """Универсальный API метод для обработки голосовых запросов
 
@@ -92,23 +104,17 @@ class MessengerManager:
 
     @staticmethod
     def _querying(user_request_string, request_id):
-        m1_result = M1Result()
         try:
             m2_result = DataRetrieving.get_data(user_request_string, request_id)
-            if m2_result.status is False:
-                m1_result.error = m2_result.message
+            if m2_result.status is True:
+                m2_result.message = constants.MSG_WE_WILL_FORM_DATA_AND_SEND_YOU
+                return m2_result
             else:
-                m1_result.status = True
-                m1_result.message = constants.MSG_WE_WILL_FORM_DATA_AND_SEND_YOU
-                m1_result.feedback = m2_result.message
-                m1_result.response = m2_result.response
-
+                return None
         except Exception as e:
             logging.warning('ID-запроса: {}\tМодуль: {}\tОшибка: {}'.format(request_id, __name__, e))
             print('MessengerManager: ' + str(e))
-            m1_result.error = constants.ERROR_SERVER_DOES_NOT_RESPONSE
-
-        return m1_result
+            return None
 
     @staticmethod
     def _simple_split(s):
@@ -124,15 +130,3 @@ class MessengerManager:
                 return constants.HELLO_ANSWER[rnd.randint(0, len(constants.HELLO_ANSWER) - 1)]
             elif word in constants.HOW_ARE_YOU:
                 return constants.HOW_ARE_YOU_ANSWER[rnd.randint(0, len(constants.HOW_ARE_YOU_ANSWER) - 1)]
-
-
-class M1Result:
-    def __init__(self, status=False, error=None, message=None, feedback=None, response=None):
-        self.status = status
-        self.error = error
-        self.message = message
-        self.feedback = feedback
-        self.response = response
-
-    def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)

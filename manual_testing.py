@@ -24,43 +24,47 @@ def cube_testing(local=True):
 
     for tf in test_files_paths:
         with open(r'{}'.format(tf), 'r', encoding='utf-8') as f:
+            doc_name_output_str = 'Файл: {}'.format(tf.split('\\')[-1])
+            testing_results.append(doc_name_output_str)
+            print(doc_name_output_str)
+
             for idx, line in enumerate(f):
                 line = ' '.join(line.split())
 
                 if line.startswith('*'):
                     continue
 
-                print(line)
                 req, answer = line.split(':')
                 if local:
-                    result = DataRetrieving.get_data(req, uuid.uuid4(), formatted=False).toJSON()
-                    system_answer = json.loads(result)
+                    system_answer = json.loads(DataRetrieving.get_data(req, uuid.uuid4(), formatted=False).toJSON())
                 else:
                     system_answer = json.loads(post_request_to_server(req).text)
 
-                response = system_answer['response']
+                response = system_answer['cube_documents']['response']
                 if response:
                     try:
                         assert int(answer) == response
-                        ars = '{}. Запрос "{}" отрабатывает корректно'.format(idx, req)
+                        ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
                         testing_results.append(ars)
                         true_answers += 1
                         print(ars)
                     except AssertionError:
-                        ars = '{}. Запрос "{}" отрабатывает некорректно (должны получать: {}, получаем: {})'
+                        ars = '{}. - Запрос "{}" отрабатывает некорректно (должны получать: {}, получаем: {})'
                         ars = ars.format(idx, req, int(answer), response)
                         testing_results.append(ars)
                         print(ars)
                 else:
-                    ars = '{}. Запрос "{}" вызвал ошибку: {}'.format(idx, req, system_answer['message'])
+                    ars = '{}. - Запрос "{}" вызвал ошибку: {}'.format(idx, req, system_answer['message'])
                     testing_results.append(ars)
                     print(ars)
 
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        false_answers = len(testing_results) - true_answers - len(test_files_paths)
+
         if local:
-            file_name = file_name.format('local', current_datetime, true_answers, len(testing_results) - true_answers)
+            file_name = file_name.format('local', current_datetime, true_answers, false_answers)
         else:
-            file_name = file_name.format('server', current_datetime, true_answers, len(testing_results) - true_answers)
+            file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
         with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file:
             file.write('\n'.join(testing_results))
@@ -81,41 +85,45 @@ def minfin_testing(local=True):
 
     for tf in test_files_paths:
         with open(tf, 'r', encoding='utf-8') as file:
+            doc_name_output_str = 'Файл: {}'.format(tf.split('\\')[-1])
+            testing_results.append(doc_name_output_str)
+            print(doc_name_output_str)
+
             for line in file:
                 req, question_id = line.split(':')
                 if local:
-                    result = DataRetrieving.get_minfin_data(req).toJSON()
-                    system_answer = json.loads(result)
+                    system_answer = json.loads(DataRetrieving.get_data(req, uuid.uuid4()).toJSON())
                 else:
-                    print('Серверное тестирование еще не реализовано')
+                    system_answer = json.loads(post_request_to_server(req).text)
 
-                response = system_answer['number']
-                question_id = float(''.join(question_id.split()))
+                response = system_answer['minfin_documents']['number']
+                question_id = ''.join(question_id.split())
                 if response:
                     try:
-                        assert question_id == response
-                        ars = '{q_id} Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
+                        assert question_id == str(response)
+                        ars = '{q_id}  + Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
                         testing_results.append(ars)
                         true_answers += 1
                         print(ars)
                     except AssertionError:
-                        ars = '{q_id} Запрос "{req}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
+                        ars = '{q_id} - Запрос "{req}" отрабатывает некорректно (должны получать:{q_id}, получаем:{fl})'
                         ars = ars.format(q_id=question_id, req=req, fl=response)
                         testing_results.append(ars)
                         print(ars)
                 else:
                     # TODO: подправить MSG
-                    ars = '{q_id} Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
-                                                                              req=req,
-                                                                              msg='Не определена')
+                    ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
+                                                                                 req=req,
+                                                                                 msg='Не определена')
                     testing_results.append(ars)
                     print(ars)
 
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    false_answers = len(testing_results) - true_answers - len(test_files_paths)
     if local:
-        file_name = file_name.format('local', current_datetime, true_answers, len(testing_results) - true_answers)
+        file_name = file_name.format('local', current_datetime, true_answers, false_answers)
     else:
-        print('Логи не записаны, так как серверное тестирование еще не реализовано')
+        file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
     with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file:
         file.write('\n'.join(testing_results))
@@ -123,5 +131,5 @@ def minfin_testing(local=True):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-cube_testing()
-# minfin_testing()
+# cube_testing()
+minfin_testing()
