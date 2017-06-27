@@ -8,7 +8,6 @@ from config import SETTINGS
 import requests
 import pycurl
 import pandas as pd
-import numpy as np
 
 input_data_file_name = 'data.xlsx'
 output_file = 'minfin_data_for_indexing_in_solr.json'

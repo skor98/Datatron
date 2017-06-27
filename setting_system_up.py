@@ -37,8 +37,8 @@ def set_up_solr_cube_data(index_way='curl'):
 
 
 # set_up_db()
-# set_up_solr_cube_data('jar_file')
-set_up_minfin_core('jar_file', clear=True, core=SETTINGS.SOLR_MINFIN_CORE)
+set_up_solr_cube_data('jar_file')
+set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
 
 
 # import os

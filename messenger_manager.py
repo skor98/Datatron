@@ -3,8 +3,8 @@ import constants
 from speechkit import speech_to_text
 from speechkit import SpeechException
 from data_retrieving import DataRetrieving
+from dr.solr import DrSolrResult
 import re
-import json
 import random as rnd
 
 logging.basicConfig(handlers=[logging.FileHandler('logs.log', 'a', 'utf-8')], level='INFO',
@@ -79,7 +79,7 @@ class MessengerManager:
                 text = speech_to_text(bytes=bytes)
             logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'voice'))
         except SpeechException:
-            return M1Result(error=constants.ERROR_CANNOT_UNDERSTAND_VOICE)
+            return DrSolrResult(error=constants.ERROR_CANNOT_UNDERSTAND_VOICE)
         else:
 
             return MessengerManager._querying(text, request_id)

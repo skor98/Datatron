@@ -294,7 +294,7 @@ def process_response(message, input_format='text', file_content=None):
     else:
         result = MessengerManager.make_voice_request("TG", message.chat.id, user_name, request_id, bytes=file_content)
 
-    if result:
+    if result.docs_found:
         process_cube_questions(message, result.cube_documents, request_id, input_format=input_format)
         process_minfin_questions(message, result.minfin_documents)
     else:
