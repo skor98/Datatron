@@ -21,7 +21,7 @@ class DimaSettings:
     PATH_TO_SOLR_POST_JAR_FILE = r'"C:\Users\User\Desktop\solr\solr-6.3.0\solr-6.3.0\example\exampledocs\post.jar"'
     PATH_TO_FFMPEG = r'C:\Users\User\PycharmProjects\Datatron\ffmpeg\ffmpeg.exe'
     PATH_TO_MINFIN_ATTACHMENTS = r'C:\Users\User\PycharmProjects\Datatron\data\minfin'
-    TELEGRAM_API_TOKEN = '371109250:AAE_0U6v5MKNcNSCZBmzIXVFIM8FPNCPqPc'  # Dimatest_Bot
+    TELEGRAM_API_TOKEN = '371109250:AAE_0U6v5MKNcNSCZBmzIXVFIM8FPNCPqPc' #DimaTestBot
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (65305591,)

@@ -24,6 +24,10 @@ def cube_testing(local=True):
 
     for tf in test_files_paths:
         with open(r'{}'.format(tf), 'r', encoding='utf-8') as f:
+            doc_name_output_str = 'Файл: {}'.format(tf.split('\\')[-1])
+            testing_results.append(doc_name_output_str)
+            print(doc_name_output_str)
+
             for idx, line in enumerate(f):
                 line = ' '.join(line.split())
 
@@ -32,12 +36,11 @@ def cube_testing(local=True):
 
                 req, answer = line.split(':')
                 if local:
-                    result = DataRetrieving.get_data(req, uuid.uuid4(), formatted=False).toJSON()
-                    system_answer = json.loads(result)
+                    system_answer = json.loads(DataRetrieving.get_data(req, uuid.uuid4(), formatted=False).toJSON())
                 else:
                     system_answer = json.loads(post_request_to_server(req).text)
 
-                response = system_answer['response']
+                response = system_answer['cube_documents']['response']
                 if response:
                     try:
                         assert int(answer) == response
@@ -56,10 +59,12 @@ def cube_testing(local=True):
                     print(ars)
 
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        false_answers = len(testing_results) - true_answers - len(test_files_paths)
+
         if local:
-            file_name = file_name.format('local', current_datetime, true_answers, len(testing_results) - true_answers)
+            file_name = file_name.format('local', current_datetime, true_answers, false_answers)
         else:
-            file_name = file_name.format('server', current_datetime, true_answers, len(testing_results) - true_answers)
+            file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
         with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file:
             file.write('\n'.join(testing_results))
@@ -80,19 +85,22 @@ def minfin_testing(local=True):
 
     for tf in test_files_paths:
         with open(tf, 'r', encoding='utf-8') as file:
+            doc_name_output_str = 'Файл: {}'.format(tf.split('\\')[-1])
+            testing_results.append(doc_name_output_str)
+            print(doc_name_output_str)
+
             for line in file:
                 req, question_id = line.split(':')
                 if local:
-                    result = DataRetrieving.get_minfin_data(req).toJSON()
-                    system_answer = json.loads(result)
+                    system_answer = json.loads(DataRetrieving.get_data(req, uuid.uuid4()).toJSON())
                 else:
-                    print('Серверное тестирование еще не реализовано')
+                    system_answer = json.loads(post_request_to_server(req).text)
 
-                response = system_answer['number']
-                question_id = float(''.join(question_id.split()))
+                response = system_answer['minfin_documents']['number']
+                question_id = ''.join(question_id.split())
                 if response:
                     try:
-                        assert question_id == response
+                        assert question_id == str(response)
                         ars = '{q_id}  + Запрос "{req}" отрабатывает корректно'.format(q_id=question_id, req=req)
                         testing_results.append(ars)
                         true_answers += 1
@@ -111,10 +119,11 @@ def minfin_testing(local=True):
                     print(ars)
 
     current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    false_answers = len(testing_results) - true_answers - len(test_files_paths)
     if local:
-        file_name = file_name.format('local', current_datetime, true_answers, len(testing_results) - true_answers)
+        file_name = file_name.format('local', current_datetime, true_answers, false_answers)
     else:
-        print('Логи не записаны, так как серверное тестирование еще не реализовано')
+        file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
     with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file:
         file.write('\n'.join(testing_results))
@@ -122,5 +131,5 @@ def minfin_testing(local=True):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-cube_testing()
-# minfin_testing()
+# cube_testing()
+minfin_testing()
