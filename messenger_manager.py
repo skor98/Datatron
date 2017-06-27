@@ -67,8 +67,9 @@ class MessengerManager:
                 text = speech_to_text(bytes=bytes)
             logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'voice'))
         except SpeechException:
-            return constants.ERROR_CANNOT_UNDERSTAND_VOICE
+            return M1Result(error=constants.ERROR_CANNOT_UNDERSTAND_VOICE)
         else:
+
             return MessengerManager._querying(text, request_id)
 
     @staticmethod

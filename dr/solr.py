@@ -112,6 +112,14 @@ class Solr:
             if dimensions[0][0]['cube'][0] == reference_cube:
                 test1_dimensions = [dimensions[0][0]]  # первое измерение из верхнего списка измерений
 
+            # Это часть позволила улучшить алгоритм с 5/39 до 11/39
+            try:
+                for dim in dimensions[0][1:]:
+                    if dim['cube'][0] == reference_cube:
+                        test1_dimensions.append(dim)
+            except:
+                pass
+
         mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
         print(mdx_request)
 
