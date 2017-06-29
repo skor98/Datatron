@@ -3,6 +3,7 @@ import json
 import requests
 import datetime
 from config import SETTINGS
+import numpy as np
 
 
 class Solr:
@@ -28,7 +29,7 @@ class Solr:
                 raise Exception('Datatron не нашел ответа на Ваш вопрос')
         except Exception as e:
             print('Solr: ' + str(e))
-            solr_result.msg = str(e)
+            solr_result.error = str(e)
             return solr_result
 
     def _send_request_to_solr(self, user_request):
@@ -63,12 +64,14 @@ class Solr:
             if doc['type'][0] == 'dimension':
                 dimensions.append(doc)
             elif doc['type'][0] == 'year_dimension':
-                year = int(doc['fvalue'][0])
+                year_value = int(doc['fvalue'][0])
                 # managing two number years
-                if year < 2007:
-                    if year < 10:
-                        year = '0' + str(year)
-                    year = datetime.datetime.strptime(str(year), '%y').year
+                if year_value < 2007:
+                    if year_value < 10:
+                        year_value = '0' + str(year)
+                    year_value = datetime.datetime.strptime(str(year_value), '%y').year
+                doc['fvalue'][0] = year_value
+                year = doc
             elif doc['type'][0] == 'territory_dimension':
                 territory = doc
             elif doc['type'][0] == 'cube':
@@ -121,6 +124,7 @@ class Solr:
         test1_dimensions = []
         try:
             reference_cube = cubes[0]['cube'][0]
+            reference_cube_score = cubes[0]['score']
         except IndexError:
             return solr_cube_result
 
@@ -130,6 +134,7 @@ class Solr:
             # Замена куба на другой, если score найденного меньше score верхнего документа
             if reference_cube != dimensions[0][0]['cube'][0] and cubes[0]['score'] < dimensions[0][0]['score']:
                 reference_cube = dimensions[0][0]['cube'][0]
+                reference_cube_score = dimensions[0][0]['score']
 
             # Максимальная группа измерений от куба лучшего элемента
             # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
@@ -138,17 +143,20 @@ class Solr:
                 test1_dimensions = [dimensions[0][0]]  # первое измерение из верхнего списка измерений
 
             # Это часть позволила улучшить алгоритм с 5/39 до 11/39
+            # Берем все элементы из первой череды измерений для выбранного куба
             try:
                 for dim in dimensions[0][1:]:
-                    if dim['cube'][0] == reference_cube:
+                    if dim['cube'][0] == reference_cube['cube'][0]:
                         test1_dimensions.append(dim)
             except Exception as e:
                 print('{}: {}'.format(__name__, str(e)))
-                pass
 
         mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
         print(mdx_request)
         solr_cube_result.mdx_query = mdx_request
+        solr_cube_result.cube_score = reference_cube_score
+        Solr._calculate_score_for_cube_questions(test1_dimensions, measures, year, territory, solr_cube_result)
+        solr_cube_result.sum_score += solr_cube_result.cube_score
         solr_cube_result.status = True
         return solr_cube_result
 
@@ -162,7 +170,7 @@ class Solr:
 
         solr_minfin_result = DrSolrMinfinResult()
         best_document = minfin_documents[0]
-
+        solr_minfin_result.score = best_document['score']
         solr_minfin_result.status = True
         solr_minfin_result.number = best_document['number'][0]
         solr_minfin_result.question = best_document['question'][0]
@@ -230,7 +238,7 @@ class Solr:
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
             if year:
-                dim_str.append(dim_tmp.format('YEARS', year))
+                dim_str.append(dim_tmp.format('YEARS', year['fvalue'][0]))
             else:
                 dim_str.append(dim_tmp.format('YEARS', get_default_value_for_dimension(cube, 'Years')))
 
@@ -249,11 +257,37 @@ class Solr:
 
         return mdx_template.format(measure, cube, ','.join(dim_str))
 
+    @staticmethod
+    def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
+        scores = []
+
+        for dim in dimensions:
+            scores.append(dim['score'])
+
+        for measure in measures:
+            scores.append(measure['score'])
+
+        if year:
+            scores.append(year['score'])
+
+        if territory:
+            scores.append(territory['score'])
+
+        solr_result.avg_score = np.mean(scores)
+        solr_result.min_score = min(scores)
+        solr_result.max_score = max(scores)
+        solr_result.sum_score = sum(scores)
+
 
 class DrSolrCubeResult:
     def __init__(self):
         self.status = False
         self.type = 'cube'
+        self.cube_score = 0
+        self.avg_score = 0
+        self.max_score = 0
+        self.min_score = 0
+        self.sum_score = 0
         self.mdx_query = None
         self.response = None
         self.message = None
@@ -263,6 +297,7 @@ class DrSolrMinfinResult:
     def __init__(self):
         self.status = False
         self.type = 'minfin'
+        self.score = 0
         self.number = 0
         self.question = ''
         self.short_answer = ''
@@ -273,6 +308,7 @@ class DrSolrMinfinResult:
         self.picture = None
         self.document_caption = None
         self.document = None
+        self.message = None
 
 
 class DrSolrResult:

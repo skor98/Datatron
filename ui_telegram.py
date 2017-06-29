@@ -311,6 +311,10 @@ def process_cube_questions(message, cube_result, request_id, input_format):
         bot.send_message(message.chat.id, response_str, parse_mode='HTML', reply_markup=constants.RESPONSE_QUALITY)
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(cube_result.response))
+        stats = 'Сред. score: {}\nМин. score: {}\nМакс. score: {}\nScore куба: {}\nСуммарный score: {}'
+        stats = stats.format(cube_result.avg_score, cube_result.min_score, cube_result.max_score,
+                             cube_result.cube_score, cube_result.sum_score)
+        bot.send_message(message.chat.id, stats)
 
 
 def process_minfin_questions(message, minfin_result):
@@ -318,6 +322,13 @@ def process_minfin_questions(message, minfin_result):
         bot.send_message(message.chat.id,
                          'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
                          parse_mode='Markdown')
+        if minfin_result.score < 20:
+            msg_str = 'Score найденного Минфин документа *({})* равен *{}*, что меньше порогового значений в *20*.'
+            bot.send_message(message.chat.id,
+                             msg_str.format(minfin_result.number, minfin_result.score),
+                             parse_mode='Markdown')
+            return
+
         if minfin_result.full_answer:
             bot.send_message(message.chat.id,
                              '*Ответ:* {}'.format(minfin_result.full_answer),
@@ -356,6 +367,7 @@ def process_minfin_questions(message, minfin_result):
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
+        bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
 def parse_feedback(fb, user_request_notification=False):

@@ -79,7 +79,9 @@ class MessengerManager:
                 text = speech_to_text(bytes=bytes)
             logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'voice'))
         except SpeechException:
-            return DrSolrResult(error=constants.ERROR_CANNOT_UNDERSTAND_VOICE)
+            dsr = DrSolrResult()
+            dsr.error = dsr.message = constants.ERROR_CANNOT_UNDERSTAND_VOICE
+            return dsr
         else:
 
             return MessengerManager._querying(text, request_id)
@@ -108,9 +110,7 @@ class MessengerManager:
             m2_result = DataRetrieving.get_data(user_request_string, request_id)
             if m2_result.status is True:
                 m2_result.message = constants.MSG_WE_WILL_FORM_DATA_AND_SEND_YOU
-                return m2_result
-            else:
-                return None
+            return m2_result
         except Exception as e:
             logging.warning('ID-запроса: {}\tМодуль: {}\tОшибка: {}'.format(request_id, __name__, e))
             print('MessengerManager: ' + str(e))
