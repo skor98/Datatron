@@ -151,13 +151,14 @@ class Solr:
             except Exception as e:
                 print('{}: {}'.format(__name__, str(e)))
 
-        mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
-        print(mdx_request)
-        solr_cube_result.mdx_query = mdx_request
-        solr_cube_result.cube_score = reference_cube_score
-        Solr._calculate_score_for_cube_questions(test1_dimensions, measures, year, territory, solr_cube_result)
-        solr_cube_result.sum_score += solr_cube_result.cube_score
-        solr_cube_result.status = True
+        if len(test1_dimensions):
+            mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
+            print(mdx_request)
+            solr_cube_result.mdx_query = mdx_request
+            solr_cube_result.cube_score = reference_cube_score
+            Solr._calculate_score_for_cube_questions(test1_dimensions, measures, year, territory, solr_cube_result)
+            solr_cube_result.sum_score += solr_cube_result.cube_score
+            solr_cube_result.status = True
         return solr_cube_result
 
     @staticmethod
