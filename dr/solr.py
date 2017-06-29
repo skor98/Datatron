@@ -146,7 +146,7 @@ class Solr:
             # Берем все элементы из первой череды измерений для выбранного куба
             try:
                 for dim in dimensions[0][1:]:
-                    if dim['cube'][0] == reference_cube['cube'][0]:
+                    if dim['cube'][0] == reference_cube:
                         test1_dimensions.append(dim)
             except Exception as e:
                 print('{}: {}'.format(__name__, str(e)))
