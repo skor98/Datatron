@@ -131,5 +131,5 @@ def minfin_testing(local=True):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-# cube_testing()
+cube_testing()
 minfin_testing()
