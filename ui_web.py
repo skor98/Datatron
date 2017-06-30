@@ -15,11 +15,15 @@ app = Bottle()
 
 @app.get('/')
 def main():
+    """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
+
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
 
 
 @app.post('/text')
 def post_basic():
+    """POST запрос для текстовых запросов к системе"""
+
     # Получение полей
     request_text = request.forms.get('Request')
     source = request.forms.get('Source')
@@ -27,7 +31,7 @@ def post_basic():
     user_name = request.forms.get('UserName')
     request_id = request.forms.get('RequestId')
 
-    # Исправление кодировки
+    # Исправление кодировки для кириллицы
     request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
 
     # если все поля заполнены
@@ -37,6 +41,8 @@ def post_basic():
 
 @app.post('/test')
 def post_test():
+    """POST запрос для удаленного тестирования системы на сервере"""
+
     request_text = request.forms.get('Request')
     request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
 
@@ -46,15 +52,23 @@ def post_test():
 
 @app.post('/audio')
 def post_audio_file():
-    # Получение полей
+    """POST запрос для голосовых запросов с помощью передачи файла запроса"""
+
+    # Получение файла
     file = request.files.get('File')
 
+    # Определение его формата
+    file_extension = file.filename.split('.')[-1]
+
+    # Определение дериктории для сохранения файла
     save_path = r'{}\tmp'.format(os.getcwd())
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
+    # Генерация случайного имени файла
     new_file_name = ''.join(choice(ascii_lowercase + digits) for _ in range(10))
-    file_extension = file.filename.split('.')[-1]
+
+    # Сохранения полученного файла под новым именем в папку для хранения временных файлов
     file_path = r"{}\{}.{}".format(save_path, new_file_name, file_extension)
     file.save(file_path)
 
@@ -70,6 +84,8 @@ def post_audio_file():
 
 @app.error(404)
 def error404(error):
+    """Чтобы выводилась ошибка, если файл не найден"""
+
     return '<center><h1>Nothing here sorry: %s</h1></center>' % error
 
 

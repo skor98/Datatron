@@ -95,6 +95,8 @@ class TextPreprocessing:
 
     @staticmethod
     def frequency_destribution(word_list, num=5):
+        """Строит частотное распределение слов в тексте и возврашает num наиболее популярных"""
+
         fq = FreqDist(word_list)
         most_popular_words = fq.most_common(num)
         popular_words = [i[0] for i in most_popular_words]

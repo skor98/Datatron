@@ -11,6 +11,12 @@ def post_request_to_server(request):
 
 
 def cube_testing(local=True):
+    """Метод для тестирования работы системы по кубам.
+    Тесты находятся в папке tests и имеют следующую структуру названия cube_<local/server>_<имя куба>
+
+    :param local: если True, то тестируется локальная система, если False, то стоящая на сервере
+    :return: None
+    """
     test_path = r'{}\{}'.format(getcwd(), 'tests')
     file_name = 'cube_{}_{}_OK_{}_Fail_{}.txt'
 
@@ -73,6 +79,15 @@ def cube_testing(local=True):
 
 
 def minfin_testing(local=True):
+    """Метод для тестирования работы системы по вопросам Минфина.
+    Тесты находятся в папке tests и имеют следующую структуру названия:
+    minfin_test_<auto/manual>_<local/server>_for_<номер партии>_questions
+    mifin_test_auto - создаются автоматически на основе документов из папки data/minfin
+    mifin_test_manual - прописываются вручную
+
+    :param local: если True, то тестируется локальная система, если False, то стоящая на сервере
+    :return: None
+    """
     test_files_paths = []
     test_path = r'{}\{}'.format(getcwd(), 'tests')
     file_name = 'minfin_{}_{}_OK_{}_Fail_{}.txt'
@@ -131,5 +146,5 @@ def minfin_testing(local=True):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-cube_testing()
-minfin_testing()
+# cube_testing()
+# minfin_testing()
