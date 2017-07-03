@@ -1,9 +1,15 @@
-import requests
-from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
-from kb.kb_support_library import get_full_values_for_dimensions, get_full_value_for_measure, get_representation_format
-from text_preprocessing import TextPreprocessing
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import json
 import logging
+
+import requests
+from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from kb.kb_support_library import get_full_values_for_dimensions
+from kb.kb_support_library import get_full_value_for_measure
+from kb.kb_support_library import get_representation_format
+from text_preprocessing import TextPreprocessing
 from dr.solr import Solr
 from config import SETTINGS
 
@@ -19,18 +25,28 @@ class DataRetrieving:
         :return: объект класса DrSolrResult()
         """
 
-        tp = TextPreprocessing(request_id)  # инстанс класса, производящего нормализацию слов
-        normalized_user_request = tp.normalization(user_request)  # нормализация запроса пользователя
+        # инстанс класса, производящего нормализацию слов
+        text_preprocessor = TextPreprocessing(request_id)
+        # нормализация запроса пользователя
+        normalized_user_request = text_preprocessor.normalization(user_request)
 
         solr = Solr(SETTINGS.SOLR_MAIN_CORE)  # инстанс класса, ответственного за работу с Apache Solr
-        solr_result = solr.get_data(normalized_user_request)  # получение структурированных результатов поиска
-        # Если хотя бы 1 документ найден
+
+        # получение структурированных результатов поиска
+        solr_result = solr.get_data(normalized_user_request)
+
+        # Если хотя бы 1 документ найден:
         if solr_result.status:
             # Если документ по кубам найден
             if solr_result.cube_documents.status:
                 # Запрос к серверу Кристы по API для получения числа
                 # Обновление переменной solr_result_cube
-                DataRetrieving._format_cube_answer(solr_result.cube_documents, user_request, request_id, formatted)
+                DataRetrieving._format_cube_answer(
+                    solr_result.cube_documents,
+                    user_request,
+                    request_id,
+                    formatted
+                )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
             logging_str = 'ID-запроса: {}\tМодуль: {}\tОтвет Solr: {}'
@@ -104,7 +120,13 @@ class DataRetrieving:
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
         verbal += ' '.join([str(idx + 1) + '. ' + i for idx, i in enumerate(feedback_verbal['dims'])])
 
-        logging.info(logging_str.format(request_id, __name__, verbal, solr_cube_result.mdx_query, value))
+        logging.info(logging_str.format(
+            request_id,
+            __name__,
+            verbal,
+            solr_cube_result.mdx_query,
+            value
+        ))
 
     @staticmethod
     def _send_request_to_server(mdx_query):
@@ -120,8 +142,11 @@ class DataRetrieving:
         cube = from_element[1:len(from_element) - 4]
 
         # Подготовка POST-данных и запрос к серверу
-        d = {'dataMartCode': cube, 'mdxQuery': mdx_query}
-        api_response = requests.post('http://conf.prod.fm.epbs.ru/mdxexpert/CellsetByMdx', d)
+        data_to_post = {'dataMartCode': cube, 'mdxQuery': mdx_query}
+        api_response = requests.post(
+            'http://conf.prod.fm.epbs.ru/mdxexpert/CellsetByMdx',
+            data_to_post
+        )
 
         return api_response, cube
 
@@ -152,9 +177,18 @@ class DataRetrieving:
         full_verbal_measure_value = get_full_value_for_measure(measure_value, cube)
 
         # фидбек в удобном виде для конвертации в JSON-объект
-        feedback = {'formal': {'cube': cube, 'measure': measure_value, 'dims': dims_vals},
-                    'verbal': {'measure': full_verbal_measure_value, 'dims': full_verbal_dimensions_value},
-                    'user_request': user_request}
+        feedback = {
+            'formal': {
+                'cube': cube,
+                'measure': measure_value,
+                'dims': dims_vals
+            },
+            'verbal': {
+                'measure': full_verbal_measure_value,
+                'dims': full_verbal_dimensions_value
+            },
+            'user_request': user_request
+        }
 
         return feedback
 

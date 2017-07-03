@@ -1,13 +1,23 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Обработка логов происходит здесь
+"""
 import datetime
 
 
 class LogsRetriever:
-    """Класс для вывода логов в Телеграме. Используется как нами, так и методологами для тестирования"""
+    """
+    Класс для вывода логов в Телеграме. Используется как нами,
+    так и методологами для тестирования
+    """
 
     def __init__(self, path_to_log_file):
         self.path_to_log_file = path_to_log_file
 
     def get_log(self, kind='all', user_id=None, time_delta=15):
+        """Возвращает лог"""
         # Все логи
         if kind == 'all':
             return self._get_all_logs()
