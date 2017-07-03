@@ -72,7 +72,7 @@ class Solr:
                 # managing two number years
                 if year_value < 2007:
                     if year_value < 10:
-                        year_value = '0' + str(year)
+                        year_value = '0' + str(year_value)
                     year_value = datetime.datetime.strptime(str(year_value), '%y').year
                 doc['fvalue'][0] = year_value
                 year = doc
