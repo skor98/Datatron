@@ -1,4 +1,6 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
 """
 Created on Sat Apr  8 23:51:02 2017
 
@@ -7,7 +9,7 @@ Created on Sat Apr  8 23:51:02 2017
 
 from botn import text_to_tags
 from bottle import Bottle, run
-import codecs
+# import codecs
 from urllib3 import util
 
 app = Bottle()
