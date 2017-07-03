@@ -75,9 +75,18 @@ def _refactor_data(data):
             doc = ClassicMinfinDocument()
             doc.number = str(row.id)
             doc.question = row.question
-            doc.lem_question = tp.normalization(row.question,
-                                                delete_digits=True,
-                                                delete_repeating_tokens=False)
+            lem_question = tp.normalization(row.question,
+                                            delete_digits=True,
+                                            delete_repeating_tokens=False)
+            doc.lem_question = ' '.join([lem_question] * 3)
+
+            synonym_questions = _get_manual_synonym_questions(doc.number)
+
+            if synonym_questions:
+                lem_synonym_questions = [tp.normalization(q, delete_digits=True, delete_repeating_tokens=False)
+                                         for q in synonym_questions]
+                doc.lem_synonym_questions = lem_synonym_questions
+
             doc.short_answer = row.short_answer
             doc.lem_short_answer = tp.normalization(row.short_answer,
                                                     delete_digits=True,
@@ -121,6 +130,31 @@ def _refactor_data(data):
 
         docs.append(doc)
     return docs
+
+
+def _get_manual_synonym_questions(question_number):
+    """Получение списка вопросов из minfin_test_manual документов для конктертного вопроса
+
+    :param question_number: номер вопроса документа
+    :return: list перефразированных запросов
+    """
+    extra_requests = []
+
+    port_num = question_number.split('.')[0]
+
+    path_to_tests = r'{}\tests'.format(getcwd())
+    file_with_portion = [f for f in listdir(path_to_tests) if f.endswith('.txt') and port_num in f and 'manual' in f]
+
+    if not file_with_portion:
+        return None
+
+    with open(r'{}\{}'.format(path_to_tests, file_with_portion[0]), 'r', encoding='utf-8') as file:
+        for line in file:
+            line = line.split(':')
+            if line[1].strip() == question_number:
+                extra_requests.append(line[0])
+
+    return extra_requests
 
 
 def _index_data_via_cmd(clear, core):
@@ -227,6 +261,7 @@ class ClassicMinfinDocument:
         self.short_answer = ''
         self.full_answer = None
         self.lem_question = ''
+        self.lem_synonym_questions = None
         self.lem_short_answer = ''
         self.lem_full_answer = None
         self.lem_key_words = ''
@@ -245,3 +280,6 @@ class ClassicMinfinDocument:
             return self.lem_question + self.lem_full_answer
         else:
             return self.lem_question + self.lem_short_answer
+
+
+_get_manual_synonym_questions('2.1')
