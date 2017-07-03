@@ -13,9 +13,15 @@ class KnowledgeBaseSupport:
         self.db_file = db_file
 
     def set_up_db(self, overwrite=False):
+        """Метод для настройки из вне"""
+
         self._create_db(overwrite=overwrite)
+
+        # Если заполнение БД должно идти из SQL скрипта (в 95% случаев)
         if self.data_source_file.endswith('.sql'):
+            # Указания пути к sql файлу
             data_source_file_path = '{}\\{}\\{}'.format(getcwd(), 'kb', self.data_source_file)
+
             # Чтение данных из файла
             with open(data_source_file_path, 'r', encoding="utf-8") as file:
                 inserts = file.read().split(';')[1:-2]
@@ -24,16 +30,19 @@ class KnowledgeBaseSupport:
             for i in inserts:
                 database.execute_sql(i)
         else:
+            # Если же оно должно идти из метаданных полученных с серверов Кристы
+            # Что очень редко, так как обновление БД на основе этих данных удалит ручные дополнения
             data_set_list = KnowledgeBaseSupport._read_data()
 
             if type(data_set_list) is not list:
                 data_set_list = [data_set_list]
 
-            # KnowledgeBaseSupport._update_value_hierarchy(data_set_list)
             KnowledgeBaseSupport._transfer_data_to_db(data_set_list)
             KnowledgeBaseSupport._create_cube_lem_description(data_set_list)
 
     def _create_db(self, overwrite=False):
+        """Создание БД"""
+
         db_file_path = r'{}\{}\{}'.format(getcwd(), 'kb', self.db_file)
         if overwrite:
             try:
@@ -47,9 +56,10 @@ class KnowledgeBaseSupport:
 
     @staticmethod
     def _read_data():
+        """Перенос данных из текстового вида в определенную структуру класса DataSet"""
+
         data_set_list = []
 
-        # cube_metadata_file = '{}\\{}\\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
         cube_metadata_file = r'{}\{}\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
 
         with open(cube_metadata_file, 'r', encoding='utf-8') as file:
@@ -87,15 +97,9 @@ class KnowledgeBaseSupport:
         return data_set_list
 
     @staticmethod
-    def _update_value_hierarchy(data_set):
-        for item in data_set:
-            for dimension_name, dimension_values in item.dimensions.items():
-                for dimension_value in dimension_values:
-                    Value.update(hierarchy_level=dimension_value['hierarchy_level']).where(
-                        Value.cube_value == dimension_value['cube_value']).execute()
-
-    @staticmethod
     def _transfer_data_to_db(data_set):
+        """Перенос данных из определнной структуры в БД"""
+
         for item in data_set:
             # Занесение куба
             cube = Cube.create(**item.cube)
@@ -115,6 +119,8 @@ class KnowledgeBaseSupport:
 
     @staticmethod
     def _create_cube_lem_description(data_set):
+        """Нормализованное описание куба на основе частотного распределения слов в значениях его измерений"""
+
         cubes = [item.cube['name'] for item in data_set]
         for cube in Cube.select().where(Cube.name in cubes):
             if cube.lem_description == '-':
@@ -127,18 +133,3 @@ class DataSet:
         self.cube = None
         self.dimensions = {}
         self.measures = []
-
-
-def fill_new_cubes():
-    import time
-    start_time = time.time()
-    data = KnowledgeBaseSupport.read_data()
-    print("Прреобразование данных выполнялось за {} секунд".format(time.time() - start_time))
-    start_time = time.time()
-    KnowledgeBaseSupport._transfer_data_to_db(data)
-    print("Занесение данных в БД выполнялось за {} секунд".format(time.time() - start_time))
-    start_time = time.time()
-    KnowledgeBaseSupport._create_cube_lem_description(data)
-    print("Создание автоматического описания выполнялось за {} секунд".format(time.time() - start_time))
-
-# fill_new_cubes()

@@ -16,13 +16,17 @@ class DocsGeneration:
         self.core = core
 
     def generate_docs(self):
-        data = DocsGeneration._create_values() + \
-               DocsGeneration._create_cubes() + \
-               DocsGeneration._create_measures()
+        data = (
+            DocsGeneration._create_values() +
+            DocsGeneration._create_cubes() +
+            DocsGeneration._create_measures()
+        )
 
         self._write_to_file(data)
 
     def clear_index(self):
+        """Очистка ядра"""
+
         dlt_str = 'http://localhost:8983/solr/{}/update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/query%3E%3C/delete%3E&commit=true'
         requests.get(dlt_str.format(self.core))
         try:
@@ -31,6 +35,9 @@ class DocsGeneration:
             pass
 
     def create_core(self):
+        """Создание ядра. Не всегда работает хорошо, лучше через командую строку в папке bin
+        выполнить команду: solr create -c <core_name>"""
+
         status_str = 'http://localhost:8983/solr/admin/cores?action=STATUS&core={}&wt=json'
         solr_response = requests.get(status_str.format(self.core))
         solr_response = json.loads(solr_response.text)
@@ -45,7 +52,8 @@ class DocsGeneration:
                 print('Что-то пошло не так: ошибка {}'.format(solr_response.status_code))
 
     def index_created_documents_via_curl(self):
-        # TODO: разобраться с pycurl.error: (6, 'Could not resolve: localhost (Domain name not found)')
+        """Индексация через cURL"""
+
         c = pycurl.Curl()
         c.setopt(c.URL, 'http://localhost:8983/solr/{}/update?commit=true'.format(self.core))
         c.setopt(c.HTTPPOST,
@@ -59,6 +67,8 @@ class DocsGeneration:
         print('Документы для кубов проиндексированы через CURL')
 
     def index_created_documents_via_cmd(self, path_to_post_jar_file):
+        """Индексация средствами post.jar из папки \example\exampledocs"""
+
         path_to_json_data_file = '{}\\{}'.format(getcwd(), self.file_name)
         command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(self.core, path_to_post_jar_file,
                                                                            path_to_json_data_file)
@@ -66,19 +76,28 @@ class DocsGeneration:
         print('Документы для кубов проиндексированы через JAR файл')
 
     def _write_to_file(self, docs):
+        """Запись имеющейся структуры в файл для последующей индексации"""
+
         json_data = json.dumps(docs)
         with open(self.file_name, 'a', encoding='utf-8') as file:
             file.write(json_data)
 
     @staticmethod
     def _create_values():
+        """Создание на основе БД документов для значений измерений"""
+
+        # Отдельно обрабатываются года
         current_year = datetime.datetime.now().year
+
+        # 4-цифренные года: 2007 - current_year
         year_values = [str(i) for i in range(2007, current_year + 1)]
+
+        # 1-2-цифренные года: 7 - 17
         year_values.extend([str(i) for i in range(7, current_year - 1999)])
         for i in range(len(year_values)):
             year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
 
-        # TODO: подправить ключ на верхний регистр
+        # Также отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
         territory_values = []
         dimension = Dimension.get(Dimension.label == 'Territories')
         for dimension_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dimension.id):
@@ -110,13 +129,15 @@ class DocsGeneration:
                 d[item['cube']] = item['fvalue']
             territory_values.append(d)
 
+        # Здесь обрабатываются прочее значения измерений
         values = []
         for cube in Cube.select():
             for dim_cub in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
                 for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
                     if dimension.label not in ('Years', 'Territories'):
                         for dimension_value in Dimension_Value.select().where(
-                                        Dimension_Value.dimension_id == dimension.id):
+                            Dimension_Value.dimension_id == dimension.id
+                        ):
                             for value in Value.select().where(Value.id == dimension_value.value_id):
                                 verbal = value.lem_index_value
                                 if value.lem_synonyms:
@@ -133,6 +154,8 @@ class DocsGeneration:
 
     @staticmethod
     def _create_cubes():
+        """Создание документов по кубам"""
+
         cubes = []
         for cube in Cube.select():
             cube_description = cube.auto_lem_description
@@ -147,13 +170,16 @@ class DocsGeneration:
 
     @staticmethod
     def _create_measures():
+        """Создание документов по мерам"""
+
         measures = []
         default_measures_ids = []
-        # TODO: обратить внимание на очень простое обращение по FK!!!!
-        # for cube in Cube.select():
-        #     default_measures_ids.append(cube.default_measure)
+
+        # Сбор ID мер, указанных для кубов в БД по умолчанию
         for cube in Cube.select():
             default_measures_ids.append(cube.default_measure_id)
+
+        # Индексация только тех мер, которые не относятся к значениям по умолчанию
         for measure in Measure.select():
             if measure.id not in default_measures_ids:
                 for cube_measure in Cube_Measure.select().where(Cube_Measure.measure_id == measure.id):

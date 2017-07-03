@@ -24,9 +24,10 @@ logsRetriever = LogsRetriever('logs.log')
 user_name_str = '{} {}'
 
 
-# /start command handler; send start-message to the user
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    """Обработки команды /start"""
+
     bot.send_message(message.chat.id, constants.TELEGRAM_START_MSG, parse_mode='HTML')
     if not check_user_existence(message.chat.id):
         try:
@@ -315,6 +316,9 @@ def process_cube_questions(message, cube_result, request_id, input_format):
         stats = stats.format(cube_result.avg_score, cube_result.min_score, cube_result.max_score,
                              cube_result.cube_score, cube_result.sum_score)
         bot.send_message(message.chat.id, stats)
+    else:
+        if cube_result.message:
+            bot.send_message(message.chat.id, cube_result.message)
 
 
 def process_minfin_questions(message, minfin_result):

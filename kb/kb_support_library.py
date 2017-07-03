@@ -175,7 +175,8 @@ def check_dimension_value_in_cube(cube_name, value):
     for value in Value.select().where(Value.cube_value == value):
         for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == value.id):
             for cube_dimension in Cube_Dimension.select().where(
-                            Cube_Dimension.dimension_id == dimension_value.dimension_id):
+                Cube_Dimension.dimension_id == dimension_value.dimension_id
+            ):
                 for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
                     if cube.name == cube_name:
                         return True
@@ -202,7 +203,8 @@ def get_classification_for_dimension(cube_name, dimension_name):
     for cube in Cube.select().where(Cube.name == cube_name):
         for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
             for dim in Dimension.select().where(
-                                    Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name):
+                Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
+            ):
                 for dim_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dim.id):
                     for value in Value.select().where(Value.id == dim_value.value_id):
                         values.append(value.full_value)
@@ -240,5 +242,6 @@ def get_default_value_for_dimension(cube_name, dimension_name):
     cube_id = Cube.get(Cube.name == cube_name).id
     for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
         for dim in Dimension.select().where(
-                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)):
+            (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
+        ):
             return Value.get(Value.id == dim.default_value).cube_value
