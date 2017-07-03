@@ -1,20 +1,39 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import logging
+import re
+import random
+
 import constants
 from speechkit import speech_to_text
 from speechkit import SpeechException
 from data_retrieving import DataRetrieving
 from dr.solr import DrSolrResult
-import re
-import random as rnd
 
-logging.basicConfig(handlers=[logging.FileHandler('logs.log', 'a', 'utf-8')], level='INFO',
-                    format='%(asctime)s\t%(levelname)s\t%(message)s', datefmt='%Y-%m-%d %H:%M')
+logging.basicConfig(
+    handlers=[logging.FileHandler('logs.log', 'a', 'utf-8')],
+    level='INFO',
+    format='%(asctime)s\t%(levelname)s\t%(message)s',
+    datefmt='%Y-%m-%d %H:%M'
+)
 
-logging_str = "ID-запроса: {}\tМодуль: {}\tID-пользователя: {}\tИмя пользователя: {}\tПлатформа: {}\tЗапрос: {}\tФормат: {}"
+logging_str = (
+    "ID-запроса: {}\t" +
+    "Модуль: {}\t" +
+    "ID-пользователя: {}\t" +
+    "Имя пользователя: {}\t" +
+    "Платформа: {}\t" +
+    "Запрос: {}\t" +
+    "Формат: {}"
+)
 
 
 class MessengerManager:
-    """Класс, который идет взаимодействие с сердцем системы (DataRetrieving). Этот класс имеет API из 5 методов"""
+    """
+    Класс, который идет взаимодействие с сердцем системы (DataRetrieving).
+    Этот класс имеет API из 5 методов
+    """
 
     @staticmethod
     def make_request(text, source, user_id, user_name, request_id):
@@ -29,13 +48,23 @@ class MessengerManager:
         """
 
         text = ' '.join(text.split())  # Удаление переносов, табуляций и пр.
-        logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'text'))
+        logging.info(logging_str.format(
+            request_id,
+            __name__,
+            user_id,
+            user_name,
+            source,
+            text,
+            'text'
+        ))
 
         return MessengerManager._querying(text, request_id)
 
     @staticmethod
     def make_request_directly_to_m2(text, source, user_id, user_name, request_id):
-        """API метод, используемый на данный момент только в inline-режиме и обращается напрямую к DataRetrieving
+        """
+        API метод, используемый на данный момент только в inline-режиме
+        и обращается напрямую к DataRetrieving
 
         :param text: запрос
         :param source: источник (web, cmd, telegram, unity)
@@ -46,7 +75,15 @@ class MessengerManager:
         """
 
         text = ' '.join(text.split())  # Удаление переносов, табуляций и пр.
-        logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'text'))
+        logging.info(logging_str.format(
+            request_id,
+            __name__,
+            user_id,
+            user_name,
+            source,
+            text,
+            'text'
+        ))
 
         return DataRetrieving.get_data(text, request_id)
 
@@ -68,7 +105,15 @@ class MessengerManager:
                 text = speech_to_text(filename=filename)
             else:
                 text = speech_to_text(bytes=bytes)
-            logging.info(logging_str.format(request_id, __name__, user_id, user_name, source, text, 'voice'))
+            logging.info(logging_str.format(
+                request_id,
+                __name__,
+                user_id,
+                user_name,
+                source,
+                text,
+                'voice'
+            ))
         except SpeechException:
             dsr = DrSolrResult()
             dsr.error = dsr.message = constants.ERROR_CANNOT_UNDERSTAND_VOICE
@@ -110,20 +155,24 @@ class MessengerManager:
             if result.status is True:
                 result.message = constants.MSG_WE_WILL_FORM_DATA_AND_SEND_YOU
             return result
-        except Exception as e:
-            logging.warning('ID-запроса: {}\tМодуль: {}\tОшибка: {}'.format(request_id, __name__, e))
-            print('MessengerManager: ' + str(e))
+        except Exception as err:
+            logging.warning('ID-запроса: {}\tМодуль: {}\tОшибка: {}'.format(
+                request_id,
+                __name__,
+                err
+            ))
+            print('MessengerManager: ' + str(err))
             dsr = DrSolrResult()
-            dsr.message = dsr.error = str(e)
+            dsr.message = dsr.error = str(err)
             return dsr
 
     @staticmethod
-    def _simple_split(s):
+    def _simple_split(string_to_tokenize):
         """Простая токенизация"""
 
-        s = s.lower()
-        s = re.sub(r'[^\w\s]', '', s)
-        return s.split()
+        string_to_tokenize = string_to_tokenize.lower()
+        cleared_string = re.sub(r'[^\w\s]', '', string_to_tokenize)
+        return cleared_string.split()
 
     @staticmethod
     def _greetings(text):
@@ -132,6 +181,6 @@ class MessengerManager:
         text = text.lower()
         for word in MessengerManager._simple_split(text):
             if word in constants.HELLO:
-                return constants.HELLO_ANSWER[rnd.randint(0, len(constants.HELLO_ANSWER) - 1)]
+                return random.choice(constants.HELLO_ANSWER)
             elif word in constants.HOW_ARE_YOU:
-                return constants.HOW_ARE_YOU_ANSWER[rnd.randint(0, len(constants.HOW_ARE_YOU_ANSWER) - 1)]
+                return random.choice(constants.HOW_ARE_YOU_ANSWER)
