@@ -1,3 +1,10 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Содержит сообщения для взаимодействия с пользователем
+"""
+
 from json import dumps
 
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
