@@ -91,6 +91,10 @@ def read_chunks(chunk_size, bytes):
 def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=True, as_audio=False):
     """Преобразования текста в речь"""
 
+    # Если ответ имеет процентный формат, то замени процент
+    if '%' in text:
+        text = text.replace('%', 'процентов')
+
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
         text, 'mp3', lang, 'oksana', YANDEX_API_KEY, 'neutral', '1.0')
 

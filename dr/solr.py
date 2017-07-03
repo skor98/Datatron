@@ -3,6 +3,7 @@ import json
 import requests
 import datetime
 from config import SETTINGS
+import numpy as np
 
 
 class Solr:
@@ -13,19 +14,23 @@ class Solr:
         """API метод для класса Solr
 
         :param user_request: нормализованный запрос пользователя
-        :return: объект класса DrSolrResult()
-        """
+        :return: объект класса DrSolrResult()"""
+
+        solr_result = DrSolrResult()
+
         try:
             docs = self._send_request_to_solr(user_request)
 
             if docs['response']['numFound']:
-                mdx_query = self._parse_solr_response(docs)
-                return DrSolrResult(True, mdx_query=mdx_query)
+                Solr._parse_solr_response(docs, solr_result)
+                solr_result.status = True
+                return solr_result
             else:
-                raise Exception('Документы не найдены')
+                raise Exception('Datatron не нашел ответа на Ваш вопрос')
         except Exception as e:
             print('Solr: ' + str(e))
-            return DrSolrResult(error=str(e))
+            solr_result.error = str(e)
+            return solr_result
 
     def _send_request_to_solr(self, user_request):
         """Метод для отправки запроса к Solr
@@ -34,13 +39,17 @@ class Solr:
         :return: ответ от Solr в формате JSON
         """
 
-        request = 'http://localhost:8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
+        request = (
+            'http://' +
+            SETTINGS.SOLR_HOST +
+            ':8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
+        )
         json_response = requests.get(request.format(self.core, user_request, 20)).text
         docs = json.loads(json_response)
         return docs
 
     @staticmethod
-    def _parse_solr_response(solr_docs):
+    def _parse_solr_response(solr_docs, solr_result):
         """Парсер набора документов
 
         Принимает на вход JSON-объект.
@@ -59,12 +68,14 @@ class Solr:
             if doc['type'][0] == 'dimension':
                 dimensions.append(doc)
             elif doc['type'][0] == 'year_dimension':
-                year = int(doc['fvalue'][0])
+                year_value = int(doc['fvalue'][0])
                 # managing two number years
-                if year < 2007:
-                    if year < 10:
-                        year = '0' + str(year)
-                    year = datetime.datetime.strptime(str(year), '%y').year
+                if year_value < 2007:
+                    if year_value < 10:
+                        year_value = '0' + str(year)
+                    year_value = datetime.datetime.strptime(str(year_value), '%y').year
+                doc['fvalue'][0] = year_value
+                year = doc
             elif doc['type'][0] == 'territory_dimension':
                 territory = doc
             elif doc['type'][0] == 'cube':
@@ -73,6 +84,22 @@ class Solr:
                 measures.append(doc)
             elif doc['type'][0] == 'minfin':
                 minfin_docs.append(doc)
+
+        solr_result.cube_documents = Solr._process_cube_question(year, territory, dimensions, cubes, measures)
+        if minfin_docs:
+            solr_result.minfin_documents = Solr._process_minfin_question(minfin_docs)
+
+        if solr_result.cube_documents.status:
+            solr_result.docs_found += 1
+
+        if solr_result.minfin_documents.status:
+            solr_result.docs_found += 1
+
+        return solr_result
+
+    @staticmethod
+    def _process_cube_question(year, territory, dimensions, cubes, measures):
+        solr_cube_result = DrSolrCubeResult()
 
         if year:
             dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'][0])]
@@ -99,12 +126,19 @@ class Solr:
         dimensions = [list(filter(lambda elem: type(elem) is not str, level)) for level in dimensions]
 
         test1_dimensions = []
-        reference_cube = cubes[0]['cube'][0]
+        try:
+            reference_cube = cubes[0]['cube'][0]
+            reference_cube_score = cubes[0]['score']
+        except IndexError:
+            return solr_cube_result
+
         # если какие-то измерения (кроме территории, года) были найдены:
         if dimensions:
             # TODO: доработать определение куба
+            # Замена куба на другой, если score найденного меньше score верхнего документа
             if reference_cube != dimensions[0][0]['cube'][0] and cubes[0]['score'] < dimensions[0][0]['score']:
                 reference_cube = dimensions[0][0]['cube'][0]
+                reference_cube_score = dimensions[0][0]['score']
 
             # Максимальная группа измерений от куба лучшего элемента
             # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
@@ -112,10 +146,78 @@ class Solr:
             if dimensions[0][0]['cube'][0] == reference_cube:
                 test1_dimensions = [dimensions[0][0]]  # первое измерение из верхнего списка измерений
 
-        mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
-        print(mdx_request)
+            # Это часть позволила улучшить алгоритм с 5/39 до 11/39
+            # Берем все элементы из первой череды измерений для выбранного куба
+            try:
+                for dim in dimensions[0][1:]:
+                    if dim['cube'][0] == reference_cube:
+                        test1_dimensions.append(dim)
+            except Exception as e:
+                print('{}: {}'.format(__name__, str(e)))
 
-        return mdx_request
+        if len(test1_dimensions):
+            mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
+            print(mdx_request)
+            solr_cube_result.mdx_query = mdx_request
+            solr_cube_result.cube_score = reference_cube_score
+            Solr._calculate_score_for_cube_questions(test1_dimensions, measures, year, territory, solr_cube_result)
+            solr_cube_result.sum_score += solr_cube_result.cube_score
+            solr_cube_result.status = True
+        return solr_cube_result
+
+    @staticmethod
+    def _process_minfin_question(minfin_documents):
+        """Работа с документами для вопросов Минфина
+
+        :param minfin_documents: документы министерства финансов
+        :return: объект класса DrSolrMinfinResult()
+        """
+
+        solr_minfin_result = DrSolrMinfinResult()
+        best_document = minfin_documents[0]
+        solr_minfin_result.score = best_document['score']
+        solr_minfin_result.status = True
+        solr_minfin_result.number = best_document['number'][0]
+        solr_minfin_result.question = best_document['question'][0]
+        solr_minfin_result.short_answer = best_document['short_answer'][0]
+        try:
+            solr_minfin_result.full_answer = best_document['full_answer'][0]
+        except KeyError:
+            pass
+
+        try:
+            if len(best_document['link_name']) > 1:
+                solr_minfin_result.link_name = best_document['link_name']
+                solr_minfin_result.link = best_document['link']
+            else:
+                solr_minfin_result.link_name = best_document['link_name'][0]
+                solr_minfin_result.link = best_document['link'][0]
+
+        except KeyError:
+            pass
+
+        try:
+            if len(best_document['picture_caption']) > 1:
+                solr_minfin_result.picture_caption = best_document['picture_caption']
+                solr_minfin_result.picture = best_document['picture']
+            else:
+                solr_minfin_result.picture_caption = best_document['picture_caption'][0]
+                solr_minfin_result.picture = best_document['picture'][0]
+
+        except KeyError:
+            pass
+
+        try:
+            if len(best_document['document']) > 1:
+                solr_minfin_result.document_caption = best_document['document_caption']
+                solr_minfin_result.document = best_document['document']
+            else:
+                solr_minfin_result.document_caption = best_document['document_caption'][0]
+                solr_minfin_result.document = best_document['document'][0]
+        except KeyError:
+            pass
+
+        return solr_minfin_result
 
     @staticmethod
     def _build_mdx_request(dimensions, measures, cube, year, territory):
@@ -141,7 +243,7 @@ class Solr:
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
             if year:
-                dim_str.append(dim_tmp.format('YEARS', year))
+                dim_str.append(dim_tmp.format('YEARS', year['fvalue'][0]))
             else:
                 dim_str.append(dim_tmp.format('YEARS', get_default_value_for_dimension(cube, 'Years')))
 
@@ -161,77 +263,46 @@ class Solr:
         return mdx_template.format(measure, cube, ','.join(dim_str))
 
     @staticmethod
-    def get_minfin_docs(user_request):
-        """Работа с документами для вопросов Минфина
+    def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
+        scores = []
 
-        :param user_request: запрос со стороны пользователя к Минфин вопросам
-        :return: объект класса DrSolrMinfinResult()
-        """
-        req_str = 'http://localhost:8983/solr/{}/select/?q={}&wt=json'
-        solr_response = requests.get(req_str.format(SETTINGS.SOLR_MINFIN_CORE, user_request))
-        docs = json.loads(solr_response.text)
+        for dim in dimensions:
+            scores.append(dim['score'])
 
-        res = DrSolrMinfinResult()
+        for measure in measures:
+            scores.append(measure['score'])
 
-        if docs['response']['numFound']:
-            res.status = True
-            best_document = docs['response']['docs'][0]
-            res.number = best_document['number'][0]
-            res.question = best_document['question'][0]
-            res.short_answer = best_document['short_answer'][0]
-            try:
-                res.full_answer = best_document['full_answer'][0]
-            except KeyError:
-                pass
+        if year:
+            scores.append(year['score'])
 
-            try:
-                if len(best_document['link_name']) > 1:
-                    res.link_name = best_document['link_name']
-                    res.link = best_document['link']
-                else:
-                    res.link_name = best_document['link_name'][0]
-                    res.link = best_document['link'][0]
+        if territory:
+            scores.append(territory['score'])
 
-            except KeyError:
-                pass
-
-            try:
-                if len(best_document['picture_caption']) > 1:
-                    res.picture_caption = best_document['picture_caption']
-                    res.picture = best_document['picture']
-                else:
-                    res.picture_caption = best_document['picture_caption'][0]
-                    res.picture = best_document['picture'][0]
-
-            except KeyError:
-                pass
-
-            try:
-                if len(best_document['document']) > 1:
-                    res.document_caption = best_document['document_caption']
-                    res.document = best_document['document']
-                else:
-                    res.document_caption = best_document['document_caption'][0]
-                    res.document = best_document['document'][0]
-            except KeyError:
-                pass
-
-        return res
+        solr_result.avg_score = np.mean(scores)
+        solr_result.min_score = min(scores)
+        solr_result.max_score = max(scores)
+        solr_result.sum_score = sum(scores)
 
 
-class DrSolrResult:
-    def __init__(self, status=False, id_query=0, mdx_query='', error=''):
-        self.status = status
+class DrSolrCubeResult:
+    def __init__(self):
+        self.status = False
         self.type = 'cube'
-        self.id_query = id_query
-        self.mdx_query = mdx_query
-        self.error = error
+        self.cube_score = 0
+        self.avg_score = 0
+        self.max_score = 0
+        self.min_score = 0
+        self.sum_score = 0
+        self.mdx_query = None
+        self.response = None
+        self.message = None
 
 
 class DrSolrMinfinResult:
-    def __init__(self, status=False):
-        self.status = status
+    def __init__(self):
+        self.status = False
         self.type = 'minfin'
+        self.score = 0
         self.number = 0
         self.question = ''
         self.short_answer = ''
@@ -242,6 +313,17 @@ class DrSolrMinfinResult:
         self.picture = None
         self.document_caption = None
         self.document = None
+        self.message = None
+
+
+class DrSolrResult:
+    def __init__(self):
+        self.status = False
+        self.message = ''
+        self.error = ''
+        self.docs_found = 0
+        self.cube_documents = DrSolrCubeResult()
+        self.minfin_documents = DrSolrMinfinResult()
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)

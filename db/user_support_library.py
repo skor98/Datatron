@@ -25,19 +25,3 @@ def get_feedbacks():
             fb = '{} {} {}'.format(feedback.time, user.full_user_name, feedback.feedback)
             feedbacks.append(fb)
     return '\n'.join(feedbacks)
-
-
-def define_question_mode(user_id, question_mode):
-    User.update(question_mode=question_mode).where(User.user_id == user_id).execute()
-
-
-def get_question_mode(user_id):
-    return User.get(User.user_id == user_id).question_mode
-
-
-def define_expert_mode(user_id, expert_mode):
-    User.update(expert_mode=expert_mode).where(User.user_id == user_id).execute()
-
-
-def get_expert_mode(user_id):
-    return User.get(User.user_id == user_id).expert_mode

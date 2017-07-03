@@ -16,6 +16,7 @@ class Value(BaseModel):
     lem_synonyms = CharField(null=True)
     cube_value = CharField()
     hierarchy_level = CharField(null=True)
+    connected_value = CharField(null=True)
 
 
 class Measure(BaseModel):

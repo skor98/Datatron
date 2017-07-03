@@ -8,7 +8,6 @@ from config import SETTINGS
 import requests
 import pycurl
 import pandas as pd
-import numpy as np
 
 input_data_file_name = 'data.xlsx'
 output_file = 'minfin_data_for_indexing_in_solr.json'
@@ -18,6 +17,7 @@ path_to_folder_file = r'{}\{}'.format(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, {})
 
 def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CORE):
     """Главный API метод к этому модулю"""
+
     minfin_docs = _refactor_data(_read_data())
     _add_automatic_key_words(minfin_docs)
     _write_data(minfin_docs)
@@ -28,27 +28,37 @@ def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CO
 
 
 def _read_data():
+    """Чтение данных из xlsx с помощью pandas и их рефакторинг"""
     files = []
     file_paths = []
 
+    # Сохранение имеющихся в дериктории xlsx файлов
     for file in listdir(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS):
         if file.endswith(".xlsx"):
             file_paths.append(path.join(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, file))
             files.append(file)
 
+    # Создания листа dataframe по документам
     dfs = []
     for file_path in file_paths:
-        df = pd.read_excel(open(file_path, 'rb'), sheetname='questions')
+        # id документа имеет структуру {партия}.{порядковый номер}
+        # если не переводить id к строке, то pandas воспринимает их как float и 3.10 становится 3.1
+        # что приводит к ошибкам в тестировании
+        df = pd.read_excel(open(file_path, 'rb'), sheetname='questions', converters={'id': str})
         df = df.fillna(0)
         dfs.append(df)
 
+    # Автоматическая генерация тестов
     _create_tests(files, dfs)
 
+    # Объединение все датафреймов в один
     data = pd.concat(dfs)
     return data
 
 
 def _write_data(data):
+    """Запись всех документов в файл"""
+
     with open(path_to_folder_file.format(output_file), 'w', encoding='utf-8') as file:
         data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
         file.write(data_to_str)
@@ -56,11 +66,14 @@ def _write_data(data):
 
 def _refactor_data(data):
     tp = TextPreprocessing(uuid.uuid4())
+
     docs = []
     for index, row in data.iterrows():
+        # Если запрос не параметризованных
+        # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
         if not row.parameterized:
             doc = ClassicMinfinDocument()
-            doc.number = row.id
+            doc.number = str(row.id)
             doc.question = row.question
             doc.lem_question = tp.normalization(row.question,
                                                 delete_digits=True,
@@ -74,7 +87,11 @@ def _refactor_data(data):
                 doc.lem_full_answer = tp.normalization(row.full_answer,
                                                        delete_digits=True,
                                                        delete_repeating_tokens=False)
-            doc.lem_key_words = tp.normalization(row.key_words)
+            kw = tp.normalization(row.key_words)
+
+            # Ключевые слова записываются трижды, для увеличения качества поиска документа
+            doc.lem_key_words = ' '.join([kw] * 3)
+
             # Может быть несколько
             if row.link_name:
                 if ';' in row.link_name:
@@ -137,6 +154,8 @@ def _index_data_via_curl(clear, core):
 
 
 def _add_automatic_key_words(documents):
+    """Добавление автоматических ключевых слов с помощью TF-IDF"""
+
     matrix = _calculate_matrix(documents)
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)

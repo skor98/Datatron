@@ -2,18 +2,25 @@ import datetime
 
 
 class LogsRetriever:
+    """Класс для вывода логов в Телеграме. Используется как нами, так и методологами для тестирования"""
+
     def __init__(self, path_to_log_file):
         self.path_to_log_file = path_to_log_file
 
     def get_log(self, kind='all', user_id=None, time_delta=15):
+        # Все логи
         if kind == 'all':
             return self._get_all_logs()
+        # Логи за сессию
         elif kind == 'session':
             return self._get_session_logs(user_id, time_delta)
+        # Все логи уровня INFO
         elif kind == 'info':
             return self._get_all_info_logs()
+        # Все логи уровня WARNING
         elif kind == 'warning':
             return self._get_all_warning_logs()
+        # Логи последнего запроса
         else:
             return self._get_request_logs(user_id)
 
@@ -90,7 +97,7 @@ class LogsRetriever:
             line = line.split('\t')
 
             try:
-                if line[1] not in ('DEBUG', 'ERROR') and len(line) > 3:
+                if line[1] == 'INFO' and len(line) > 3:
                     logs.append('\t'.join(line))
             except IndexError:
                 pass

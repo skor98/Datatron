@@ -11,10 +11,8 @@ class BaseModel(Model):
 
 class User(BaseModel):
     user_id = IntegerField()
-    user_name = CharField()
+    user_name = CharField(null=True)
     full_user_name = CharField()
-    expert_mode = BigIntegerField()
-    question_mode = BigIntegerField()
 
 
 class Feedback(BaseModel):
