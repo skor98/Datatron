@@ -16,9 +16,11 @@ class DocsGeneration:
         self.core = core
 
     def generate_docs(self):
-        data = DocsGeneration._create_values() + \
-               DocsGeneration._create_cubes() + \
-               DocsGeneration._create_measures()
+        data = (
+            DocsGeneration._create_values() +
+            DocsGeneration._create_cubes() +
+            DocsGeneration._create_measures()
+        )
 
         self._write_to_file(data)
 
@@ -134,7 +136,8 @@ class DocsGeneration:
                 for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
                     if dimension.label not in ('Years', 'Territories'):
                         for dimension_value in Dimension_Value.select().where(
-                                        Dimension_Value.dimension_id == dimension.id):
+                            Dimension_Value.dimension_id == dimension.id
+                        ):
                             for value in Value.select().where(Value.id == dimension_value.value_id):
                                 verbal = value.lem_index_value
                                 if value.lem_synonyms:
