@@ -30,7 +30,8 @@ def download(url, filename):
 
 # locations = ['Tutorials/SLUHandsOn', 'Examples/LanguageUnderstanding/ATIS/BrainScript']
 
-##### СМЕНИТЕ ЭТИ ЛОКАЦИИ НА РАСПОЛОЖЕНИЕ ФАЙЛОВ У ВАС
+# ToDo !!
+# СМЕНИТЕ ЭТИ ЛОКАЦИИ НА РАСПОЛОЖЕНИЕ ФАЙЛОВ У ВАС
 locations = ['C:/Users/imon/Documents/Git/Datatron 2.0/OpenFinData/cntk', 'C:/local/ATIS/Data']
 data = {
     'train': {'file': 'atis.trainf.ctf', 'location': 0},
@@ -65,8 +66,8 @@ from cntk import *
 from cntk.learner import adam_sgd, learning_rate_schedule
 
 # vocab_size = 685 ; num_labels = 68 ; #num_intents = 26
-vocab_size = 1295;
-num_labels = 85;  # num_intents = 26
+vocab_size = 1295
+num_labels = 85  # num_intents = 26
 
 # model dimensions
 input_dim = vocab_size
@@ -241,15 +242,15 @@ def send_welcome(message):
 def repeat_all_messages(message):
     try:
         seq = message.text
-        mass = seq.split(' ');
+        mass = seq.split(' ')
         print(seq.split(' '))
         # kw=[]
         # for w in seq.split(' '):
         #    kw.append(query_dict[w])
 
-        ##ДОБАВИТЬ ОБРАБОТКУ СЛУЧАЕВ КОТОРЫХ НЕТ В СЛОВАРЕ
-        ##ЛОГГИРОВАТЬ ТАКИЕ СЛУЧАИ
-        ##ИХ ТЕГИ ДЕЛАТЬ О
+        # ДОБАВИТЬ ОБРАБОТКУ СЛУЧАЕВ КОТОРЫХ НЕТ В СЛОВАРЕ
+        # ЛОГГИРОВАТЬ ТАКИЕ СЛУЧАИ
+        # ИХ ТЕГИ ДЕЛАТЬ О
         w = [query_dict[w] for w in seq.split(' ')]  # convert to word indices
         print(w)
         onehot = np.zeros([len(w), len(query_dict) + 1], np.float32)
@@ -280,15 +281,15 @@ def text_to_tags(request_msg):
     try:
         seq = request_msg
         seq = seq.lower()
-        mass = seq.split(' ');
+        mass = seq.split(' ')
         print(seq.split(' '))
         # kw=[]
         # for w in seq.split(' '):
         # kw.append(query_dict[w])
 
-        ##ДОБАВИТЬ ОБРАБОТКУ СЛУЧАЕВ КОТОРЫХ НЕТ В СЛОВАРЕ
-        ##ЛОГГИРОВАТЬ ТАКИЕ СЛУЧАИ
-        ##ИХ ТЕГИ ДЕЛАТЬ О
+        # ДОБАВИТЬ ОБРАБОТКУ СЛУЧАЕВ КОТОРЫХ НЕТ В СЛОВАРЕ
+        # ЛОГГИРОВАТЬ ТАКИЕ СЛУЧАИ
+        # ИХ ТЕГИ ДЕЛАТЬ О
         w = [query_dict[w] for w in seq.split(' ')]  # convert to word indices
         print(w)
         onehot = np.zeros([len(w), len(query_dict) + 1], np.float32)

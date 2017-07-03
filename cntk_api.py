@@ -6,7 +6,7 @@ Created on Sat Apr  8 23:51:02 2017
 """
 
 from botn import text_to_tags
-from bottle import Bottle,  run
+from bottle import Bottle, run
 import codecs
 from urllib3 import util
 
@@ -17,9 +17,9 @@ app = Bottle()
 def get_basic(request_text=None):
     request_text = request_text.strip()
     print(request_text)
-    
+
     print(util.parse_url(request_text))
-    #request_text = codecs.decode(bytes(request_text, 'URL-encoding'), 'utf-8')
+    # request_text = codecs.decode(bytes(request_text, 'URL-encoding'), 'utf-8')
     if request_text:
         result = text_to_tags(request_text)
         return result

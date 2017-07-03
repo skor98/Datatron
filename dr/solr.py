@@ -39,7 +39,11 @@ class Solr:
         :return: ответ от Solr в формате JSON
         """
 
-        request = 'http://localhost:8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
+        request = (
+            'http://' +
+            SETTINGS.SOLR_HOST +
+            ':8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
+        )
         json_response = requests.get(request.format(self.core, user_request, 20)).text
         docs = json.loads(json_response)
         return docs

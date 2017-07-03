@@ -31,8 +31,11 @@ class ServerSettings:
     # которые теперь лежат в одном ядре (kb_3c) с остальными
     SOLR_MINFIN_CORE = 'new_minfin'
 
-    # ID Димы Е., Димы В. и Маши, которым приходит уведомление при запуске системы
-    ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713)
+    # ID Димы Е., Димы В., Маши и Лёши которым приходит уведомление при запуске системы
+    ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713, 441850514)
+
+    # Хост, на котором запущен Solr
+    SOLR_HOST = 'localhost'
 
     # Хост на котором работает Bottle приложение из ui_web.py
     HOST = '0.0.0.0'
@@ -50,6 +53,7 @@ class DimaSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (65305591,)
+    SOLR_HOST = 'localhost'
     HOST = 'localhost'
 
 
@@ -65,8 +69,26 @@ class MashaSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (164241807,)
+    SOLR_HOST = 'localhost'
     HOST = 'localhost'
 
 
+class AlexSettings:
+    """Настройки для работы на локальной виртуальной машине Лёши"""
+
+    PATH_TO_KNOWLEDGEBASE = r'C:\Users\RealPC\Desktop\Datatron\kb\knowledge_base.db'
+    PATH_TO_USER_DB = r'C:\Users\RealPC\Desktop\Datatron\db\users.db'
+    PATH_TO_SOLR_POST_JAR_FILE = r'"C:\Users\RealPC\Desktop\solr-6.6.0\example\exampledocs\post.jar"'
+    PATH_TO_FFMPEG = r'"C:\Users\RealPC\Desktop\ffmpeg\ffmpeg.exe"'
+    PATH_TO_MINFIN_ATTACHMENTS = r'C:\Users\RealPC\Desktop\Datatron\data\minfin'
+    TELEGRAM_API_TOKEN = '385055797:AAElq4hXYZPkubP42Aj5Jk4w6wa6Qd5aHe8'  # AlexDatatronBot
+    SOLR_MAIN_CORE = 'kb_3c'
+    SOLR_MINFIN_CORE = 'minfin'
+    ADMIN_TELEGRAM_ID = (441850514,)
+    SOLR_HOST = '192.168.1.8'
+    HOST = '0.0.0.0'
+
+
 ss, ds, ms = ServerSettings, DimaSettings, MashaSettings
+alex_settings = AlexSettings
 SETTINGS = ds  # Подставь нужную переменную для работы системы

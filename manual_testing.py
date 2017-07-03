@@ -127,9 +127,11 @@ def minfin_testing(local=True):
                         print(ars)
                 else:
                     # TODO: подправить MSG
-                    ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(q_id=question_id,
-                                                                                 req=req,
-                                                                                 msg='Не определена')
+                    ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                        q_id=question_id,
+                        req=req,
+                        msg='Не определена'
+                    )
                     testing_results.append(ars)
                     print(ars)
 

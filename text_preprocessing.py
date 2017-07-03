@@ -36,7 +36,7 @@ class TextPreprocessing:
 
         # Убираем цифры
         if delete_digits:
-           tokens = [t for t in tokens if not t.isdigit()]
+            tokens = [t for t in tokens if not t.isdigit()]
         # Убираем нижние подчеркивания
         tokens = [t for t in tokens if '_' not in t]
 
