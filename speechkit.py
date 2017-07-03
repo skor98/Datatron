@@ -1,10 +1,12 @@
-import xml.etree.ElementTree as XmlElementTree
+import uuid
 import subprocess
+
+import xml.etree.ElementTree as XmlElementTree
 import httplib2
 import requests
-import uuid
-from config import SETTINGS, YANDEX_API_KEY
 from ffmpy import FFmpeg
+
+from config import SETTINGS, YANDEX_API_KEY
 
 # Yandex URL для API
 YANDEX_ASR_HOST = 'asr.yandex.net'
@@ -29,11 +31,17 @@ def convert_to_ogg(in_filename: str = None, in_content: bytes = None):
     stdout = None
 
     if in_filename:
-        stdout, stderr = ff.run(input_data=open(in_filename, 'br').read(),
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=open(in_filename, 'br').read(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
     elif in_content:
-        stdout, stderr = ff.run(input_data=in_content, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=in_content,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
     return stdout
 
@@ -49,17 +57,25 @@ def convert_to_mp3(in_filename: str = None, in_content: bytes = None):
     stdout = None
 
     if in_filename:
-        stdout, stderr = ff.run(input_data=open(in_filename, 'br').read(),
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=open(in_filename, 'br').read(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
     elif in_content:
-        stdout, stderr = ff.run(input_data=in_content, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=in_content,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
     return stdout
 
 
 def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
-    """Конвертирование файл/байтов в PCM 160000 Гц 16 бит – наилучшу кодировку для распознавания Speechkit-ом"""
+    """
+    Конвертирование файл/байтов в PCM 160000 Гц 16 бит –
+    наилучшую кодировку для распознавания Speechkit-ом
+    """
     ff = FFmpeg(
         executable=PATH_TO_FFMPEG,
         inputs={'pipe:0': None},
@@ -68,10 +84,17 @@ def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
     stdout = None
 
     if in_filename:
-        stdout, stderr = ff.run(input_data=open(in_filename, 'br').read(), stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=open(in_filename, 'br').read(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
     elif in_bytes:
-        stdout, stderr = ff.run(input_data=in_bytes, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = ff.run(
+            input_data=in_bytes,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
 
     return stdout
 
@@ -98,11 +121,11 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
         text, 'mp3', lang, 'oksana', YANDEX_API_KEY, 'neutral', '1.0')
 
-    r = requests.get(url)
-    if r.status_code == 200:
-        response_content = r.content
+    req = requests.get(url)
+    if req.status_code == 200:
+        response_content = req.content
     else:
-        raise Exception('{}: {}'.format(__name__, r.text))
+        raise Exception('{}: {}'.format(__name__, req.text))
 
     # Для телеграма файл конвертируется в OGG формат, а не возвращается аудио записью
     if not as_audio and convert:
@@ -117,7 +140,13 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     return response_content
 
 
-def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic='notes', lang='ru-RU'):
+def speech_to_text(
+        filename=None,
+        bytes=None,
+        request_id=uuid.uuid4().hex,
+        topic='notes',
+        lang='ru-RU'
+):
     """Преобразования речи в текст"""
 
     if filename:
@@ -176,11 +205,26 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
             if max_confidence != - float("inf"):
                 return text
             else:
-                raise SpeechException('No text found.\n\nResponse:\n%s\n\nRequest id: %s' % (response_text, request_id))
+                exception_string = (
+                    'No text found.\n\n' +
+                    'Response:\n{}\n\n' +
+                    'Request id: {}'
+                )
+                raise SpeechException(exception_string.format(
+                    response_text,
+                    request_id
+                ))
         else:
-            raise SpeechException('No text found.\n\nResponse:\n%s\n\nRequest id: %s' % (response_text, request_id))
+            exception_string = 'No text found.\n\nResponse:\n{}\n\nRequest id: {}'
+            raise SpeechException(exception_string.format(
+                response_text,
+                request_id
+            ))
     else:
-        raise SpeechException('Unknown error.\nCode: %s\n\n%s' % (response.code, response.read()))
+        raise SpeechException('Unknown error.\nCode: {}\n\n{}'.format(
+            response.code,
+            response.read()
+        ))
 
 
 class SpeechException(Exception):
