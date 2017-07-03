@@ -34,6 +34,9 @@ class ServerSettings:
     # ID Димы Е., Димы В., Маши и Лёши которым приходит уведомление при запуске системы
     ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713, 441850514)
 
+    # Хост, на котором запущен Solr
+    SOLR_HOST = 'localhost'
+
     # Хост на котором работает Bottle приложение из ui_web.py
     HOST = '0.0.0.0'
 
@@ -50,6 +53,7 @@ class DimaSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (65305591,)
+    SOLR_HOST = 'localhost'
     HOST = 'localhost'
 
 
@@ -65,6 +69,7 @@ class MashaSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (164241807,)
+    SOLR_HOST = 'localhost'
     HOST = 'localhost'
 
 
@@ -80,6 +85,7 @@ class AlexSettings:
     SOLR_MAIN_CORE = 'kb_3c'
     SOLR_MINFIN_CORE = 'minfin'
     ADMIN_TELEGRAM_ID = (441850514,)
+    SOLR_HOST = '192.168.1.8'
     HOST = '0.0.0.0'
 
 
