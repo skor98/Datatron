@@ -32,7 +32,7 @@ class ServerSettings:
     SOLR_MINFIN_CORE = 'new_minfin'
 
     # ID Димы Е., Димы В., Маши и Лёши которым приходит уведомление при запуске системы
-    ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713)
+    ADMIN_TELEGRAM_ID = (65305591, 164241807, 139653713, 441850514)
 
     # Хост, на котором запущен Solr
     SOLR_HOST = 'localhost'
