@@ -89,6 +89,5 @@ class AlexSettings:
     HOST = '0.0.0.0'
 
 
-ss, ds, ms = ServerSettings, DimaSettings, MashaSettings
-alex_settings = AlexSettings
-SETTINGS = ds  # Подставь нужную переменную для работы системы
+ss, ds, ms, als = ServerSettings, DimaSettings, MashaSettings, AlexSettings
+SETTINGS = ss  # Подставь нужную переменную для работы системы
