@@ -1,7 +1,14 @@
-from config import SETTINGS
-from peewee import *
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-database = SqliteDatabase(SETTINGS.PATH_TO_USER_DB)
+"""
+Создание базы данных с пользователями
+"""
+
+from config import SETTINGS
+from peewee import Model, SqliteDatabase, IntegerField, CharField, ForeignKeyField
+
+database = SqliteDatabase(SETTINGS.PATH_TO_USER_DB)  # pylint: disable=invalid-name
 
 
 class BaseModel(Model):
@@ -22,14 +29,16 @@ class Feedback(BaseModel):
 
 
 def create_tables():
+    """Создаёт таблицы с пользователями"""
     database.connect()
-    database.create_tables(
-        [User, Feedback])
+    database.create_tables([User, Feedback])
 
 
 def drop_tables():
-    database.drop_tables(
-        [User, Feedback])
+    """Удаляет таблицы с пользователями"""
+    database.drop_tables([User, Feedback])
 
-# create_tables()
-# drop_tables()
+if __name__ == "__main__":
+    pass
+    # create_tables()
+    # drop_tables()
