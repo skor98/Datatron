@@ -34,7 +34,7 @@ class KnowledgeBaseSupport:
             # Что очень редко, так как обновление БД на основе этих данных удалит ручные дополнения
             data_set_list = KnowledgeBaseSupport._read_data()
 
-            if type(data_set_list) is not list:
+            if not isinstance(data_set_list, list):
                 data_set_list = [data_set_list]
 
             KnowledgeBaseSupport._transfer_data_to_db(data_set_list)
