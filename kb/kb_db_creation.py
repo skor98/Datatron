@@ -1,6 +1,12 @@
-from config import SETTINGS
-from peewee import Model, SqliteDatabase, CharField, ForeignKeyField
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
+from peewee import Model, SqliteDatabase, CharField, ForeignKeyField, CompositeKey
+
+from config import SETTINGS
+
+
+# ToDo: Какая-то подозрительная глобальная переменная. Нужно что-то сделать
 database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 
 
@@ -64,11 +70,30 @@ class Cube_Measure(BaseModel):
 
 
 def create_tables():
+    """Создаёт таблицы с базой знаний"""
     database.connect()
-    database.create_tables(
-        [Dimension, Cube, Measure, Cube_Measure, Cube_Dimension, Dimension_Value, Value])
+    database.create_tables([
+        Dimension,
+        Cube,
+        Measure,
+        Cube_Measure,
+        Cube_Dimension,
+        Dimension_Value,
+        Value
+    ])
 
 
 def drop_tables():
-    database.drop_tables(
-        [Dimension, Cube, Measure, Cube_Measure, Cube_Dimension, Dimension_Value, Value])
+    """Удаляет таблицы с базой знаний"""
+    database.drop_tables([
+        Dimension,
+        Cube,
+        Measure,
+        Cube_Measure,
+        Cube_Dimension,
+        Dimension_Value,
+        Value
+    ])
+
+if __name__ == "__main__":
+    pass
