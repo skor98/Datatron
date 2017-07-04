@@ -1,5 +1,5 @@
 from config import SETTINGS
-from peewee import *
+from peewee import Model, SqliteDatabase, CharField, ForeignKeyField
 
 database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 

@@ -121,9 +121,9 @@ def get_cube_dimensions(cube_name):
 
 def check_dimension_value_in_cube(cube_name, value):
     """Проверка наличия в кубе значения"""
-    # ToDo: value аргумент и мы его тут же переопределяем WTF!
-    for value in Value.select().where(Value.cube_value == value):
-        for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == value.id):
+
+    for val in Value.select().where(Value.cube_value == value):
+        for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == val.id):
             for cube_dimension in Cube_Dimension.select().where(
                     Cube_Dimension.dimension_id == dimension_value.dimension_id
             ):
