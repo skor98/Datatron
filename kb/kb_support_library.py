@@ -225,7 +225,7 @@ def get_default_dimension(cube_name):
 def create_lem_manual_description(cube_name):
     tp = TextPreprocessing('Creating lemmatized manual description')
     manual_description = Cube.get(Cube.name == cube_name).manual_description
-    lem_manual_description = tp.normalization(manual_description, delete_repeating_tokens=False)
+    lem_manual_description = tp.normalization(manual_description)
     Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
 
 
@@ -234,7 +234,7 @@ def create_lem_synonyms():
     for val in Value.select():
         syn = val.synonyms
         if syn:
-            lem_syn = tp.normalization(syn, delete_repeating_tokens=False)
+            lem_syn = tp.normalization(syn)
             Value.update(lem_synonyms=lem_syn).where(Value.cube_value == val.cube_value).execute()
 
 
