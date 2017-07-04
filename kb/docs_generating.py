@@ -9,7 +9,7 @@ import datetime
 import pycurl
 import requests
 
-from kb.kb_db_creation import * # ToDo Убрать звёздочку
+from kb.kb_db_creation import *  # ToDo Убрать звёздочку
 from config import SETTINGS
 
 
@@ -80,7 +80,7 @@ class DocsGeneration:
                      ('fileupload',
                       (c.FORM_FILE, getcwd() + '\\{}'.format(self.file_name),
                        c.FORM_CONTENTTYPE, 'application/json')
-                     ),
+                      ),
                  ])
         c.perform()
         print('Документы для кубов проиндексированы через CURL')
@@ -108,6 +108,34 @@ class DocsGeneration:
     def _create_values():
         """Создание на основе БД документов для значений измерений"""
 
+        year_values = DocsGeneration._create_year_values()
+        territory_values = DocsGeneration._create_territory_values()
+
+        # Здесь обрабатываются прочее значения измерений
+        values = []
+        for cube in Cube.select():
+            for dim_cub in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
+                for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
+                    if dimension.label not in ('Years', 'Territories'):
+                        for dimension_value in DimensionValue.select().where(
+                                        DimensionValue.dimension_id == dimension.id
+                        ):
+                            for value in Value.select().where(Value.id == dimension_value.value_id):
+                                verbal = value.lem_index_value
+                                if value.lem_synonyms:
+                                    verbal += ' {}'.format(value.lem_synonyms)
+                                values.append({
+                                    'type': 'dimension',
+                                    'cube': cube.name,
+                                    'name': dimension.label,
+                                    'verbal': verbal,
+                                    'fvalue': value.cube_value,
+                                    'hierarchy_level': value.hierarchy_level})
+
+        return year_values + territory_values + values
+
+    @staticmethod
+    def _create_year_values():
         # Отдельно обрабатываются года
         current_year = datetime.datetime.now().year
 
@@ -119,7 +147,12 @@ class DocsGeneration:
         for _ in range(len(year_values)):
             year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
 
-        # Также отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
+        return year_values
+
+    @staticmethod
+    def _create_territory_values():
+        # TODO: рефакторинг
+        # Отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
         territory_values = []
         dimension = Dimension.get(Dimension.label == 'Territories')
         for dimension_value in DimensionValue.select().where(DimensionValue.dimension_id == dimension.id):
@@ -129,7 +162,7 @@ class DocsGeneration:
                     index_value += ' {}'.format(value.lem_synonyms)
                 territory_values.append(index_value)
 
-        td = {} # ToDo: Что это такое?
+        td = {}  # ToDo: Что это такое?
 
         for item in territory_values:
             td[item] = []
@@ -153,28 +186,7 @@ class DocsGeneration:
                 d[item['cube']] = item['fvalue']
             territory_values.append(d)
 
-        # Здесь обрабатываются прочее значения измерений
-        values = []
-        for cube in Cube.select():
-            for dim_cub in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
-                for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
-                    if dimension.label not in ('Years', 'Territories'):
-                        for dimension_value in DimensionValue.select().where(
-                                DimensionValue.dimension_id == dimension.id
-                        ):
-                            for value in Value.select().where(Value.id == dimension_value.value_id):
-                                verbal = value.lem_index_value
-                                if value.lem_synonyms:
-                                    verbal += ' {}'.format(value.lem_synonyms)
-                                values.append({
-                                    'type': 'dimension',
-                                    'cube': cube.name,
-                                    'name': dimension.label,
-                                    'verbal': verbal,
-                                    'fvalue': value.cube_value,
-                                    'hierarchy_level': value.hierarchy_level})
-
-        return year_values + territory_values + values
+        return territory_values
 
     @staticmethod
     def _create_cubes():
