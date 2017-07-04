@@ -39,12 +39,13 @@ def set_up_solr_cube_data(index_way='curl'):
 def set_up_all_together():
     """Настройка БД, документов по кубам и минфину одним методом.
     Если какой-то функционал не нужен, то он комметируется перед выполнением"""
-    set_up_db()
+    # set_up_db()
     # set_up_solr_cube_data('jar_file')
     # set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
 
 
 set_up_all_together()
 
+# Команда переключение в нужну дерикторию и запуска Solr для Димы
 # cd C:\Users\User\Desktop\solr\solr-6.3.0\solr-6.3.0\bin
 # solr.cmd start -f
