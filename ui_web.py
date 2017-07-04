@@ -1,16 +1,28 @@
-from messenger_manager import MessengerManager
-from data_retrieving import DataRetrieving
-from bottle import Bottle, request, run, BaseRequest
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Web интерфейс для взаимодействия с Datatron.
+Предназначен для разработки, не является основнымю
+"""
+
 import codecs
 import uuid
 import os
 from random import choice
 from string import ascii_lowercase, digits
+
+from bottle import Bottle, request, run, BaseRequest
+
+from messenger_manager import MessengerManager
+from data_retrieving import DataRetrieving
 from config import SETTINGS
+
+# pylint: disable=no-member
 
 # увеличения допустимого размера файла до 3мб для избежания 413 ошибки
 BaseRequest.MEMFILE_MAX = 1024 * 3
-app = Bottle()
+app = Bottle() # pylint: disable=invalid-name
 
 
 @app.get('/')
@@ -36,7 +48,13 @@ def post_basic():
 
     # если все поля заполнены
     if request_text and source and user_id and user_name and request_id:
-        return MessengerManager.make_request(request_text, source, user_id, user_name, request_id).toJSON()
+        return MessengerManager.make_request(
+            request_text,
+            source,
+            user_id,
+            user_name,
+            request_id
+        ).toJSON()
 
 
 @app.post('/test')
@@ -79,7 +97,13 @@ def post_audio_file():
 
     # если все поля заполнены
     if file and source and user_id and user_name and request_id:
-        return MessengerManager.make_voice_request(source, user_id, user_name, request_id, filename=file_path).toJSON()
+        return MessengerManager.make_voice_request(
+            source,
+            user_id,
+            user_name,
+            request_id,
+            filename=file_path
+        ).toJSON()
 
 
 @app.error(404)
@@ -88,5 +112,5 @@ def error404(error):
 
     return '<center><h1>Nothing here sorry: %s</h1></center>' % error
 
-
-run(app, host=SETTINGS.HOST, port=8019, debug=True)
+if __name__ == "__main__":
+    run(app, host=SETTINGS.HOST, port=8019, debug=True)
