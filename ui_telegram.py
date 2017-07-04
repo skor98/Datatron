@@ -373,13 +373,13 @@ def process_response(message, input_format='text', file_content=None):
         )
 
     if result.docs_found:
+        process_minfin_questions(message, result.minfin_documents)
         process_cube_questions(
             message,
             result.cube_documents,
             request_id,
             input_format=input_format
         )
-        process_minfin_questions(message, result.minfin_documents)
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 

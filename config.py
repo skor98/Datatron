@@ -93,4 +93,4 @@ class AlexSettings:
 
 
 ss, ds, ms, als = ServerSettings, DimaSettings, MashaSettings, AlexSettings
-SETTINGS = ds  # Подставь нужную переменную для работы системы
+SETTINGS = ss  # Подставь нужную переменную для работы системы
