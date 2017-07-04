@@ -4,8 +4,8 @@
 
 import logging
 import json
+import re
 
-from string import punctuation as pct
 from nltk.corpus import stopwords
 from nltk import FreqDist
 import nltk
@@ -19,25 +19,25 @@ class TextPreprocessing:
         self.norming_style = norming_style
         self.language = 'russian'
 
-    def normalization(self, text, delete_digits=False, delete_repeating_tokens=True):
+    def normalization(self, text, delete_digits=False):
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
         # Замена нижнего подчеркивания встречающегося в caption в метаданных куба на пробел
         text = text.replace('_', ' ')
+        
+        # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
+        text = re.sub('[^\w\s-]+', '', text)
+        
         tokens = nltk.word_tokenize(text.lower())
 
         # TODO: что делать с вопросительными словами?
         stop_words = stopwords.words(self.language)
         stop_words.remove('не')
-        stop_words += "также иной г. год года году да нет".split()
+        stop_words += "также иной г. год года году да нет -".split()
 
-        # Убираем знаки пунктуации и стоп слова
-        tokens = [t for t in tokens if (t not in stop_words) and (t not in pct)]
-
-        # Убираем дополнительные символы
-        only_correct_symbols = [sym for sym in ' '.join(tokens) if sym not in ["«", "»", "`", "'"]]
-        tokens = (''.join(only_correct_symbols)).split()
+        # Убираем стоп-слова
+        tokens = [t for t in tokens if t not in stop_words]
 
         # Убираем цифры
         if delete_digits:
@@ -46,39 +46,12 @@ class TextPreprocessing:
         # Лемматизация
         tokens = [morph.parse(t)[0].normal_form for t in tokens]
 
-        if delete_repeating_tokens:
-            # Удаление повторяющихся токенов
-            tokens = TextPreprocessing._delete_repeating_with_saving_order(tokens)
-
         normalized_request = ' '.join(tokens)
 
         logging_str = "ID-запроса: {}\tМодуль: {}\tЗапрос после нормализации: {}"
         logging.info(logging_str.format(self.request_id, __name__, normalized_request))
 
         return normalized_request
-
-    @staticmethod
-    def _delete_repeating_with_saving_order(tokens):
-        # Распределени слов по повторениям
-        fdist = nltk.FreqDist(tokens)
-
-        # Отбор слов, повторяющихся более одного раза
-        repeatings = [(i, fdist[i]) for i in fdist.keys() if fdist[i] > 1]
-
-        # переворот листа для убирания повторов с конца
-        tokens.reverse()
-
-        # Удаление повторов
-        for rep in repeatings:
-            i = 0
-            while i < rep[1] - 1:
-                tokens.remove(rep[0])
-                i += 1
-
-        # возвращение исходного порядка
-        tokens.reverse()
-
-        return tokens
 
     @staticmethod
     def log_to_dict(log):
