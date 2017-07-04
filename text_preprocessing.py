@@ -27,13 +27,13 @@ class TextPreprocessing:
         text = text.replace('_', ' ')
         tokens = nltk.word_tokenize(text.lower())
 
-        # TODO: продолжать работу над стоп-словами
+        # TODO: что делать с вопросительными словами?
         stop_words = stopwords.words(self.language)
         stop_words.remove('не')
         stop_words += "также иной г. год года году да нет".split()
 
         # Убираем знаки пунктуации и стоп слова
-        tokens = [t for t in tokens if (t not in stop_words) and (t not in list(pct))]
+        tokens = [t for t in tokens if (t not in stop_words) and (t not in pct)]
 
         # Убираем дополнительные символы
         only_correct_symbols = [sym for sym in ' '.join(tokens) if sym not in ["«", "»", "`", "'"]]
@@ -42,8 +42,6 @@ class TextPreprocessing:
         # Убираем цифры
         if delete_digits:
             tokens = [t for t in tokens if not t.isdigit()]
-        # Убираем нижние подчеркивания
-        tokens = [t for t in tokens if '_' not in t]
 
         # Лемматизация
         tokens = [morph.parse(t)[0].normal_form for t in tokens]

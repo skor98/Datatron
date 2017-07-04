@@ -76,26 +76,25 @@ def _refactor_data(data):
             doc.number = str(row.id)
             doc.question = row.question
             lem_question = tp.normalization(row.question,
-                                            delete_digits=True,
-                                            delete_repeating_tokens=False)
+                                            delete_digits=True
+                                            )
             doc.lem_question = ' '.join([lem_question] * 3)
 
             synonym_questions = _get_manual_synonym_questions(doc.number)
 
             if synonym_questions:
-                lem_synonym_questions = [tp.normalization(q, delete_digits=True, delete_repeating_tokens=False)
-                                         for q in synonym_questions]
+                lem_synonym_questions = [tp.normalization(q, delete_digits=True) for q in synonym_questions]
                 doc.lem_synonym_questions = lem_synonym_questions
 
             doc.short_answer = row.short_answer
             doc.lem_short_answer = tp.normalization(row.short_answer,
-                                                    delete_digits=True,
-                                                    delete_repeating_tokens=False)
+                                                    delete_digits=True
+                                                    )
             if row.full_answer:
                 doc.full_answer = row.full_answer
                 doc.lem_full_answer = tp.normalization(row.full_answer,
-                                                       delete_digits=True,
-                                                       delete_repeating_tokens=False)
+                                                       delete_digits=True
+                                                       )
             kw = tp.normalization(row.key_words)
 
             # Ключевые слова записываются трижды, для увеличения качества поиска документа
