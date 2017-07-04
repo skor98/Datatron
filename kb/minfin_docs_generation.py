@@ -283,7 +283,7 @@ def _create_tests(files, data_frames):
     for file_name, df in zip(files, data_frames):
         file_path = r'tests\minfin_test_auto_for_{}.txt'.format(file_name.split('.')[0])
         with open(file_path, 'w', encoding='utf-8') as file_out:
-            for index, row in df[['id', 'question']].iterrows():
+            for row in df[['id', 'question']].itertuples():
                 file_out.write('{}:{}\n'.format(row.question, row.id))
         #ToDo обработка ошибок открытия файлов
 
