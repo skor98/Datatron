@@ -1,14 +1,26 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Инициализация системы
+"""
+
+import sys
+import argparse
+from collections import Counter
+
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generating import DocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_core
-from collections import Counter
 from config import SETTINGS
 
 
 def set_up_db(overwrite=True):
-    """Создание и заполнение БД
+    """
+    Создание и заполнение БД
 
-    :param overwrite: если True, то БД будет создана полностью заново, если False - то будет дополнена
+    :param overwrite: если True, то БД будет создана полностью заново,
+    если False - то будет дополнена
     :return:
     """
     # 1. Создание и заполнение БД
@@ -20,7 +32,8 @@ def set_up_db(overwrite=True):
 
 
 def set_up_solr_cube_data(index_way='curl'):
-    """Создание и индексирование документов по кубам
+    """
+    Создание и индексирование документов по кубам
 
     :param index_way: если curl, то индексирование документов в Solr Apache будет черз сURL,
     если jar_file, то средствами java скрипта от Solr
@@ -34,17 +47,74 @@ def set_up_solr_cube_data(index_way='curl'):
         dga.index_created_documents_via_curl()
     elif index_way == 'jar_file':
         dga.index_created_documents_via_cmd(SETTINGS.PATH_TO_SOLR_POST_JAR_FILE)
+#    else
 
 
 def set_up_all_together():
-    """Настройка БД, документов по кубам и минфину одним методом.
-    Если какой-то функционал не нужен, то он комметируется перед выполнением"""
-    set_up_db()
-    # set_up_solr_cube_data('jar_file')
-    # set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
+    """
+    Настройка БД, документов по кубам и минфину одним методом.
+    Если какой-то функционал не нужен, то он комметируется перед выполнением
+    """
+    # set_up_db()
+    set_up_solr_cube_data('jar_file')
+    set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
 
 
-set_up_all_together()
+if __name__ == '__main__':
+    # pylint: disable=invalid-name
+    parser = argparse.ArgumentParser(
+        description="Иниициализация системы"
+    )
 
+    parser.add_argument(
+        "--db",
+        action='store_true',
+        help='Создание и заполнение БД',
+    )
+
+    parser.add_argument(
+        "--solr",
+        action='store_true',
+        help='Создание и индексирование документов по кубам',
+    )
+
+    parser.add_argument(
+        "--solr-index", nargs='?', choices=['curl', 'jar'],
+        help=(
+            'если curl, то индексирование документов в Solr Apache ' +
+            'будет черз сURL, если jar, ' +
+            'то средствами java скрипта от Solr'
+        ), default='curl', const='curl'
+    )
+
+    parser.add_argument(
+        "--minfin",
+        action='store_true',
+        help='Создание и индексирование документов по минфину',
+    )
+
+    args = parser.parse_args()
+    # pylint: enable=invalid-name
+
+    if args.solr_index == 'jar':
+        args.solr_index = 'jar_file'
+
+    if not args.db and not args.solr and not args.minfin:
+        print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
+            sys.argv[0]
+        ))
+        sys.exit(0)
+
+    if args.db:
+        set_up_db()
+    if args.solr:
+        set_up_solr_cube_data(args.solr_index)
+    if args.minfin:
+        set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
+
+    print("Complete")
+
+
+# Команда переключение в нужну дерикторию и запуска Solr для Димы
 # cd C:\Users\User\Desktop\solr\solr-6.3.0\solr-6.3.0\bin
 # solr.cmd start -f

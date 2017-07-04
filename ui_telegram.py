@@ -1,28 +1,47 @@
-from telebot import types
-from logs_retriever import LogsRetriever
-from db.user_support_library import check_user_existence, create_user, create_feedback, get_feedbacks
-from kb.kb_support_library import get_classification_for_dimension
-from speechkit import text_to_speech
-from messenger_manager import MessengerManager
-from config import SETTINGS
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-import telebot
-import requests
-import constants
-import config
+"""
+Бот телеграма для Datatron
+"""
+
 import uuid
 import datetime
 import random
 import string
 import os
 
-API_TOKEN = config.SETTINGS.TELEGRAM_API_TOKEN
+import telebot
+from telebot import types
+from logs_retriever import LogsRetriever
+from db.user_support_library import check_user_existence
+from db.user_support_library import create_user
+from db.user_support_library import create_feedback
+from db.user_support_library import get_feedbacks
+from kb.kb_support_library import get_classification_for_dimension
+from speechkit import text_to_speech
+from messenger_manager import MessengerManager
+
+from config import SETTINGS
+
+
+import requests
+import constants
+
+API_TOKEN = SETTINGS.TELEGRAM_API_TOKEN
 bot = telebot.TeleBot(API_TOKEN)
 
 logsRetriever = LogsRetriever('logs.log')
 
 user_name_str = '{} {}'
 
+
+def get_random_id(id_len=4):
+    """
+    Генерируем случайную буквенно-цифровую последовательность из id_len символов
+    """
+    alphabet = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(alphabet) for ind in range(id_len))
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -35,27 +54,29 @@ def send_welcome(message):
         except TypeError:
             full_name = None
 
-        create_user(message.chat.id,
-                    message.chat.username,
-                    full_name)
+        create_user(
+            message.chat.id,
+            message.chat.username,
+            full_name
+        )
 
 
 # /help command handler; send hello-message to the user
 @bot.message_handler(commands=['help'])
-def send_welcome(message):
+def send_help(message):
     bot.send_message(
         message.chat.id,
         constants.HELP_MSG,
         parse_mode='HTML',
         reply_markup=constants.HELP_KEYBOARD,
-        disable_web_page_preview=True)
+        disable_web_page_preview=True
+    )
 
 
 @bot.message_handler(commands=['getlog'])
 def get_all_logs(message):
-    log_file = open('logs.log', 'rb')
-    bot.send_document(message.chat.id, data=log_file)
-    log_file.close()
+    with open('logs.log', 'rb') as log_file:
+        bot.send_document(message.chat.id, data=log_file)
 
 
 @bot.message_handler(commands=['getsessionlog'])
@@ -66,8 +87,22 @@ def get_session_logs(message):
             time_span = int(message.text.split()[1])
         except IndexError:
             pass
+        except ValueError:
+            # Элемент 1 существует, но не число
+            error_message_pattern = (
+                'Не могу перевести {} в число. ' +
+                'Буду использовать значение по умолчанию'
+            )
+            bot.send_message(
+                message.chat.id,
+                error_message_pattern.format(message.text.split()[1])
+            )
         if time_span:
-            logs = logsRetriever.get_log(kind='session', user_id=message.chat.id, time_delta=time_span)
+            logs = logsRetriever.get_log(
+                kind='session',
+                user_id=message.chat.id,
+                time_delta=time_span
+            )
         else:
             logs = logsRetriever.get_log(kind='session', user_id=message.chat.id)
 
@@ -99,11 +134,13 @@ def get_all_info_logs(message):
         logs = logsRetriever.get_log(kind='info')
         path_to_log_file = r'tmp\{}'
         if logs:
-            rnd_str = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
-            file_name = '{}_{}_{}_{}.log'.format('info',
-                                                 rnd_str,
-                                                 message.chat.username,
-                                                 datetime.datetime.now().strftime("%d-%m-%Y"))
+            rnd_str = get_random_id(4)
+            file_name = '{}_{}_{}_{}.log'.format(
+                'info',
+                rnd_str,
+                message.chat.username,
+                datetime.datetime.now().strftime("%d-%m-%Y")
+            )
 
             path_to_log_file = path_to_log_file.format(file_name)
             with open(path_to_log_file, 'w', encoding='utf-8') as file:
@@ -121,11 +158,11 @@ def get_all_info_logs(message):
 
 
 @bot.message_handler(commands=['getwarninglog'])
-def get_all_info_logs(message):
+def get_all_warning_logs(message):
     try:
         logs = logsRetriever.get_log(kind='warning')
         if logs:
-            rnd_str = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(4))
+            rnd_str = get_random_id(4)
             file_name = '{}_{}_{}_{}.log'.format('warning',
                                                  rnd_str,
                                                  message.chat.username,
@@ -192,7 +229,14 @@ def get_classification(message):
         else:
             values = get_classification_for_dimension(msg[0].upper(), msg[1])
             if values:
-                params = '\n'.join(['{}. {}'.format(idx + 1, val) for idx, val in enumerate(values[:15])])
+                try:
+                    proc_values = values[:15]
+                except IndexError:
+                    proc_values = values
+
+                params = '\n'.join([
+                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
+                ])
                 bot.send_message(message.chat.id, params)
             else:
                 bot.send_message(message.chat.id, 'Классификацию получить не удалось')
@@ -234,8 +278,13 @@ def voice_processing(message):
                         full_name)
 
     file_info = bot.get_file(message.voice.file_id)
-    file = requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(API_TOKEN, file_info.file_path))
-    process_response(message, input_format='voice', file_content=file.content)
+    file_data = requests.get(
+        'https://api.telegram.org/file/bot{0}/{1}'.format(
+            API_TOKEN,
+            file_info.file_path
+        )
+    )
+    process_response(message, input_format='voice', file_content=file_data.content)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -244,10 +293,18 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, 'https://youtu.be/swok2pcFtNI')
     elif call.data == 'correct_response':
         request_id = call.message.text.split()[-1]
-        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(request_id, __name__, '+'))
+        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(
+            request_id,
+            __name__,
+            '+'
+        ))
     elif call.data == 'incorrect_response':
         request_id = call.message.text.split()[-1]
-        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(request_id, __name__, '-'))
+        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(
+            request_id,
+            __name__,
+            '-'
+        ))
 
 
 # inline mode handler
@@ -256,16 +313,22 @@ def query_text(query):
     input_message_content = query.query
 
     user_name = user_name_str.format(query.from_user.first_name, query.from_user.last_name)
-    m2_result = MessengerManager.make_request_directly_to_m2(input_message_content, 'TG-INLINE',
-                                                             query.from_user.id, user_name, uuid.uuid4())
+    m2_result = MessengerManager.make_request_directly_to_m2(
+        input_message_content,
+        'TG-INLINE',
+        query.from_user.id,
+        user_name, uuid.uuid4()
+    )
 
     result_array = []
     if m2_result.status is False:  # in case the string is not correct we ask user to keep typing
-        msg = types.InlineQueryResultArticle(id='0',
-                                             title='Продолжайте ввод запроса',
-                                             input_message_content=types.InputTextMessageContent(
-                                                 message_text=input_message_content + '\nЗапрос не удался😢'
-                                             ))
+        msg = types.InlineQueryResultArticle(
+            id='0',
+            title='Продолжайте ввод запроса',
+            input_message_content=types.InputTextMessageContent(
+                message_text=input_message_content + '\nЗапрос не удался😢'
+            )
+        )
         result_array.append(msg)  # Nothing works without this list, I dunno why :P
         bot.answer_inline_query(query.id, result_array)
 
@@ -274,11 +337,13 @@ def query_text(query):
             msg_append_text = ':\n' + str(m2_result.response)
             title = str(m2_result.response)
 
-            msg = types.InlineQueryResultArticle(id='1',
-                                                 title=title,
-                                                 input_message_content=types.InputTextMessageContent(
-                                                     message_text=input_message_content + msg_append_text),
-                                                 )
+            msg = types.InlineQueryResultArticle(
+                id='1',
+                title=title,
+                input_message_content=types.InputTextMessageContent(
+                    message_text=input_message_content + msg_append_text
+                ),
+            )
             result_array.append(msg)
 
         finally:
@@ -291,12 +356,29 @@ def process_response(message, input_format='text', file_content=None):
 
     bot.send_chat_action(message.chat.id, 'typing')
     if input_format == 'text':
-        result = MessengerManager.make_request(message.text, 'TG', message.chat.id, user_name, request_id)
+        result = MessengerManager.make_request(
+            message.text,
+            'TG',
+            message.chat.id,
+            user_name,
+            request_id
+        )
     else:
-        result = MessengerManager.make_voice_request("TG", message.chat.id, user_name, request_id, bytes=file_content)
+        result = MessengerManager.make_voice_request(
+            "TG",
+            message.chat.id,
+            user_name,
+            request_id,
+            bytes=file_content
+        )
 
     if result.docs_found:
-        process_cube_questions(message, result.cube_documents, request_id, input_format=input_format)
+        process_cube_questions(
+            message,
+            result.cube_documents,
+            request_id,
+            input_format=input_format
+        )
         process_minfin_questions(message, result.minfin_documents)
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
@@ -304,17 +386,34 @@ def process_response(message, input_format='text', file_content=None):
 
 def process_cube_questions(message, cube_result, request_id, input_format):
     if cube_result.status:
-        if input_format == 'text':
-            response_str = parse_feedback(cube_result.message).format(cube_result.response, request_id)
-        else:
-            response_str = parse_feedback(cube_result.message, True).format(cube_result.response, request_id)
+        is_input_text = (input_format == 'text')
+        response_str = parse_feedback(cube_result.message, not is_input_text).format(
+            cube_result.response,
+            request_id
+        )
 
-        bot.send_message(message.chat.id, response_str, parse_mode='HTML', reply_markup=constants.RESPONSE_QUALITY)
+        bot.send_message(
+            message.chat.id,
+            response_str,
+            parse_mode='HTML',
+            reply_markup=constants.RESPONSE_QUALITY
+        )
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(cube_result.response))
-        stats = 'Сред. score: {}\nМин. score: {}\nМакс. score: {}\nScore куба: {}\nСуммарный score: {}'
-        stats = stats.format(cube_result.avg_score, cube_result.min_score, cube_result.max_score,
-                             cube_result.cube_score, cube_result.sum_score)
+        stats_pattern = (
+            'Сред. score: {}\n' +
+            'Мин. score: {}\n' +
+            'Макс. score: {}\n' +
+            'Score куба: {}\n' +
+            'Суммарный score: {}'
+        )
+        stats = stats_pattern.format(
+            cube_result.avg_score,
+            cube_result.min_score,
+            cube_result.max_score,
+            cube_result.cube_score,
+            cube_result.sum_score
+        )
         bot.send_message(message.chat.id, stats)
     else:
         if cube_result.message:
@@ -327,7 +426,10 @@ def process_minfin_questions(message, minfin_result):
                          'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
                          parse_mode='Markdown')
         if minfin_result.score < 20:
-            msg_str = 'Score найденного Минфин документа *({})* равен *{}*, что меньше порогового значений в *20*.'
+            msg_str = (
+                'Score найденного Минфин документа *({})* равен *{}*, ' +
+                'что меньше порогового значений в *20*.'
+            )
             bot.send_message(message.chat.id,
                              msg_str.format(minfin_result.number, minfin_result.score),
                              parse_mode='Markdown')
@@ -339,20 +441,29 @@ def process_minfin_questions(message, minfin_result):
                              parse_mode='Markdown', reply_to_message_id=message.message_id)
         # может быть несколько
         if minfin_result.link_name:
-            if type(minfin_result.link_name) is list:
+            if isinstance(minfin_result.link_name, list):
                 link_output_str = []
                 for idx, (ln, l) in enumerate(zip(minfin_result.link_name, minfin_result.link)):
                     link_output_str.append('{}. [{}]({})'.format(idx + 1, ln, l))
-                link_output_str.insert(0, '*Дополнительные результаты* можно посмотреть по ссылкам:')
+                link_output_str.insert(
+                    0,
+                    '*Дополнительные результаты* можно посмотреть по ссылкам:'
+                )
                 bot.send_message(message.chat.id, '\n'.join(link_output_str), parse_mode='Markdown')
             else:
                 link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
-                bot.send_message(message.chat.id,
-                                 '{}\n[{}]({})'.format(link_output_str, minfin_result.link_name, minfin_result.link),
-                                 parse_mode='Markdown')
+                bot.send_message(
+                    message.chat.id,
+                    '{}\n[{}]({})'.format(
+                        link_output_str,
+                        minfin_result.link_name,
+                        minfin_result.link
+                    ),
+                    parse_mode='Markdown'
+                )
         # может быть несколько
         if minfin_result.picture_caption:
-            if type(minfin_result.picture_caption) is list:
+            if isinstance(minfin_result.picture_caption, list):
                 for pc, p in zip(minfin_result.picture_caption, minfin_result.picture):
                     with open('data/minfin/img/{}'.format(p), 'rb') as picture:
                         bot.send_photo(message.chat.id, picture, caption=pc)
@@ -361,13 +472,17 @@ def process_minfin_questions(message, minfin_result):
                     bot.send_photo(message.chat.id, picture, caption=minfin_result.picture_caption)
         # может быть несколько
         if minfin_result.document_caption:
-            if type(minfin_result.document_caption) is list:
+            if isinstance(minfin_result.document_caption, list):
                 for dc, d in zip(minfin_result.document_caption, minfin_result.document):
                     with open('data/minfin/doc/{}'.format(d), 'rb') as document:
                         bot.send_document(message.chat.id, document, caption=dc)
             else:
                 with open('data/minfin/doc/{}'.format(minfin_result.document), 'rb') as document:
-                    bot.send_document(message.chat.id, document, caption=minfin_result.document_caption)
+                    bot.send_document(
+                        message.chat.id,
+                        document,
+                        caption=minfin_result.document_caption
+                    )
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
@@ -379,10 +494,14 @@ def parse_feedback(fb, user_request_notification=False):
     fb_norm = fb['verbal']
     exp = '<b>Экспертная обратная связь</b>\nКуб: {}\nМера: {}\nИзмерения: {}'
     norm = '<b>Дататрон выделил следующие параметры (обычная обратная связь)</b>:\n{}'
-    exp = exp.format(fb_exp['cube'], fb_exp['measure'],
-                     ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']]))
-    norm = norm.format('1. {}\n'.format(
-        fb_norm['measure']) + '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])]))
+    exp = exp.format(
+        fb_exp['cube'], fb_exp['measure'],
+        ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']])
+    )
+    norm = norm.format(
+        '1. {}\n'.format(fb_norm['measure']) +
+        '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
+    )
 
     user_request = ''
     if user_request_notification:
@@ -396,9 +515,7 @@ def parse_feedback(fb, user_request_notification=False):
 
 # polling cycle
 if __name__ == '__main__':
-    admin_id = SETTINGS.ADMIN_TELEGRAM_ID
-
-    for _id in admin_id:
-        bot.send_message(_id, "ADMIN_INFO: Бот запушен")
+    for admin_id in SETTINGS.ADMIN_TELEGRAM_ID:
+        bot.send_message(admin_id, "ADMIN_INFO: Бот запушен")
 
     bot.polling(none_stop=True)

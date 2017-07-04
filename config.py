@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 YANDEX_API_KEY = 'e05f5a12-8e05-4161-ad05-cf435a4e7d5b'
 
 
@@ -90,4 +93,4 @@ class AlexSettings:
 
 
 ss, ds, ms, als = ServerSettings, DimaSettings, MashaSettings, AlexSettings
-SETTINGS = ss  # Подставь нужную переменную для работы системы
+SETTINGS = ds  # Подставь нужную переменную для работы системы
