@@ -37,7 +37,7 @@ class Dimension(BaseModel):
     default_value = ForeignKeyField(Value, null=True)
 
 
-class Dimension_Value(BaseModel):
+class DimensionValue(BaseModel):
     value = ForeignKeyField(Value)
     dimension = ForeignKeyField(Dimension)
 
@@ -53,7 +53,7 @@ class Cube(BaseModel):
     default_measure = ForeignKeyField(Measure)
 
 
-class Cube_Dimension(BaseModel):
+class CubeDimension(BaseModel):
     dimension = ForeignKeyField(Dimension)
     cube = ForeignKeyField(Cube)
 
@@ -61,7 +61,7 @@ class Cube_Dimension(BaseModel):
         primary_key = CompositeKey('dimension', 'cube')
 
 
-class Cube_Measure(BaseModel):
+class CubeMeasure(BaseModel):
     measure = ForeignKeyField(Measure)
     cube = ForeignKeyField(Cube)
 
@@ -76,9 +76,9 @@ def create_tables():
         Dimension,
         Cube,
         Measure,
-        Cube_Measure,
-        Cube_Dimension,
-        Dimension_Value,
+        CubeMeasure,
+        CubeDimension,
+        DimensionValue,
         Value
     ])
 
@@ -89,9 +89,9 @@ def drop_tables():
         Dimension,
         Cube,
         Measure,
-        Cube_Measure,
-        Cube_Dimension,
-        Dimension_Value,
+        CubeMeasure,
+        CubeDimension,
+        DimensionValue,
         Value
     ])
 

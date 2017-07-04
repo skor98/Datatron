@@ -107,15 +107,15 @@ class KnowledgeBaseSupport:
             # Занесение мер & связка мер с кубов
             for measure in item.measures:
                 m = Measure.create(**measure)
-                Cube_Measure.create(cube=cube, measure=m)
+                CubeMeasure.create(cube=cube, measure=m)
 
             # Занесение измерений & занесение значений & связка значений и измерений
             for dimension_name, dimension_values in item.dimensions.items():
                 d = Dimension.create(label=dimension_name)
-                Cube_Dimension.create(cube=cube, dimension=d)
+                CubeDimension.create(cube=cube, dimension=d)
                 for dimension_value in dimension_values:
                     v = Value.create(**dimension_value)
-                    Dimension_Value.create(value=v, dimension=d)
+                    DimensionValue.create(value=v, dimension=d)
 
     @staticmethod
     def _create_cube_lem_description(data_set):

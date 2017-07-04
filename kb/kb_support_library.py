@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from kb.kb_db_creation import Dimension_Value
+from kb.kb_db_creation import DimensionValue
 from kb.kb_db_creation import Value
 from kb.kb_db_creation import Cube
-from kb.kb_db_creation import Cube_Measure
+from kb.kb_db_creation import CubeMeasure
 from kb.kb_db_creation import Measure
 from kb.kb_db_creation import Dimension
-from kb.kb_db_creation import Cube_Dimension
+from kb.kb_db_creation import CubeDimension
 
 from text_preprocessing import TextPreprocessing
 
@@ -102,7 +102,7 @@ def get_full_value_for_measure(cube_value, cube_name):
     """Получение полного вербального значения меры по формальному значению и кубу"""
 
     for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_measure in Cube_Measure.select().where(Cube_Measure.cube == cube.id):
+        for cube_measure in CubeMeasure.select().where(CubeMeasure.cube == cube.id):
             for measure in Measure.select().where(Measure.id == cube_measure.measure_id,
                                                   Measure.cube_value == cube_value):
                 return measure.full_value
@@ -113,7 +113,7 @@ def get_cube_dimensions(cube_name):
 
     dimensions = []
     for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
+        for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
             for dimension in Dimension.select().where(Dimension.id == cube_dimension.dimension_id):
                 dimensions.append(dimension.label)
     return dimensions
@@ -123,9 +123,9 @@ def check_dimension_value_in_cube(cube_name, value):
     """Проверка наличия в кубе значения"""
 
     for val in Value.select().where(Value.cube_value == value):
-        for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == val.id):
-            for cube_dimension in Cube_Dimension.select().where(
-                    Cube_Dimension.dimension_id == dimension_value.dimension_id
+        for dimension_value in DimensionValue.select().where(DimensionValue.value_id == val.id):
+            for cube_dimension in CubeDimension.select().where(
+                    CubeDimension.dimension_id == dimension_value.dimension_id
             ):
                 for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
                     return cube.name == cube_name
@@ -136,9 +136,9 @@ def create_automative_cube_description(cube_name):
 
     values = []
     for cube in Cube.select().where(Cube.name == cube_name):
-        for dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
-            for dim_value in Dimension_Value.select().where(
-                    Dimension_Value.dimension_id == dimension.dimension_id
+        for dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
+            for dim_value in DimensionValue.select().where(
+                    DimensionValue.dimension_id == dimension.dimension_id
             ):
                 for value in Value.select().where(Value.id == dim_value.value_id):
                     values.append(value.lem_index_value)
@@ -154,11 +154,11 @@ def get_classification_for_dimension(cube_name, dimension_name):
 
     values = []
     for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
+        for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
             for dim in Dimension.select().where(
                     Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
             ):
-                for dim_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dim.id):
+                for dim_value in DimensionValue.select().where(DimensionValue.dimension_id == dim.id):
                     for value in Value.select().where(Value.id == dim_value.value_id):
                         values.append(value.full_value)
     return values
@@ -203,7 +203,7 @@ def get_default_value_for_dimension(cube_name, dimension_name):
     """Получение значения измерения по умолчанию"""
 
     cube_id = Cube.get(Cube.name == cube_name).id
-    for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
+    for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube_id):
         for dim in Dimension.select().where(
                 (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
         ):

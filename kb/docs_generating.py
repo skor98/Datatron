@@ -100,7 +100,7 @@ class DocsGeneration:
         # Также отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
         territory_values = []
         dimension = Dimension.get(Dimension.label == 'Territories')
-        for dimension_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dimension.id):
+        for dimension_value in DimensionValue.select().where(DimensionValue.dimension_id == dimension.id):
             for value in Value.select().where(Value.id == dimension_value.value_id):
                 index_value = value.lem_index_value
                 if value.lem_synonyms:
@@ -116,8 +116,8 @@ class DocsGeneration:
 
         for key, value in td.items():
             for item in value:
-                dimension_value_dimension_id = Dimension_Value.get(Dimension_Value.value_id == item['id']).dimension_id
-                cube_id = Cube_Dimension.get(Cube_Dimension.dimension_id == dimension_value_dimension_id).cube_id
+                dimension_value_dimension_id = DimensionValue.get(DimensionValue.value_id == item['id']).dimension_id
+                cube_id = CubeDimension.get(CubeDimension.dimension_id == dimension_value_dimension_id).cube_id
                 item['cube'] = Cube.get(Cube.id == cube_id).name
                 item.pop('id', None)
 
@@ -132,11 +132,11 @@ class DocsGeneration:
         # Здесь обрабатываются прочее значения измерений
         values = []
         for cube in Cube.select():
-            for dim_cub in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
+            for dim_cub in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
                 for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
                     if dimension.label not in ('Years', 'Territories'):
-                        for dimension_value in Dimension_Value.select().where(
-                            Dimension_Value.dimension_id == dimension.id
+                        for dimension_value in DimensionValue.select().where(
+                            DimensionValue.dimension_id == dimension.id
                         ):
                             for value in Value.select().where(Value.id == dimension_value.value_id):
                                 verbal = value.lem_index_value
@@ -182,7 +182,7 @@ class DocsGeneration:
         # Индексация только тех мер, которые не относятся к значениям по умолчанию
         for measure in Measure.select():
             if measure.id not in default_measures_ids:
-                for cube_measure in Cube_Measure.select().where(Cube_Measure.measure_id == measure.id):
+                for cube_measure in CubeMeasure.select().where(CubeMeasure.measure_id == measure.id):
                     for cube in Cube.select().where(Cube.id == cube_measure.cube_id):
                         measures.append({
                             'type': 'measure',
