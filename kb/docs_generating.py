@@ -1,18 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from kb.kb_db_creation import *
 from os import getcwd, remove
 import json
-import pycurl
-import requests
 import subprocess
 import datetime
+
+import pycurl
+import requests
+
+from kb.kb_db_creation import * # ToDo Убрать звёздочку
+from config import SETTINGS
 
 
 class DocsGeneration:
     def __init__(self, core):
-        self.file_name = 'kb\data_for_indexing.json'
+        self.file_name = r'kb\data_for_indexing.json'
         self.core = core
 
     def generate_docs(self):
@@ -27,7 +30,13 @@ class DocsGeneration:
     def clear_index(self):
         """Очистка ядра"""
 
-        dlt_str = 'http://localhost:8983/solr/{}/update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/query%3E%3C/delete%3E&commit=true'
+        dlt_str = (
+            'http://' +
+            SETTINGS.SOLR_HOST +
+            ':8983/solr/{}/update?stream.' +
+            'body=%3Cdelete%3E%3Cquery%3E*:*%3C/' +
+            'query%3E%3C/delete%3E&commit=true'
+        )
         requests.get(dlt_str.format(self.core))
         try:
             remove('{}\\{}'.format(getcwd(), self.file_name))
@@ -44,7 +53,12 @@ class DocsGeneration:
         if solr_response['status'][self.core]:
             print('Ядро {} уже существует'.format(self.core))
         else:
-            create_core_str = 'http://localhost:8983/solr/admin/cores?action=CREATE&name={}&configSet=basic_configs'
+            create_core_str = (
+                'http://' +
+                SETTINGS.SOLR_HOST +
+                ':8983/solr/admin/cores?action=CREATE' +
+                '&name={}&configSet=basic_configs'
+            )
             solr_response = requests.get(create_core_str.format(self.core))
             if solr_response.status_code == 200:
                 print('Ядро {} автоматически создано'.format(self.core))
@@ -55,23 +69,31 @@ class DocsGeneration:
         """Индексация через cURL"""
 
         c = pycurl.Curl()
-        c.setopt(c.URL, 'http://localhost:8983/solr/{}/update?commit=true'.format(self.core))
+        curl_addr = (
+            'http://' +
+            SETTINGS.SOLR_HOST +
+            ':8983/solr/{}/update?commit=true'
+        )
+        c.setopt(c.URL, curl_addr.format(self.core))
         c.setopt(c.HTTPPOST,
                  [
                      ('fileupload',
                       (c.FORM_FILE, getcwd() + '\\{}'.format(self.file_name),
                        c.FORM_CONTENTTYPE, 'application/json')
-                      ),
+                     ),
                  ])
         c.perform()
         print('Документы для кубов проиндексированы через CURL')
 
     def index_created_documents_via_cmd(self, path_to_post_jar_file):
-        """Индексация средствами post.jar из папки \example\exampledocs"""
+        r"""Индексация средствами post.jar из папки \example\exampledocs"""
 
         path_to_json_data_file = '{}\\{}'.format(getcwd(), self.file_name)
-        command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(self.core, path_to_post_jar_file,
-                                                                           path_to_json_data_file)
+        command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
+            self.core,
+            path_to_post_jar_file,
+            path_to_json_data_file
+        )
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
         print('Документы для кубов проиндексированы через JAR файл')
 
@@ -94,7 +116,7 @@ class DocsGeneration:
 
         # 1-2-цифренные года: 7 - 17
         year_values.extend([str(i) for i in range(7, current_year - 1999)])
-        for i in range(len(year_values)):
+        for _ in range(len(year_values)):
             year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
 
         # Также отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
@@ -107,7 +129,7 @@ class DocsGeneration:
                     index_value += ' {}'.format(value.lem_synonyms)
                 territory_values.append(index_value)
 
-        td = {}
+        td = {} # ToDo: Что это такое?
 
         for item in territory_values:
             td[item] = []
@@ -116,7 +138,9 @@ class DocsGeneration:
 
         for key, value in td.items():
             for item in value:
-                dimension_value_dimension_id = DimensionValue.get(DimensionValue.value_id == item['id']).dimension_id
+                dimension_value_dimension_id = DimensionValue.get(
+                    DimensionValue.value_id == item['id']
+                ).dimension_id
                 cube_id = CubeDimension.get(CubeDimension.dimension_id == dimension_value_dimension_id).cube_id
                 item['cube'] = Cube.get(Cube.id == cube_id).name
                 item.pop('id', None)
@@ -136,7 +160,7 @@ class DocsGeneration:
                 for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
                     if dimension.label not in ('Years', 'Territories'):
                         for dimension_value in DimensionValue.select().where(
-                            DimensionValue.dimension_id == dimension.id
+                                DimensionValue.dimension_id == dimension.id
                         ):
                             for value in Value.select().where(Value.id == dimension_value.value_id):
                                 verbal = value.lem_index_value
