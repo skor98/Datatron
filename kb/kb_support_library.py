@@ -1,7 +1,12 @@
-from kb.kb_db_creation import Dimension_Value, Value, Cube, Cube_Measure, Measure, Dimension, Cube_Dimension
+from kb.kb_db_creation import Dimension_Value
+from kb.kb_db_creation import Value
+from kb.kb_db_creation import Cube
+from kb.kb_db_creation import Cube_Measure
+from kb.kb_db_creation import Measure
+from kb.kb_db_creation import Dimension
+from kb.kb_db_creation import Cube_Dimension
+
 from text_preprocessing import TextPreprocessing
-import requests
-import json
 
 
 def is_dim_in_dim_set(dim, dim_set, dd):
@@ -15,7 +20,8 @@ def is_dim_in_cube(dim, dd):
 
 
 def filter_combinations(combs, dim_set, dd):
-    """Фильтрация запросов на основе 1-4 пунктов от Алексея"""
+    """Фильтрация запросов на основе 1-4 пунктов от Алексея-методолога"""
+
     filtered_combs = list(combs)
 
     # уровень бюджета, если присутствует в измерения, должен быть указан (пункт 4)
@@ -64,88 +70,9 @@ def filter_combinations(combs, dim_set, dd):
     return filtered_combs
 
 
-def docs_needed(md, dd, measure_dim_sets):
-    """Создание всех возможных комбинаций измерений
-
-    Вход: cловари из имеющихся мер и измерений куба и набор сочитающихся измерений
-    Выход: словарь с количество значений для каждого измерения и максимальное количество возможных документов"""
-
-    # словарь вида {id измерения: количество значений для данного измерения}
-    dim_with_number_of_values = {}
-
-    # для каждого ключа (то есть id измерения) в словаре измерений
-    for d in dd:
-        # подчет количества значений в БД для измерения с id = d
-        count = Dimension_Value.raw('select count(*) from dimension_value where dimension_id = %s' % d).scalar()
-
-        # добавления получившегося результата в словарь
-        dim_with_number_of_values[d] = count
-
-    result = 0
-
-    # для каждого набора (кортежа) измерений
-    for d_set in measure_dim_sets:
-
-        # возможное количество вариантов для кортежа измерений
-        d_set_values_num = 1
-
-        # для каждого измерения в кортеже
-        for dim_id in d_set[1]:
-
-            # если имеются значениия для данного измерения
-            if dim_with_number_of_values[dim_id] != 0:
-                d_set_values_num *= dim_with_number_of_values[dim_id]
-
-        result += d_set_values_num
-
-    # умножаем получившийся результат на количество значений мер
-    result *= len(md)
-
-    return dim_with_number_of_values, result
-
-
-def report(cube_id, cube_name, md, dd, measure_dim_sets, dim_num, doc_num):
-    """Отчет в консоль по генерации документов"""
-    split_line = '=' * 10 + ' Шаг %s ' + '=' * 10
-    print('Куб: {}, cube_id: {}'.format(cube_name, cube_id))
-    print(split_line % '1')
-    print('Меры: {}шт. {}\nИзмерения: {}шт. {}'.format(len(md), md, len(dd), dd))
-    print(split_line % '2')
-    print('Количество сочетаний измерений и мер: %s' % len(measure_dim_sets))
-    print(measure_dim_sets)
-    print(split_line % '3')
-    print('(Измерение : Количество значений)')
-    for key, value in dim_num.items():
-        print('({}:{})'.format(dd[key], value))
-    print('Полное количество документов до фильтрации и удаления пустых запросов: {:,}'.format(doc_num))
-
-
-def query_data(mdx_query):
-    """Фильтрация запросов на основе 1-4 пунктов от Алексея"""
-    query_by_elements = mdx_query.split(' ')
-    from_element = query_by_elements[query_by_elements.index('FROM') + 1]
-    cube = from_element[1:len(from_element) - 4]
-
-    d = {'dataMartCode': cube, 'mdxQuery': mdx_query}
-    r = requests.post('http://conf.test.fm.epbs.ru/mdxexpert/CellsetByMdx', d)
-    t = json.loads(r.text)
-
-    if 'success' in t:
-        return False, t
-    elif t["cells"][0][0]["value"] is None:
-        return False, None
-    else:
-        return True, t["cells"][0][0]["value"]
-
-
-def logging(file_name, text):
-    """Логирование промежуточных этапов"""
-    with open(file_name + '.txt', 'w') as file:
-        file.write(text)
-
-
 def get_full_values_for_dimensions(cube_values):
     """Получение полных вербальных значений измерений по формальным значениями"""
+
     full_values = []
     for cube_value in cube_values:
         for value in Value.select().where(Value.cube_value == cube_value):
@@ -155,6 +82,7 @@ def get_full_values_for_dimensions(cube_values):
 
 def get_full_value_for_measure(cube_value, cube_name):
     """Получение полного вербального значения меры по формальному значению и кубу"""
+
     for cube in Cube.select().where(Cube.name == cube_name):
         for cube_measure in Cube_Measure.select().where(Cube_Measure.cube == cube.id):
             for measure in Measure.select().where(Measure.id == cube_measure.measure_id,
@@ -163,6 +91,8 @@ def get_full_value_for_measure(cube_value, cube_name):
 
 
 def get_cube_dimensions(cube_name):
+    """Получение списка измерения куба"""
+
     dimensions = []
     for cube in Cube.select().where(Cube.name == cube_name):
         for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
@@ -172,10 +102,12 @@ def get_cube_dimensions(cube_name):
 
 
 def check_dimension_value_in_cube(cube_name, value):
+    """Проверка наличия в кубе значения"""
+
     for value in Value.select().where(Value.cube_value == value):
         for dimension_value in Dimension_Value.select().where(Dimension_Value.value_id == value.id):
             for cube_dimension in Cube_Dimension.select().where(
-                Cube_Dimension.dimension_id == dimension_value.dimension_id
+                            Cube_Dimension.dimension_id == dimension_value.dimension_id
             ):
                 for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
                     if cube.name == cube_name:
@@ -185,6 +117,8 @@ def check_dimension_value_in_cube(cube_name, value):
 
 
 def create_automative_cube_description(cube_name):
+    """Генерация автоматического описания к кубу"""
+
     values = []
     for cube in Cube.select().where(Cube.name == cube_name):
         for dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
@@ -199,11 +133,13 @@ def create_automative_cube_description(cube_name):
 
 
 def get_classification_for_dimension(cube_name, dimension_name):
+    """Получение значений измерения конкретного куба"""
+
     values = []
     for cube in Cube.select().where(Cube.name == cube_name):
         for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube.id):
             for dim in Dimension.select().where(
-                Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
+                                    Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
             ):
                 for dim_value in Dimension_Value.select().where(Dimension_Value.dimension_id == dim.id):
                     for value in Value.select().where(Value.id == dim_value.value_id):
@@ -212,17 +148,23 @@ def get_classification_for_dimension(cube_name, dimension_name):
 
 
 def get_representation_format(mdx_query):
+    """Получение формата меры (рубли, проценты) для куба"""
+
     left_part, right_part = mdx_query.split('(')
     measure_value = left_part.split('}')[0].split('.')[1][1:-1]
     return int(Measure.get(Measure.cube_value == measure_value).format)
 
 
 def get_default_dimension(cube_name):
+    """Полчение меры по умолчанию для куба"""
+
     default_measure_id = Cube.get(Cube.name == cube_name).default_measure
     return Measure.get(Measure.id == default_measure_id).cube_value
 
 
 def create_lem_manual_description(cube_name):
+    """Создание нормализованного описания для куба"""
+
     tp = TextPreprocessing('Creating lemmatized manual description')
     manual_description = Cube.get(Cube.name == cube_name).manual_description
     lem_manual_description = tp.normalization(manual_description)
@@ -230,6 +172,8 @@ def create_lem_manual_description(cube_name):
 
 
 def create_lem_synonyms():
+    """Создания нормализованных синонимов для значений измерений"""
+
     tp = TextPreprocessing('Creating lemmatized manual description')
     for val in Value.select():
         syn = val.synonyms
@@ -239,9 +183,11 @@ def create_lem_synonyms():
 
 
 def get_default_value_for_dimension(cube_name, dimension_name):
+    """Получение значения измерения по умолчанию"""
+    
     cube_id = Cube.get(Cube.name == cube_name).id
     for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
         for dim in Dimension.select().where(
-            (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
+                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
         ):
             return Value.get(Value.id == dim.default_value).cube_value
