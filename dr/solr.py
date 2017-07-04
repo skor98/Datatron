@@ -1,9 +1,20 @@
-from kb.kb_support_library import get_cube_dimensions, get_default_value_for_dimension, get_default_dimension
-import json
-import requests
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Взаимодействие с Solr
+"""
+
 import datetime
-from config import SETTINGS
+import json
+
+import requests
 import numpy as np
+
+from kb.kb_support_library import get_cube_dimensions
+from kb.kb_support_library import get_default_value_for_dimension
+from kb.kb_support_library import get_default_dimension
+from config import SETTINGS
 
 
 class Solr:
@@ -27,9 +38,9 @@ class Solr:
                 return solr_result
             else:
                 raise Exception('Datatron не нашел ответа на Ваш вопрос')
-        except Exception as e:
-            print('Solr: ' + str(e))
-            solr_result.error = str(e)
+        except Exception as err:
+            print('Solr: ' + str(err))
+            solr_result.error = str(err)
             return solr_result
 
     def _send_request_to_solr(self, user_request):
@@ -85,7 +96,13 @@ class Solr:
             elif doc['type'][0] == 'minfin':
                 minfin_docs.append(doc)
 
-        solr_result.cube_documents = Solr._process_cube_question(year, territory, dimensions, cubes, measures)
+        solr_result.cube_documents = Solr._process_cube_question(
+            year,
+            territory,
+            dimensions,
+            cubes,
+            measures
+        )
         if minfin_docs:
             solr_result.minfin_documents = Solr._process_minfin_question(minfin_docs)
 
@@ -116,14 +133,16 @@ class Solr:
                 if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in tmp_dimensions[idx]:
                     continue
                 else:
-                    tmp_dimensions[idx].append('{}_{}'.format(doc['name'][0], doc['cube'][0]))
+                    tmp_dimensions[idx].append('{}_{}'.format(
+                        doc['name'][0],
+                        doc['cube'][0]
+                    ))
                     tmp_dimensions[idx].append(doc)
                     dimensions.remove(doc)
             idx += 1
 
-        dimensions = tmp_dimensions
         # Очистка от ненужных элементов
-        dimensions = [list(filter(lambda elem: type(elem) is not str, level)) for level in dimensions]
+        dimensions = [list(filter(lambda elem: not isinstance(elem, str), level)) for level in tmp_dimensions]
 
         test1_dimensions = []
         try:
@@ -136,7 +155,10 @@ class Solr:
         if dimensions:
             # TODO: доработать определение куба
             # Замена куба на другой, если score найденного меньше score верхнего документа
-            if reference_cube != dimensions[0][0]['cube'][0] and cubes[0]['score'] < dimensions[0][0]['score']:
+            if (
+                    reference_cube != dimensions[0][0]['cube'][0]
+                    and cubes[0]['score'] < dimensions[0][0]['score']
+            ):
                 reference_cube = dimensions[0][0]['cube'][0]
                 reference_cube_score = dimensions[0][0]['score']
 
@@ -144,7 +166,8 @@ class Solr:
             # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
 
             if dimensions[0][0]['cube'][0] == reference_cube:
-                test1_dimensions = [dimensions[0][0]]  # первое измерение из верхнего списка измерений
+                # первое измерение из верхнего списка измерений
+                test1_dimensions = [dimensions[0][0]]
 
             # Это часть позволила улучшить алгоритм с 5/39 до 11/39
             # Берем все элементы из первой череды измерений для выбранного куба
@@ -152,15 +175,27 @@ class Solr:
                 for dim in dimensions[0][1:]:
                     if dim['cube'][0] == reference_cube:
                         test1_dimensions.append(dim)
-            except Exception as e:
-                print('{}: {}'.format(__name__, str(e)))
+            except Exception as err:
+                print('{}: {}'.format(__name__, str(err)))
 
-        if len(test1_dimensions):
-            mdx_request = Solr._build_mdx_request(test1_dimensions, measures, reference_cube, year, territory)
+        if test1_dimensions:
+            mdx_request = Solr._build_mdx_request(
+                test1_dimensions,
+                measures,
+                reference_cube,
+                year,
+                territory
+            )
             print(mdx_request)
             solr_cube_result.mdx_query = mdx_request
             solr_cube_result.cube_score = reference_cube_score
-            Solr._calculate_score_for_cube_questions(test1_dimensions, measures, year, territory, solr_cube_result)
+            Solr._calculate_score_for_cube_questions(
+                test1_dimensions,
+                measures,
+                year,
+                territory,
+                solr_cube_result
+            )
             solr_cube_result.sum_score += solr_cube_result.cube_score
             solr_cube_result.status = True
         return solr_cube_result
@@ -243,16 +278,22 @@ class Solr:
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
             if year:
-                dim_str.append(dim_tmp.format('YEARS', year['fvalue'][0]))
+                year_fvalue = year['fvalue'][0]
             else:
-                dim_str.append(dim_tmp.format('YEARS', get_default_value_for_dimension(cube, 'Years')))
+                year_fvalue = get_default_value_for_dimension(cube, 'Years')
+            dim_str.append(dim_tmp.format('YEARS', year_fvalue))
 
         # TODO: подправить на капс
         if 'Territories' in reference_cube_dimensions and territory:
             dim_str.append(dim_tmp.format('TERRITORIES', territory[cube][0]))
             dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
         elif 'Territories' in reference_cube_dimensions:
-            dim_str.append(dim_tmp.format('BGLEVELS', get_default_value_for_dimension(cube, 'BGLevels')))
+            dim_str.append(dim_tmp.format(
+                'BGLEVELS',
+                get_default_value_for_dimension(cube, 'BGLevels')
+            ))
+        else:
+            pass # ToDo: тут должно что-то быть или нет?
 
         measure = get_default_dimension(cube)
         if measures:
@@ -266,6 +307,7 @@ class Solr:
     def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
         scores = []
 
+        # ToDo: Проверка, что ['score'] существует и к нему можно обратиться (2!)
         for dim in dimensions:
             scores.append(dim['score'])
 

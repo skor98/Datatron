@@ -184,7 +184,7 @@ def create_lem_synonyms():
 
 def get_default_value_for_dimension(cube_name, dimension_name):
     """Получение значения измерения по умолчанию"""
-    
+
     cube_id = Cube.get(Cube.name == cube_name).id
     for cube_dimension in Cube_Dimension.select().where(Cube_Dimension.cube_id == cube_id):
         for dim in Dimension.select().where(

@@ -77,16 +77,16 @@ def cube_testing(local=True):
                     testing_results.append(ars)
                     print(ars)
 
-        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        false_answers = len(testing_results) - true_answers - len(test_files_paths)
+    current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    false_answers = len(testing_results) - true_answers - len(test_files_paths)
 
-        if local:
-            file_name = file_name.format('local', current_datetime, true_answers, false_answers)
-        else:
-            file_name = file_name.format('server', current_datetime, true_answers, false_answers)
+    if local:
+        file_name = file_name.format('local', current_datetime, true_answers, false_answers)
+    else:
+        file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
-        with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file_out:
-            file_out.write('\n'.join(testing_results))
+    with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file_out:
+        file_out.write('\n'.join(testing_results))
 
     print('Лог прогона записан в файл {}'.format(file_name))
 
@@ -163,5 +163,6 @@ def minfin_testing(local=True):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-# cube_testing()
-# minfin_testing()
+if __name__ == "__main__":
+    cube_testing()
+    minfin_testing()
