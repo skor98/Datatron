@@ -1,11 +1,16 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import nltk
-import pymorphy2
+
+
 import logging
 import json
+
 from string import punctuation as pct
 from nltk.corpus import stopwords
 from nltk import FreqDist
+import nltk
+
+import pymorphy2
 
 
 class TextPreprocessing:
@@ -83,21 +88,24 @@ class TextPreprocessing:
         json_str = ''
         try:
             log = log.split('\t')[1:]
-            for l in log:
-                l = l.split(':')
-                json_str += '"{}": "{}",'.format(l[0].strip(), l[1].strip())
+            for log_line in log:
+                log_line_parts = log_line.split(':')
+                json_str += '"{}": "{}",'.format(
+                    log_line_parts[0].strip(),
+                    log_line_parts[1].strip()
+                )
 
             json_str = '{' + json_str[:-1] + '}'
             return json.loads(json_str)
-        except IndexError as e:
-            print('TextPreprocessing: ' + str(e))
+        except IndexError as ind_error:
+            print('TextPreprocessing: ' + str(ind_error))
             return None
 
     @staticmethod
     def frequency_destribution(word_list, num=5):
         """Строит частотное распределение слов в тексте и возврашает num наиболее популярных"""
 
-        fq = FreqDist(word_list)
-        most_popular_words = fq.most_common(num)
+        freq_dist = FreqDist(word_list)
+        most_popular_words = freq_dist.most_common(num)
         popular_words = [i[0] for i in most_popular_words]
         return popular_words
