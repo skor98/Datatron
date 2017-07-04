@@ -61,33 +61,6 @@ class MessengerManager:
         return MessengerManager._querying(text, request_id)
 
     @staticmethod
-    def make_request_directly_to_m2(text, source, user_id, user_name, request_id):
-        """
-        API метод, используемый на данный момент только в inline-режиме
-        и обращается напрямую к DataRetrieving
-
-        :param text: запрос
-        :param source: источник (web, cmd, telegram, unity)
-        :param user_id: идетификатор пользователя
-        :param user_name: имя пользователя
-        :param request_id: идентификатор запроса
-        :return: объект класса DrSolrResult()
-        """
-
-        text = ' '.join(text.split())  # Удаление переносов, табуляций и пр.
-        logging.info(logging_str.format(
-            request_id,
-            __name__,
-            user_id,
-            user_name,
-            source,
-            text,
-            'text'
-        ))
-
-        return DataRetrieving.get_data(text, request_id)
-
-    @staticmethod
     def make_voice_request(source, user_id, user_name, request_id, bytes=None, filename=None):
         """Универсальный API метод для обработки голосовых запросов
 

@@ -17,7 +17,6 @@ class BaseModel(Model):
 
 class Value(BaseModel):
     full_value = CharField()
-    synonyms = CharField(null=True)
     lem_index_value = CharField()
     lem_synonyms = CharField(null=True)
     cube_value = CharField()

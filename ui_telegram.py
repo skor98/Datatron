@@ -24,7 +24,6 @@ from messenger_manager import MessengerManager
 
 from config import SETTINGS
 
-
 import requests
 import constants
 
@@ -42,6 +41,7 @@ def get_random_id(id_len=4):
     """
     alphabet = string.ascii_lowercase + string.digits
     return ''.join(random.choice(alphabet) for ind in range(id_len))
+
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -189,14 +189,6 @@ def repeat_all_messages(message):
 
 @bot.message_handler(commands=['fb'])
 def leave_feedback(message):
-    if not check_user_existence(message.chat.id):
-        try:
-            full_name = ' '.join([message.chat.first_name, message.chat.last_name])
-        except TypeError:
-            full_name = None
-
-        create_user(message.chat.id, message.chat.username, full_name)
-
     feedback = message.text[4:].strip()
     if feedback:
         create_feedback(message.chat.id,
@@ -235,8 +227,8 @@ def get_classification(message):
                     proc_values = values
 
                 params = '\n'.join([
-                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                ])
+                                       '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
+                                       ])
                 bot.send_message(message.chat.id, params)
             else:
                 bot.send_message(message.chat.id, 'Классификацию получить не удалось')
@@ -251,32 +243,11 @@ def salute(message):
     if greets:
         bot.send_message(message.chat.id, greets)
     else:
-        if not check_user_existence(message.chat.id):
-            try:
-                full_name = ' '.join([message.chat.first_name, message.chat.last_name])
-            except TypeError:
-                full_name = None
-
-            create_user(message.chat.id,
-                        message.chat.username,
-                        full_name)
-
         process_response(message)
 
 
 @bot.message_handler(content_types=['voice'])
 def voice_processing(message):
-    if not check_user_existence(message.chat.id):
-        if not check_user_existence(message.chat.id):
-            try:
-                full_name = ' '.join([message.chat.first_name, message.chat.last_name])
-            except TypeError:
-                full_name = None
-
-            create_user(message.chat.id,
-                        message.chat.username,
-                        full_name)
-
     file_info = bot.get_file(message.voice.file_id)
     file_data = requests.get(
         'https://api.telegram.org/file/bot{0}/{1}'.format(
@@ -305,49 +276,6 @@ def callback_inline(call):
             __name__,
             '-'
         ))
-
-
-# inline mode handler
-@bot.inline_handler(lambda query: len(query.query) >= 0)
-def query_text(query):
-    input_message_content = query.query
-
-    user_name = user_name_str.format(query.from_user.first_name, query.from_user.last_name)
-    m2_result = MessengerManager.make_request_directly_to_m2(
-        input_message_content,
-        'TG-INLINE',
-        query.from_user.id,
-        user_name, uuid.uuid4()
-    )
-
-    result_array = []
-    if m2_result.status is False:  # in case the string is not correct we ask user to keep typing
-        msg = types.InlineQueryResultArticle(
-            id='0',
-            title='Продолжайте ввод запроса',
-            input_message_content=types.InputTextMessageContent(
-                message_text=input_message_content + '\nЗапрос не удался😢'
-            )
-        )
-        result_array.append(msg)  # Nothing works without this list, I dunno why :P
-        bot.answer_inline_query(query.id, result_array)
-
-    else:
-        try:
-            msg_append_text = ':\n' + str(m2_result.response)
-            title = str(m2_result.response)
-
-            msg = types.InlineQueryResultArticle(
-                id='1',
-                title=title,
-                input_message_content=types.InputTextMessageContent(
-                    message_text=input_message_content + msg_append_text
-                ),
-            )
-            result_array.append(msg)
-
-        finally:
-            bot.answer_inline_query(query.id, result_array)
 
 
 def process_response(message, input_format='text', file_content=None):
