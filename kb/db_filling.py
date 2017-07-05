@@ -1,7 +1,7 @@
 from kb.kb_db_creation import *
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
-from os import remove, getcwd, path
+from os import remove, path
 import json
 
 sep1 = ';'
@@ -20,7 +20,7 @@ class KnowledgeBaseSupport:
         # Если заполнение БД должно идти из SQL скрипта (в 95% случаев)
         if self.data_source_file.endswith('.sql'):
             # Указания пути к sql файлу
-            data_source_file_path = '{}\\{}\\{}'.format(getcwd(), 'kb', self.data_source_file)
+            data_source_file_path = path.join('kb', self.data_source_file)
 
             # Чтение данных из файла
             with open(data_source_file_path, 'r', encoding="utf-8") as file:
@@ -43,7 +43,7 @@ class KnowledgeBaseSupport:
     def _create_db(self, overwrite=False):
         """Создание БД"""
 
-        db_file_path = r'{}\{}\{}'.format(getcwd(), 'kb', self.db_file)
+        db_file_path = path.join('kb', self.db_file)
         if overwrite:
             try:
                 remove(db_file_path)
@@ -60,7 +60,7 @@ class KnowledgeBaseSupport:
 
         data_set_list = []
 
-        cube_metadata_file = r'{}\{}\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
+        cube_metadata_file = path.join('kb', 'cubes_metadata.txt')
 
         with open(cube_metadata_file, 'r', encoding='utf-8') as file:
             data = file.read()

@@ -4,7 +4,7 @@
 import json
 import uuid
 import datetime
-from os import getcwd, listdir
+from os import path, listdir
 
 import requests
 
@@ -26,7 +26,7 @@ def cube_testing(local=True, test_sphere='cube'):
     :param local: если True, то тестируется локальная система, если False, то стоящая на сервере
     :return: None
     """
-    test_path = r'{}\{}'.format(getcwd(), 'tests')
+    test_path = 'tests'
     testing_results = []
     true_answers = []
 
@@ -36,8 +36,8 @@ def cube_testing(local=True, test_sphere='cube'):
         test_files_paths = get_test_files(test_path, "minfin_test")
 
     for tf in test_files_paths:
-        with open(r'{}'.format(tf), 'r', encoding='utf-8') as file_in:
-            doc_name_output_str = 'Файл: {}'.format(tf.split('\\')[-1])
+        with open(tf, 'r', encoding='utf-8') as file_in:
+            doc_name_output_str = 'Файл: ' + path.basename(tf)
             testing_results.append(doc_name_output_str)
             print(doc_name_output_str)
 
@@ -89,7 +89,7 @@ def cube_testing(local=True, test_sphere='cube'):
     else:
         file_name = file_name.format('server', current_datetime, true_answers, false_answers)
 
-    with open(r'{}\{}'.format(test_path, file_name), 'w', encoding='utf-8') as file_out:
+    with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
 
     print('Лог прогона записан в файл {}'.format(file_name))
@@ -150,7 +150,7 @@ def get_test_files(test_path, prefix):
     test_files_paths = []
     for file in listdir(test_path):
         if file.startswith(prefix):
-            test_files_paths.append(r'{}\{}'.format(test_path, file))
+            test_files_paths.append(path.join(test_path, file))
     return test_files_paths
 
 

@@ -12,7 +12,6 @@ import string
 import os
 
 import telebot
-from telebot import types
 from logs_retriever import LogsRetriever
 from db.user_support_library import check_user_existence
 from db.user_support_library import create_user
@@ -132,17 +131,15 @@ def get_request_logs(message):
 def get_all_info_logs(message):
     try:
         logs = logsRetriever.get_log(kind='info')
-        path_to_log_file = r'tmp\{}'
         if logs:
             rnd_str = get_random_id(4)
-            file_name = '{}_{}_{}_{}.log'.format(
+            path_to_log_file = os.path.join('tmp', '{}_{}_{}_{}.log'.format(
                 'info',
                 rnd_str,
                 message.chat.username,
                 datetime.datetime.now().strftime(DATE_FORMAT)
-            )
+            ))
 
-            path_to_log_file = path_to_log_file.format(file_name)
             with open(path_to_log_file, 'w', encoding='utf-8') as file:
                 file.write(logs)
             try:
@@ -446,6 +443,6 @@ def parse_feedback(fb, user_request_notification=False):
 # polling cycle
 if __name__ == '__main__':
     for admin_id in SETTINGS.ADMIN_TELEGRAM_ID:
-        bot.send_message(admin_id, "ADMIN_INFO: Бот запушен")
+        bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
 
     bot.polling(none_stop=True)

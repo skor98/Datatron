@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from os import getcwd, remove
+from os import path, remove
 import json
 import subprocess
 import datetime
@@ -15,7 +15,7 @@ from config import SETTINGS
 
 class DocsGeneration:
     def __init__(self):
-        self.file_name = r'kb\data_for_indexing.json'
+        self.file_name = path.join('kb', 'data_for_indexing.json')
         self.core = SETTINGS.SOLR_MAIN_CORE
 
     def generate_docs(self):
@@ -39,7 +39,7 @@ class DocsGeneration:
         )
         requests.get(dlt_str.format(self.core))
         try:
-            remove('{}\\{}'.format(getcwd(), self.file_name))
+            remove(self.file_name)
         except FileNotFoundError:
             pass
 
@@ -78,7 +78,7 @@ class DocsGeneration:
         c.setopt(c.HTTPPOST,
                  [
                      ('fileupload',
-                      (c.FORM_FILE, getcwd() + '\\{}'.format(self.file_name),
+                      (c.FORM_FILE, self.file_name,
                        c.FORM_CONTENTTYPE, 'application/json')
                       ),
                  ])
@@ -86,9 +86,9 @@ class DocsGeneration:
         print('Документы для кубов проиндексированы через CURL')
 
     def index_created_documents_via_jar_file(self):
-        r"""Индексация средствами post.jar из папки \example\exampledocs"""
+        r"""Индексация средствами post.jar из папки /example/exampledocs"""
 
-        path_to_json_data_file = '{}\\{}'.format(getcwd(), self.file_name)
+        path_to_json_data_file = self.file_name
         command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
             self.core,
             SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
