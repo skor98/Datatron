@@ -199,8 +199,8 @@ def get_default_value_for_dimension(cube_name, dimension_name):
     # И если оно не уровня All (в БД уровень All обозначается 0)
     def_value = dbc.Value.get(dbc.Value.id == dimension.default_value)
 
-        return {'dimension': dimension_name,
-                'fvalue': def_value.cube_value}
+    return {'dimension': dimension_name,
+            'fvalue': def_value.cube_value}
 
 
 def get_connected_value_to_given_value(cube_value):

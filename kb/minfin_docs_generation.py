@@ -78,7 +78,7 @@ def _refactor_data(data):
     tp = TextPreprocessing(uuid.uuid4())
 
     docs = []
-    for index, row in data.iterrows():
+    for row in data.itertuples():
         # Если запрос не параметризованных
         # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
         if not row.parameterized:

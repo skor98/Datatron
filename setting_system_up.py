@@ -66,6 +66,7 @@ def set_up_all_together():
 
 
 if __name__ == '__main__':
+    # set_up_all_together()
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(
         description="Иниициализация системы"
