@@ -50,13 +50,9 @@ class Solr:
         :return: ответ от Solr в формате JSON
         """
 
-        request = (
-            'http://' +
-            SETTINGS.SOLR_HOST +
-            ':8983/solr/{}/select/?q={}&rows={}&wt=json&fl=*,score'
-        )
-        json_response = requests.get(request.format(self.core, user_request, 20)).text
-        docs = json.loads(json_response)
+        request = 'http://{}:8983/solr/{}/select'.format(SETTINGS.SOLR_HOST, self.core)
+        params = {'q': user_request, 'rows': 20, 'wt': 'json', 'fl': '*,score'}
+        docs = requests.get(request, params=params).json()
         return docs
 
     @staticmethod
@@ -76,24 +72,24 @@ class Solr:
         solr_docs = solr_docs['response']['docs']
 
         for doc in solr_docs:
-            if doc['type'][0] == 'dimension':
+            if doc['type'] == 'dimension':
                 dimensions.append(doc)
-            elif doc['type'][0] == 'year_dimension':
-                year_value = int(doc['fvalue'][0])
+            elif doc['type'] == 'year_dimension':
+                year_value = int(doc['fvalue'])
                 # managing two number years
                 if year_value < 2007:
                     if year_value < 10:
                         year_value = '0' + str(year_value)
                     year_value = datetime.datetime.strptime(str(year_value), '%y').year
-                doc['fvalue'][0] = year_value
+                doc['fvalue'] = year_value
                 year = doc
-            elif doc['type'][0] == 'territory_dimension':
+            elif doc['type'] == 'territory_dimension':
                 territory = doc
-            elif doc['type'][0] == 'cube':
+            elif doc['type'] == 'cube':
                 cubes.append(doc)
-            elif doc['type'][0] == 'measure':
+            elif doc['type'] == 'measure':
                 measures.append(doc)
-            elif doc['type'][0] == 'minfin':
+            elif doc['type'] == 'minfin':
                 minfin_docs.append(doc)
 
         solr_result.cube_documents = Solr._process_cube_question(
@@ -119,10 +115,10 @@ class Solr:
         solr_cube_result = DrSolrCubeResult()
 
         if year:
-            dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'][0])]
+            dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
 
         if territory:
-            dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'][0])]
+            dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'])]
 
         # Построение иерархического списка измерений
         tmp_dimensions, idx = [], 0
@@ -130,12 +126,12 @@ class Solr:
             tmp_dimensions.append([])
             for doc in list(dimensions):
                 # TODO: реализовать для смотри также
-                if '{}_{}'.format(doc['name'][0], doc['cube'][0]) in tmp_dimensions[idx]:
+                if '{}_{}'.format(doc['name'], doc['cube']) in tmp_dimensions[idx]:
                     continue
                 else:
                     tmp_dimensions[idx].append('{}_{}'.format(
-                        doc['name'][0],
-                        doc['cube'][0]
+                        doc['name'],
+                        doc['cube']
                     ))
                     tmp_dimensions[idx].append(doc)
                     dimensions.remove(doc)
@@ -145,7 +141,7 @@ class Solr:
         dimensions = [list(filter(lambda elem: not isinstance(elem, str), level)) for level in tmp_dimensions]
 
         try:
-            reference_cube = cubes[0]['cube'][0]
+            reference_cube = cubes[0]['cube']
             reference_cube_score = cubes[0]['score']
         except IndexError:
             return solr_cube_result
@@ -156,10 +152,10 @@ class Solr:
             # TODO: доработать определение куба
             # Замена куба на другой, если score найденного меньше score верхнего документа
             if (
-                            reference_cube != dimensions[0][0]['cube'][0]
+                            reference_cube != dimensions[0][0]['cube']
                     and cubes[0]['score'] < dimensions[0][0]['score']
             ):
-                reference_cube = dimensions[0][0]['cube'][0]
+                reference_cube = dimensions[0][0]['cube']
                 reference_cube_score = dimensions[0][0]['score']
 
             # Максимальная группа измерений от куба лучшего элемента
@@ -168,7 +164,7 @@ class Solr:
             # Это часть позволила улучшить алгоритм с 5/39 до 11/39
             # Берем все элементы из первой череды измерений для выбранного куба
             for dim in dimensions[0]:
-                if dim['cube'][0] == reference_cube:
+                if dim['cube'] == reference_cube:
                     final_dimensions.append(dim)
 
         if final_dimensions:
@@ -205,43 +201,30 @@ class Solr:
         best_document = minfin_documents[0]
         solr_minfin_result.score = best_document['score']
         solr_minfin_result.status = True
-        solr_minfin_result.number = best_document['number'][0]
-        solr_minfin_result.question = best_document['question'][0]
-        solr_minfin_result.short_answer = best_document['short_answer'][0]
+        solr_minfin_result.number = best_document['number']
+        solr_minfin_result.question = best_document['question']
+        solr_minfin_result.short_answer = best_document['short_answer']
+
         try:
-            solr_minfin_result.full_answer = best_document['full_answer'][0]
+            solr_minfin_result.full_answer = best_document['full_answer']
         except KeyError:
             pass
 
         try:
-            if len(best_document['link_name']) > 1:
-                solr_minfin_result.link_name = best_document['link_name']
-                solr_minfin_result.link = best_document['link']
-            else:
-                solr_minfin_result.link_name = best_document['link_name'][0]
-                solr_minfin_result.link = best_document['link'][0]
-
+            solr_minfin_result.link_name = best_document['link_name']
+            solr_minfin_result.link = best_document['link']
         except KeyError:
             pass
 
         try:
-            if len(best_document['picture_caption']) > 1:
-                solr_minfin_result.picture_caption = best_document['picture_caption']
-                solr_minfin_result.picture = best_document['picture']
-            else:
-                solr_minfin_result.picture_caption = best_document['picture_caption'][0]
-                solr_minfin_result.picture = best_document['picture'][0]
-
+            solr_minfin_result.picture_caption = best_document['picture_caption']
+            solr_minfin_result.picture = best_document['picture']
         except KeyError:
             pass
 
         try:
-            if len(best_document['document']) > 1:
-                solr_minfin_result.document_caption = best_document['document_caption']
-                solr_minfin_result.document = best_document['document']
-            else:
-                solr_minfin_result.document_caption = best_document['document_caption'][0]
-                solr_minfin_result.document = best_document['document'][0]
+            solr_minfin_result.document_caption = best_document['document_caption']
+            solr_minfin_result.document = best_document['document']
         except KeyError:
             pass
 
@@ -262,26 +245,27 @@ class Solr:
         # шаблон MDX-запроса
         mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
 
-        dim_tmp, dim_str = "[{}].[{}]", []
+        dim_tmp, dim_str_value = "[{}].[{}]", []
+
         for doc in dimensions:
-            dim_str.append(dim_tmp.format(doc['name'][0], doc['fvalue'][0]))
+            dim_str_value.append(dim_tmp.format(doc['name'], doc['fvalue']))
 
         reference_cube_dimensions = get_cube_dimensions(cube)
 
         # TODO: подправить на капс
         if 'Years' in reference_cube_dimensions:
             if year:
-                year_fvalue = year['fvalue'][0]
+                year_fvalue = year['fvalue']
             else:
                 year_fvalue = get_default_value_for_dimension(cube, 'Years')
-            dim_str.append(dim_tmp.format('YEARS', year_fvalue))
+            dim_str_value.append(dim_tmp.format('YEARS', year_fvalue))
 
         # TODO: подправить на капс
         if 'Territories' in reference_cube_dimensions and territory:
-            dim_str.append(dim_tmp.format('TERRITORIES', territory[cube][0]))
-            dim_str.append(dim_tmp.format('BGLEVELS', '09-3'))
+            dim_str_value.append(dim_tmp.format('TERRITORIES', territory[cube]))
+            dim_str_value.append(dim_tmp.format('BGLEVELS', '09-3'))
         elif 'Territories' in reference_cube_dimensions:
-            dim_str.append(dim_tmp.format(
+            dim_str_value.append(dim_tmp.format(
                 'BGLEVELS',
                 get_default_value_for_dimension(cube, 'BGLevels')
             ))
@@ -290,11 +274,15 @@ class Solr:
 
         measure = get_default_dimension(cube)
         if measures:
-            measures = [item for item in measures if item['cube'][0] == cube]
+            measures = [item for item in measures if item['cube'] == cube]
             if measures:
-                measure = measures[0]['formal'][0]
+                measure = measures[0]['formal']
 
-        return mdx_template.format(measure, cube, ','.join(dim_str))
+        return mdx_template.format(measure, cube, ','.join(dim_str_value))
+
+    @staticmethod
+    def _update_connected_values():
+        pass
 
     @staticmethod
     def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):

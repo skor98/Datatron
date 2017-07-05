@@ -11,7 +11,7 @@ from collections import Counter
 
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generating import DocsGeneration
-from kb.minfin_docs_generation import set_up_minfin_core
+from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
 
 
@@ -25,8 +25,12 @@ def set_up_db(overwrite=True):
     """
     # 1. Создание и заполнение БД
     kb_path = SETTINGS.PATH_TO_KNOWLEDGEBASE
-    db_file = kb_path.split('\\')[Counter(kb_path)['\\']]
-    # kbs = KnowledgeBaseSupport('CLMR02.csv', db_file)
+
+    if '/' in kb_path:
+        db_file = kb_path.split('/')[Counter(kb_path)['/']]
+    else:
+        db_file = kb_path.split('\\')[Counter(kb_path)['\\']]
+
     kbs = KnowledgeBaseSupport('knowledge_base.db.sql', db_file)
     kbs.set_up_db(overwrite=overwrite)
 
@@ -40,14 +44,13 @@ def set_up_solr_cube_data(index_way='curl'):
     :return:
     """
     # 2. Генерация и индексация документов
-    dga = DocsGeneration(core=SETTINGS.SOLR_MAIN_CORE)
+    dga = DocsGeneration()
     dga.clear_index()  # Удаление документов из ядра
     dga.generate_docs()  # Генерация документов
     if index_way == 'curl':
         dga.index_created_documents_via_curl()
-    elif index_way == 'jar_file':
-        dga.index_created_documents_via_cmd(SETTINGS.PATH_TO_SOLR_POST_JAR_FILE)
-#    else
+    else:
+        dga.index_created_documents_via_jar_file()
 
 
 def set_up_all_together():
@@ -56,8 +59,8 @@ def set_up_all_together():
     Если какой-то функционал не нужен, то он комметируется перед выполнением
     """
     # set_up_db()
-    set_up_solr_cube_data('jar_file')
-    set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
+    set_up_solr_cube_data('jar')
+    set_up_minfin_data('jar')
 
 
 if __name__ == '__main__':
@@ -96,9 +99,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
-    if args.solr_index == 'jar':
-        args.solr_index = 'jar_file'
-
     if not args.db and not args.solr and not args.minfin:
         print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
             sys.argv[0]
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     if args.solr:
         set_up_solr_cube_data(args.solr_index)
     if args.minfin:
-        set_up_minfin_core('jar_file', clear=False, core=SETTINGS.SOLR_MAIN_CORE)
+        set_up_minfin_data(args.solr_index)
 
     print("Complete")
 

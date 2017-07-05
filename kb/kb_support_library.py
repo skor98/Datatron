@@ -195,15 +195,19 @@ def create_lem_manual_description(cube_name):
 
 
 def get_default_value_for_dimension(cube_name, dimension_name):
+    # TODO: переписать код
     """Получение значения измерения по умолчанию"""
 
-    cube_id = Cube.get(Cube.name == cube_name).id
-    for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube_id):
-        for dim in Dimension.select().where(
-                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
-        ):
-            print(Value.get(Value.id == dim.default_value).cube_value)
-            return Value.get(Value.id == dim.default_value).cube_value
+    dimension = (Dimension
+                 .select()
+                 .join(CubeDimension)
+                 .join(Cube)
+                 .where(Cube.name == cube_name, Dimension.label == dimension_name))[0]
+
+    def_value = Value.get(Value.id == dimension.default_value)
+
+    print(def_value)
+    return def_value
 
 
 def get_connected_value_to_given_value(cube_value):

@@ -24,16 +24,16 @@ solr_clear_req = (
 path_to_folder_file = r'{}\{}'.format(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, {})
 
 
-def set_up_minfin_core(index_way='curl', clear=False, core=SETTINGS.SOLR_MAIN_CORE):
+def set_up_minfin_data(index_way='curl'):
     """Главный API метод к этому модулю"""
 
     minfin_docs = _refactor_data(_read_data())
     _add_automatic_key_words(minfin_docs)
     _write_data(minfin_docs)
     if index_way == 'curl':
-        _index_data_via_curl(clear=clear, core=core)
-    elif index_way == 'jar_file':
-        _index_data_via_cmd(clear=clear, core=core)
+        _index_data_via_curl()
+    else:
+        _index_data_via_jar_file()
 
 
 def _read_data():
@@ -96,7 +96,7 @@ def _refactor_data(data):
             if synonym_questions:
                 lem_synonym_questions = [
                     tp.normalization(q, delete_digits=True) for q in synonym_questions
-                ]
+                    ]
                 doc.lem_synonym_questions = lem_synonym_questions
 
             doc.short_answer = row.short_answer
@@ -138,7 +138,7 @@ def _refactor_data(data):
                 if ';' in row.document_caption:
                     doc.document_caption = [
                         elem.strip() for elem in row.document_caption.split(';')
-                    ]
+                        ]
                     doc.document = [elem.strip() for elem in row.document.split(';')]
                 else:
                     doc.document_caption = row.document_caption
@@ -175,15 +175,12 @@ def _get_manual_synonym_questions(question_number):
     return extra_requests
 
 
-def _index_data_via_cmd(clear, core):
+def _index_data_via_jar_file():
     path_to_json_data_file = path_to_folder_file.format(output_file)
     path_to_solr_jar_file = SETTINGS.PATH_TO_SOLR_POST_JAR_FILE
 
-    if clear:
-        requests.get(solr_clear_req.format(core))
-
     command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
-        core,
+        SETTINGS.SOLR_MAIN_CORE,
         path_to_solr_jar_file,
         path_to_json_data_file
     )
@@ -191,14 +188,11 @@ def _index_data_via_cmd(clear, core):
     print('Минфин-документы проиндексированы через JAR файл')
 
 
-def _index_data_via_curl(clear, core):
-    if clear:
-        requests.get(solr_clear_req.format(core))
-
+def _index_data_via_curl():
     curl_instance = pycurl.Curl()
     curl_instance.setopt(
         curl_instance.URL,
-        'http://' + SETTINGS.SOLR_HOST + ':8983/solr/{}/update?commit=true'.format(core)
+        'http://' + SETTINGS.SOLR_HOST + ':8983/solr/{}/update?commit=true'.format(SETTINGS.SOLR_MAIN_CORE)
     )
     curl_instance.setopt(curl_instance.HTTPPOST, [(
         'fileupload',
@@ -207,7 +201,7 @@ def _index_data_via_curl(clear, core):
             path_to_folder_file.format(output_file),
             curl_instance.FORM_CONTENTTYPE, 'application/json'
         )
-    ),])
+    ), ])
     curl_instance.perform()
     print('Минфин-документы проиндексированы через CURL')
 
@@ -285,7 +279,7 @@ def _create_tests(files, data_frames):
         with open(file_path, 'w', encoding='utf-8') as file_out:
             for row in df[['id', 'question']].itertuples():
                 file_out.write('{}:{}\n'.format(row.question, row.id))
-        #ToDo обработка ошибок открытия файлов
+                # ToDo обработка ошибок открытия файлов
 
 
 class ClassicMinfinDocument:
@@ -311,11 +305,7 @@ class ClassicMinfinDocument:
         return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
 
     def get_string_representation(self):
-        # ToDo: WTF! Ветки if else идентичны
         if self.lem_full_answer:
             return self.lem_question + self.lem_full_answer
         else:
             return self.lem_question + self.lem_short_answer
-
-
-_get_manual_synonym_questions('2.1')
