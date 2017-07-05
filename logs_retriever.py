@@ -6,6 +6,8 @@
 """
 import datetime
 
+from config import DATETIME_FORMAT
+
 
 class LogsRetriever:
     """
@@ -130,7 +132,7 @@ class LogsRetriever:
 
     @staticmethod
     def _get_dt_from_line(data_log_part):
-        return datetime.datetime.strptime(data_log_part, '%Y-%m-%d  %H:%M')
+        return datetime.datetime.strptime(data_log_part, DATETIME_FORMAT)
 
     @staticmethod
     def _get_value_from_log_part(user_log_part):

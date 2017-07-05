@@ -13,7 +13,7 @@ from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generating import DocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
-
+from manual_testing import cube_testing
 
 def set_up_db(overwrite=True):
     """
@@ -60,6 +60,7 @@ def set_up_all_together():
     """
     # set_up_db()
     set_up_solr_cube_data('jar')
+    # pylint: disable=no-member
     set_up_minfin_data('jar')
 
 
@@ -96,6 +97,12 @@ if __name__ == '__main__':
         help='Создание и индексирование документов по минфину',
     )
 
+    parser.add_argument(
+        "--disable-testing",
+        action='store_true',
+        help='Отключает тестирование после инициализации кубов',
+    )
+
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
@@ -109,8 +116,12 @@ if __name__ == '__main__':
         set_up_db()
     if args.solr:
         set_up_solr_cube_data(args.solr_index)
+        if not args.disable_testing:
+            cube_testing(test_sphere='cube')
     if args.minfin:
         set_up_minfin_data(args.solr_index)
+        if not args.disable_testing:
+            cube_testing(test_sphere='minfin')
 
     print("Complete")
 
