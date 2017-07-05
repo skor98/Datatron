@@ -44,15 +44,13 @@ class KnowledgeBaseSupport:
         """Создание БД"""
 
         db_file_path = path.join('kb', self.db_file)
-        if overwrite:
-            try:
+        if path.exists(db_file_path):
+            if overwrite:
                 remove(db_file_path)
-                dbc.create_tables()
-            except FileNotFoundError:
-                dbc.create_tables()
-        else:
-            if not path.isfile(db_file_path):
-                dbc.create_tables()
+            else:
+                return None
+            
+        dbc.create_tables()
 
     @staticmethod
     def _read_data():
