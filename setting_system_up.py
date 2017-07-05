@@ -18,6 +18,7 @@ from config import SETTINGS
 from manual_testing import cube_testing
 #import logs_helper
 
+
 def set_up_db(overwrite=True):
     """
     Создание и заполнение БД
@@ -65,6 +66,7 @@ def set_up_all_together():
 
 
 if __name__ == '__main__':
+    # set_up_all_together()
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(
         description="Иниициализация системы"

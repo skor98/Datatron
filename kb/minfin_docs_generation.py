@@ -69,7 +69,7 @@ def _read_data():
 def _write_data(data):
     """Запись всех документов в файл"""
 
-    with open(path_to_folder_file.format(output_file), 'w', encoding='utf-8') as file:
+    with open(path.join(path_to_folder_file, output_file), 'w', encoding='utf-8') as file:
         data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
         file.write(data_to_str)
 
@@ -78,7 +78,7 @@ def _refactor_data(data):
     tp = TextPreprocessing(uuid.uuid4())
 
     docs = []
-    for index, row in data.iterrows():
+    for row in data.itertuples():
         # Если запрос не параметризованных
         # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
         if not row.parameterized:
