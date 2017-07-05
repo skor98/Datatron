@@ -5,9 +5,8 @@ import json
 import math
 import uuid
 import subprocess
-from os import getcwd, listdir, path
+from os import listdir, path
 
-import requests
 import pycurl
 import pandas as pd
 
@@ -21,7 +20,8 @@ solr_clear_req = (
     'update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/' +
     'query%3E%3C/delete%3E&commit=true'
 )
-path_to_folder_file = r'{}\{}'.format(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, {})
+path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
+path_to_tests = 'tests'
 
 
 def set_up_minfin_data(index_way='curl'):
@@ -43,9 +43,9 @@ def _read_data():
     file_paths = []
 
     # Сохранение имеющихся в дериктории xlsx файлов
-    for file in listdir(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS):
+    for file in listdir(path_to_folder_file):
         if file.endswith(".xlsx"):
-            file_paths.append(path.join(SETTINGS.PATH_TO_MINFIN_ATTACHMENTS, file))
+            file_paths.append(path.join(path_to_folder_file, file))
             files.append(file)
 
     # Создания листа dataframe по документам
@@ -158,15 +158,13 @@ def _get_manual_synonym_questions(question_number):
 
     port_num = question_number.split('.')[0]
 
-    path_to_tests = r'{}\tests'.format(getcwd())
-
     is_portion_func = lambda f: f.endswith('.txt') and port_num in f and 'manual' in f
     file_with_portion = [f for f in listdir(path_to_tests) if is_portion_func(f)]
 
     if not file_with_portion:
         return None
 
-    with open(r'{}\{}'.format(path_to_tests, file_with_portion[0]), 'r', encoding='utf-8') as file:
+    with open(path.join(path_to_tests, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
             line = line.split(':')
             if line[1].strip() == question_number:
@@ -275,7 +273,7 @@ def _key_words_for_doc(document_id, score, top=5):
 
 def _create_tests(files, data_frames):
     for file_name, df in zip(files, data_frames):
-        file_path = r'tests\minfin_test_auto_for_{}.txt'.format(file_name.split('.')[0])
+        file_path = path.join(path_to_tests, 'minfin_test_auto_for_{}.txt'.format(file_name.rsplit('.', 1)[0]))
         with open(file_path, 'w', encoding='utf-8') as file_out:
             for row in df[['id', 'question']].itertuples():
                 file_out.write('{}:{}\n'.format(row.question, row.id))

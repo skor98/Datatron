@@ -1,7 +1,7 @@
-from kb.kb_db_creation import *
+import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
-from os import remove, getcwd, path
+from os import remove, path
 import json
 
 sep1 = ';'
@@ -20,7 +20,7 @@ class KnowledgeBaseSupport:
         # Если заполнение БД должно идти из SQL скрипта (в 95% случаев)
         if self.data_source_file.endswith('.sql'):
             # Указания пути к sql файлу
-            data_source_file_path = '{}\\{}\\{}'.format(getcwd(), 'kb', self.data_source_file)
+            data_source_file_path = path.join('kb', self.data_source_file)
 
             # Чтение данных из файла
             with open(data_source_file_path, 'r', encoding="utf-8") as file:
@@ -28,7 +28,7 @@ class KnowledgeBaseSupport:
 
             # Построчное исполнение команд
             for i in inserts:
-                database.execute_sql(i)
+                dbc.database.execute_sql(i)
         else:
             # Если же оно должно идти из метаданных полученных с серверов Кристы
             # Что очень редко, так как обновление БД на основе этих данных удалит ручные дополнения
@@ -43,16 +43,14 @@ class KnowledgeBaseSupport:
     def _create_db(self, overwrite=False):
         """Создание БД"""
 
-        db_file_path = r'{}\{}\{}'.format(getcwd(), 'kb', self.db_file)
-        if overwrite:
-            try:
+        db_file_path = path.join('kb', self.db_file)
+        if path.exists(db_file_path):
+            if overwrite:
                 remove(db_file_path)
-                create_tables()
-            except FileNotFoundError:
-                create_tables()
-        else:
-            if not path.isfile(db_file_path):
-                create_tables()
+            else:
+                return None
+            
+        dbc.create_tables()
 
     @staticmethod
     def _read_data():
@@ -60,7 +58,7 @@ class KnowledgeBaseSupport:
 
         data_set_list = []
 
-        cube_metadata_file = r'{}\{}\{}'.format(getcwd(), 'kb', 'cubes_metadata.txt')
+        cube_metadata_file = path.join('kb', 'cubes_metadata.txt')
 
         with open(cube_metadata_file, 'r', encoding='utf-8') as file:
             data = file.read()
@@ -102,30 +100,30 @@ class KnowledgeBaseSupport:
 
         for item in data_set:
             # Занесение куба
-            cube = Cube.create(**item.cube)
+            cube = dbc.Cube.create(**item.cube)
 
             # Занесение мер & связка мер с кубов
             for measure in item.measures:
-                m = Measure.create(**measure)
-                CubeMeasure.create(cube=cube, measure=m)
+                m = dbc.Measure.create(**measure)
+                dbc.CubeMeasure.create(cube=cube, measure=m)
 
             # Занесение измерений & занесение значений & связка значений и измерений
             for dimension_name, dimension_values in item.dimensions.items():
-                d = Dimension.create(label=dimension_name)
-                CubeDimension.create(cube=cube, dimension=d)
+                d = dbc.Dimension.create(label=dimension_name)
+                dbc.CubeDimension.create(cube=cube, dimension=d)
                 for dimension_value in dimension_values:
-                    v = Value.create(**dimension_value)
-                    DimensionValue.create(value=v, dimension=d)
+                    v = dbc.Value.create(**dimension_value)
+                    dbc.DimensionValue.create(value=v, dimension=d)
 
     @staticmethod
     def _create_cube_lem_description(data_set):
         """Нормализованное описание куба на основе частотного распределения слов в значениях его измерений"""
 
         cubes = [item.cube['name'] for item in data_set]
-        for cube in Cube.select().where(Cube.name in cubes):
+        for cube in dbc.Cube.select().where(dbc.Cube.name in cubes):
             if cube.lem_description == '-':
                 description = create_automative_cube_description(cube.name)
-                Cube.update(lem_description=description).where(Cube.name == cube.name).execute()
+                dbc.Cube.update(lem_description=description).where(dbc.Cube.name == cube.name).execute()
 
 
 class DataSet:

@@ -12,6 +12,7 @@ from kb.kb_support_library import get_representation_format
 from text_preprocessing import TextPreprocessing
 from dr.solr import Solr
 from config import SETTINGS
+import logs_helper  # pylint: disable=unused-import
 
 
 # Module, which is responsible for getting required from user data
@@ -30,7 +31,8 @@ class DataRetrieving:
         # нормализация запроса пользователя
         normalized_user_request = text_preprocessor.normalization(user_request)
 
-        solr = Solr(SETTINGS.SOLR_MAIN_CORE)  # инстанс класса, ответственного за работу с Apache Solr
+        # инстанс класса, ответственного за работу с Apache Solr
+        solr = Solr(SETTINGS.SOLR_MAIN_CORE)
 
         # получение структурированных результатов поиска
         solr_result = solr.get_data(normalized_user_request)
@@ -49,8 +51,8 @@ class DataRetrieving:
                 )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
-            logging_str = 'ID-запроса: {}\tМодуль: {}\tОтвет Solr: {}'
-            logging.warning(logging_str.format(request_id, __name__, solr_result.error))
+            logging_str = 'ID-запроса: {}\tОтвет Solr: {}'
+            logging.warning(logging_str.format(request_id, solr_result.error))
 
         return solr_result
 
@@ -71,7 +73,8 @@ class DataRetrieving:
             solr_cube_result.message = "Доступ закрыт"
             solr_cube_result.response = api_response
             value = api_response
-        # Обработка случая, когда что-то пошло не так, например, в запросе указан неизвестный параметр
+        # Обработка случая, когда что-то пошло не так, например,
+        # в запросе указан неизвестный параметр
         elif '"success":false' in api_response:
             solr_cube_result.status = False
             solr_cube_result.message = ERROR_IN_MDX_REQUEST
@@ -113,16 +116,14 @@ class DataRetrieving:
             # добавление обратной связи в поле экземпляра класа
             solr_cube_result.message = feedback
 
-        logging_str = 'ID-запроса: {}\tМодуль: {}\tОтвет Solr: {}\tMDX-запрос: {}\tЧисло: {}'
-
         # Создание фидбека в другом формате для удобного логирования
         feedback_verbal = feedback['verbal']
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
         verbal += ' '.join([str(idx + 1) + '. ' + i for idx, i in enumerate(feedback_verbal['dims'])])
 
+        logging_str = 'ID-запроса: {}\tОтвет Solr: {}\tMDX-запрос: {}\tЧисло: {}'
         logging.info(logging_str.format(
             request_id,
-            __name__,
             verbal,
             solr_cube_result.mdx_query,
             value
@@ -189,7 +190,8 @@ class DataRetrieving:
             },
             'user_request': user_request
         }
-
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            logging.debug("Получили фидбек {}".format(feedback))
         return feedback
 
     @staticmethod
@@ -213,10 +215,12 @@ class DataRetrieving:
             num_len -= 1
 
         if num_len < 6:
-            return str_num
+            res = str_num
         elif 6 < num_len <= 9:
-            return '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
+            res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
         elif 9 < num_len <= 12:
-            return '{},{} {}'.format(str_num[:-9], str_num[-9], 'млрд')
+            res = '{},{} {}'.format(str_num[:-9], str_num[-9], 'млрд')
         else:
-            return '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
+            res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
+        logging.debug("Сконвертировали {} в {}".format(number, res))
+        return res

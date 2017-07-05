@@ -8,7 +8,7 @@ Web интерфейс для взаимодействия с Datatron.
 
 import codecs
 import uuid
-import os
+from os import path, makedirs
 from random import choice
 from string import ascii_lowercase, digits
 
@@ -76,18 +76,18 @@ def post_audio_file():
     file = request.files.get('File')
 
     # Определение его формата
-    file_extension = file.filename.split('.')[-1]
+    file_extension = file.filename.rsplit('.', 1)[-1]
 
     # Определение дериктории для сохранения файла
-    save_path = r'{}\tmp'.format(os.getcwd())
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
+    save_path = 'tmp'
+    if not path.exists(save_path):
+        makedirs(save_path)
 
     # Генерация случайного имени файла
     new_file_name = ''.join(choice(ascii_lowercase + digits) for _ in range(10))
 
     # Сохранения полученного файла под новым именем в папку для хранения временных файлов
-    file_path = r"{}\{}.{}".format(save_path, new_file_name, file_extension)
+    file_path = path.join(save_path, '{}.{}'.format(new_file_name, file_extension))
     file.save(file_path)
 
     source = request.forms.get('Source')
