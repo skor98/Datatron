@@ -16,7 +16,7 @@ from kb.docs_generating import DocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import cube_testing
-import logs_helper  # pylint: disable=unused-import
+#import logs_helper
 
 def set_up_db(overwrite=True):
     """
