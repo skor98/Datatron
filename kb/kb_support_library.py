@@ -3,13 +3,7 @@
 
 from collections import namedtuple
 
-from kb.kb_db_creation import DimensionValue
-from kb.kb_db_creation import Value
-from kb.kb_db_creation import Cube
-from kb.kb_db_creation import CubeMeasure
-from kb.kb_db_creation import Measure
-from kb.kb_db_creation import Dimension
-from kb.kb_db_creation import CubeDimension
+import kb.kb_db_creation as dbc
 
 from text_preprocessing import TextPreprocessing
 
@@ -95,7 +89,7 @@ def get_full_values_for_dimensions(cube_values):
 
     full_values = []
     for cube_value in cube_values:
-        given_value = Value.get(Value.cube_value == cube_value)
+        given_value = dbc.Value.get(dbc.Value.cube_value == cube_value)
         full_values.append(given_value.full_value)
 
     return full_values
@@ -104,11 +98,11 @@ def get_full_values_for_dimensions(cube_values):
 def get_full_value_for_measure(cube_value, cube_name):
     """Получение полного вербального значения меры по формальному значению и кубу"""
 
-    measure = (Measure
-               .select(Measure.full_value)
-               .join(CubeMeasure)
-               .join(Cube)
-               .where(Measure.cube_value == cube_value, Cube.name == cube_name))[0]
+    measure = (dbc.Measure
+               .select(dbc.Measure.full_value)
+               .join(dbc.CubeMeasure)
+               .join(dbc.Cube)
+               .where(dbc.Measure.cube_value == cube_value, dbc.Cube.name == cube_name))[0]
 
     print(measure.full_value)
     return measure.full_value
@@ -118,9 +112,9 @@ def get_cube_dimensions(cube_name):
     """Получение списка измерения куба"""
 
     dimensions = []
-    for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
-            for dimension in Dimension.select().where(Dimension.id == cube_dimension.dimension_id):
+    for cube in dbc.Cube.select().where(dbc.Cube.name == cube_name):
+        for cube_dimension in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
+            for dimension in dbc.Dimension.select().where(dbc.Dimension.id == cube_dimension.dimension_id):
                 dimensions.append(dimension.label)
     return dimensions
 
@@ -128,12 +122,12 @@ def get_cube_dimensions(cube_name):
 def check_dimension_value_in_cube(cube_name, value):
     """Проверка наличия в кубе значения"""
 
-    for val in Value.select().where(Value.cube_value == value):
-        for dimension_value in DimensionValue.select().where(DimensionValue.value_id == val.id):
-            for cube_dimension in CubeDimension.select().where(
-                            CubeDimension.dimension_id == dimension_value.dimension_id
+    for val in dbc.Value.select().where(dbc.Value.cube_value == value):
+        for dimension_value in dbc.DimensionValue.select().where(dbc.DimensionValue.value_id == val.id):
+            for cube_dimension in dbc.CubeDimension.select().where(
+                            dbc.CubeDimension.dimension_id == dimension_value.dimension_id
             ):
-                for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
+                for cube in dbc.Cube.select().where(dbc.Cube.id == cube_dimension.cube_id):
                     return cube.name == cube_name
 
 
@@ -141,12 +135,12 @@ def create_automative_cube_description(cube_name):
     """Генерация автоматического описания к кубу"""
 
     values = []
-    for cube in Cube.select().where(Cube.name == cube_name):
-        for dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
-            for dim_value in DimensionValue.select().where(
-                            DimensionValue.dimension_id == dimension.dimension_id
+    for cube in dbc.Cube.select().where(dbc.Cube.name == cube_name):
+        for dimension in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
+            for dim_value in dbc.DimensionValue.select().where(
+                            dbc.DimensionValue.dimension_id == dimension.dimension_id
             ):
-                for value in Value.select().where(Value.id == dim_value.value_id):
+                for value in dbc.Value.select().where(dbc.Value.id == dim_value.value_id):
                     values.append(value.lem_index_value)
 
     values = ' '.join(values).split()
@@ -159,13 +153,13 @@ def get_classification_for_dimension(cube_name, dimension_name):
     """Получение значений измерения конкретного куба"""
 
     values = []
-    for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
-            for dim in Dimension.select().where(
-                                    Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
+    for cube in dbc.Cube.select().where(dbc.Cube.name == cube_name):
+        for cube_dimension in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
+            for dim in dbc.Dimension.select().where(
+                                    dbc.Dimension.id == cube_dimension.dimension_id and dbc.Dimension.label == dimension_name
             ):
-                for dim_value in DimensionValue.select().where(DimensionValue.dimension_id == dim.id):
-                    for value in Value.select().where(Value.id == dim_value.value_id):
+                for dim_value in dbc.DimensionValue.select().where(dbc.DimensionValue.dimension_id == dim.id):
+                    for value in dbc.Value.select().where(dbc.Value.id == dim_value.value_id):
                         values.append(value.full_value)
     return values
 
@@ -175,36 +169,36 @@ def get_representation_format(mdx_query):
 
     left_part = mdx_query.split('(')[0]
     measure_value = left_part.split('}')[0].split('.')[1][1:-1]
-    return int(Measure.get(Measure.cube_value == measure_value).format)
+    return int(dbc.Measure.get(dbc.Measure.cube_value == measure_value).format)
 
 
 def get_default_dimension(cube_name):
     """Полчение меры по умолчанию для куба"""
 
-    default_measure_id = Cube.get(Cube.name == cube_name).default_measure
-    return Measure.get(Measure.id == default_measure_id).cube_value
+    default_measure_id = dbc.Cube.get(dbc.Cube.name == cube_name).default_measure
+    return dbc.Measure.get(dbc.Measure.id == default_measure_id).cube_value
 
 
 def create_lem_manual_description(cube_name):
     """Создание нормализованного описания для куба"""
 
     tp = TextPreprocessing('Creating lemmatized manual description')
-    manual_description = Cube.get(Cube.name == cube_name).manual_description
+    manual_description = dbc.Cube.get(dbc.Cube.name == cube_name).manual_description
     lem_manual_description = tp.normalization(manual_description)
-    Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
+    dbc.Cube.update(manual_lem_description=lem_manual_description).where(dbc.Cube.name == cube_name).execute()
 
 
 def get_default_value_for_dimension(cube_name, dimension_name):
     # TODO: переписать код
     """Получение значения измерения по умолчанию"""
 
-    dimension = (Dimension
+    dimension = (dbc.Dimension
                  .select()
-                 .join(CubeDimension)
-                 .join(Cube)
-                 .where(Cube.name == cube_name, Dimension.label == dimension_name))[0]
+                 .join(dbc.CubeDimension)
+                 .join(dbc.Cube)
+                 .where(dbc.Cube.name == cube_name, dbc.Dimension.label == dimension_name))[0]
 
-    def_value = Value.get(Value.id == dimension.default_value)
+    def_value = dbc.Value.get(dbc.Value.id == dimension.default_value)
 
     print(def_value)
     return def_value
@@ -213,15 +207,15 @@ def get_default_value_for_dimension(cube_name, dimension_name):
 def get_connected_value_to_given_value(cube_value):
     """Возвращает связанное значение измерения с данным"""
 
-    given_value = Value.get(Value.cube_value == cube_value)
+    given_value = dbc.Value.get(dbc.Value.cube_value == cube_value)
     if given_value.connected_value:
-        connected_value = Value.get(Value.id == given_value.connected_value)
+        connected_value = dbc.Value.get(dbc.Value.id == given_value.connected_value)
 
-        dimension = (Dimension
-                     .select(Dimension.label)
-                     .join(DimensionValue)
-                     .join(Value)
-                     .where(Value.id == connected_value.id))[0]
+        dimension = (dbc.Dimension
+                     .select(dbc.Dimension.label)
+                     .join(dbc.DimensionValue)
+                     .join(dbc.Value)
+                     .where(dbc.Value.id == connected_value.id))[0]
 
         ConnectedValue = namedtuple('ConnectedValue', ['dimension', 'value'])
         return ConnectedValue(dimension.label, connected_value.cube_value)

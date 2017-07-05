@@ -9,7 +9,7 @@ import datetime
 import pycurl
 import requests
 
-from kb.kb_db_creation import *  # ToDo Убрать звёздочку
+import kb.kb_db_creation as dbc
 from config import SETTINGS
 
 
@@ -113,14 +113,14 @@ class DocsGeneration:
 
         # Здесь обрабатываются прочее значения измерений
         values = []
-        for cube in Cube.select():
-            for dim_cub in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
-                for dimension in Dimension.select().where(Dimension.id == dim_cub.dimension_id):
+        for cube in dbc.Cube.select():
+            for dim_cub in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
+                for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
                     if dimension.label not in ('Years', 'Territories'):
-                        for dimension_value in DimensionValue.select().where(
-                                        DimensionValue.dimension_id == dimension.id
+                        for dimension_value in dbc.DimensionValue.select().where(
+                                        dbc.DimensionValue.dimension_id == dimension.id
                         ):
-                            for value in Value.select().where(Value.id == dimension_value.value_id):
+                            for value in dbc.Value.select().where(dbc.Value.id == dimension_value.value_id):
                                 verbal = value.lem_index_value
                                 if value.lem_synonyms:
                                     verbal += ' {}'.format(value.lem_synonyms)
@@ -154,9 +154,9 @@ class DocsGeneration:
         # TODO: рефакторинг
         # Отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
         territory_values = []
-        dimension = Dimension.get(Dimension.label == 'Territories')
-        for dimension_value in DimensionValue.select().where(DimensionValue.dimension_id == dimension.id):
-            for value in Value.select().where(Value.id == dimension_value.value_id):
+        dimension = dbc.Dimension.get(dbc.Dimension.label == 'Territories')
+        for dimension_value in dbc.DimensionValue.select().where(dbc.DimensionValue.dimension_id == dimension.id):
+            for value in dbc.Value.select().where(dbc.Value.id == dimension_value.value_id):
                 index_value = value.lem_index_value
                 if value.lem_synonyms:
                     index_value += ' {}'.format(value.lem_synonyms)
@@ -166,16 +166,16 @@ class DocsGeneration:
 
         for item in territory_values:
             td[item] = []
-            for value in Value.select().where(Value.lem_index_value == item):
+            for value in dbc.Value.select().where(dbc.Value.lem_index_value == item):
                 td[item].append({'id': value.id, 'fvalue': value.cube_value})
 
         for key, value in td.items():
             for item in value:
-                dimension_value_dimension_id = DimensionValue.get(
-                    DimensionValue.value_id == item['id']
+                dimension_value_dimension_id = dbc.DimensionValue.get(
+                    dbc.DimensionValue.value_id == item['id']
                 ).dimension_id
-                cube_id = CubeDimension.get(CubeDimension.dimension_id == dimension_value_dimension_id).cube_id
-                item['cube'] = Cube.get(Cube.id == cube_id).name
+                cube_id = dbc.CubeDimension.get(dbc.CubeDimension.dimension_id == dimension_value_dimension_id).cube_id
+                item['cube'] = dbc.Cube.get(dbc.Cube.id == cube_id).name
                 item.pop('id', None)
 
         territory_values.clear()
@@ -193,7 +193,7 @@ class DocsGeneration:
         """Создание документов по кубам"""
 
         cubes = []
-        for cube in Cube.select():
+        for cube in dbc.Cube.select():
             cube_description = cube.auto_lem_description
             if cube.manual_lem_description:
                 cube_description += ' {}'.format(cube.manual_lem_description)
@@ -212,14 +212,14 @@ class DocsGeneration:
         default_measures_ids = []
 
         # Сбор ID мер, указанных для кубов в БД по умолчанию
-        for cube in Cube.select():
+        for cube in dbc.Cube.select():
             default_measures_ids.append(cube.default_measure_id)
 
         # Индексация только тех мер, которые не относятся к значениям по умолчанию
-        for measure in Measure.select():
+        for measure in dbc.Measure.select():
             if measure.id not in default_measures_ids:
-                for cube_measure in CubeMeasure.select().where(CubeMeasure.measure_id == measure.id):
-                    for cube in Cube.select().where(Cube.id == cube_measure.cube_id):
+                for cube_measure in dbc.CubeMeasure.select().where(dbc.CubeMeasure.measure_id == measure.id):
+                    for cube in dbc.Cube.select().where(dbc.Cube.id == cube_measure.cube_id):
                         measures.append({
                             'type': 'measure',
                             'cube': cube.name,
