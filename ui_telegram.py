@@ -162,9 +162,9 @@ def get_all_warning_logs(message):
             rnd_str = get_random_id(4)
             file_name = '{}_{}_{}_{}.log'.format(
                 'warning',
-                 rnd_str,
-                 message.chat.username,
-                 datetime.datetime.now().strftime(DATE_FORMAT)
+                rnd_str,
+                message.chat.username,
+                datetime.datetime.now().strftime(DATE_FORMAT)
             )
             with open(file_name, 'w') as file:
                 file.write(logs)
@@ -226,8 +226,8 @@ def get_classification(message):
                     proc_values = values
 
                 params = '\n'.join([
-                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                ])
+                                       '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
+                                       ])
                 bot.send_message(message.chat.id, params)
             else:
                 bot.send_message(message.chat.id, 'Классификацию получить не удалось')
@@ -300,13 +300,35 @@ def process_response(message, input_format='text', file_content=None):
         )
 
     if result.docs_found:
-        process_minfin_questions(message, result.minfin_documents)
-        process_cube_questions(
-            message,
-            result.cube_documents,
-            request_id,
-            input_format=input_format
-        )
+        # TODO: подправить со временем, выдавать только один ответ
+        if result.minfin_documents.score > result.cube_documents.sum_score:
+            bot.send_message(message.chat.id,
+                             '_Комментарий:_\nПри этом запросе должен выдаваться только Минфин документ.' +
+                             ' Документ по кубам (если найден), должен идти в \"смотри также\"',
+                             parse_mode='Markdown')
+            process_minfin_questions(message, result.minfin_documents)
+            process_cube_questions(
+                message,
+                result.cube_documents,
+                request_id,
+                input_format=input_format
+            )
+        else:
+            bot.send_message(message.chat.id,
+                             '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
+                             ' Документ по Минфину (если найден и его score > 20), должен идти в \"смотри также\"',
+                             parse_mode='Markdown')
+            process_cube_questions(
+                message,
+                result.cube_documents,
+                request_id,
+                input_format=input_format
+            )
+            process_minfin_questions(message, result.minfin_documents)
+
+
+
+
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
