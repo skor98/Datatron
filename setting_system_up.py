@@ -66,7 +66,6 @@ def set_up_all_together():
 
 
 if __name__ == '__main__':
-    # set_up_all_together()
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(
         description="Иниициализация системы"
@@ -79,9 +78,15 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--solr",
+        "--cube",
         action='store_true',
         help='Создание и индексирование документов по кубам',
+    )
+
+    parser.add_argument(
+        "--minfin",
+        action='store_true',
+        help='Создание и индексирование документов по минфину',
     )
 
     parser.add_argument(
@@ -94,12 +99,6 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--minfin",
-        action='store_true',
-        help='Создание и индексирование документов по минфину',
-    )
-
-    parser.add_argument(
         "--disable-testing",
         action='store_true',
         help='Отключает тестирование после инициализации кубов',
@@ -108,7 +107,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
-    if not args.db and not args.solr and not args.minfin:
+    if not args.db and not args.cube and not args.minfin:
         print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
             sys.argv[0]
         ))
@@ -116,7 +115,7 @@ if __name__ == '__main__':
 
     if args.db:
         set_up_db()
-    if args.solr:
+    if args.cube:
         set_up_solr_cube_data(args.solr_index)
         if not args.disable_testing:
             cube_testing(test_sphere='cube')

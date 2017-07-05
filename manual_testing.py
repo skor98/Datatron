@@ -11,8 +11,8 @@ import requests
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT
 
-
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+
 
 def post_request_to_server(request):
     return requests.post('http://api.datatron.ru/test', {"Request": request})
@@ -29,6 +29,8 @@ def cube_testing(local=True, test_sphere='cube'):
     test_path = 'tests'
     testing_results = []
     true_answers = []
+    wrong_answers = []
+    error_answers = []
 
     if test_sphere == 'cube':
         test_files_paths = get_test_files(test_path, "cubes_test")
@@ -63,7 +65,9 @@ def cube_testing(local=True, test_sphere='cube'):
                         answer,
                         system_answer,
                         testing_results,
-                        true_answers
+                        true_answers,
+                        wrong_answers,
+                        error_answers
                     )
                 else:
                     assert_minfin_requests(
@@ -71,23 +75,34 @@ def cube_testing(local=True, test_sphere='cube'):
                         req,
                         system_answer,
                         testing_results,
-                        true_answers
+                        true_answers,
+                        wrong_answers,
+                        error_answers
                     )
 
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
 
     true_answers = sum(true_answers)
-    false_answers = len(testing_results) - true_answers - len(test_files_paths)
+    wrong_answers = sum(wrong_answers)
+    error_answers = sum(error_answers)
 
     if test_sphere == 'cube':
-        file_name = 'cube_{}_{}_OK_{}_Fail_{}.txt'
+        file_name = 'cube_{}_{}_OK_{}_Wrong_{}_Error_{}.txt'
     else:
-        file_name = 'minfin_{}_{}_OK_{}_Fail_{}.txt'
+        file_name = 'minfin_{}_{}_OK_{}_Wrong_{}_Error_{}.txt'
 
     if local:
-        file_name = file_name.format('local', current_datetime, true_answers, false_answers)
+        file_name = file_name.format('local',
+                                     current_datetime,
+                                     true_answers,
+                                     wrong_answers,
+                                     error_answers)
     else:
-        file_name = file_name.format('server', current_datetime, true_answers, false_answers)
+        file_name = file_name.format('server',
+                                     current_datetime,
+                                     true_answers,
+                                     wrong_answers,
+                                     error_answers)
 
     with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
@@ -95,7 +110,7 @@ def cube_testing(local=True, test_sphere='cube'):
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
-def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers):
+def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers, wrong_answers, error_answers):
     response = system_answer['cube_documents']['response']
     if response:
         try:
@@ -111,15 +126,17 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             )
             ars = ars.format(idx, req, int(answer), response)
             testing_results.append(ars)
+            wrong_answers.append(1)
             print(ars)
     else:
         ars = '{}. - Запрос "{}" вызвал ошибку: {}'
         ars = ars.format(idx, req, system_answer['message'])
         testing_results.append(ars)
+        error_answers.append(1)
         print(ars)
 
 
-def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers):
+def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers, error_answers):
     response = system_answer['minfin_documents']['number']
     if response:
         try:
@@ -135,6 +152,7 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
             )
             ars = ars.format(q_id=question_id, req=req, fl=response)
             testing_results.append(ars)
+            wrong_answers.append(1)
     else:
         # TODO: подправить MSG
         ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(
@@ -143,6 +161,7 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
             msg='Не определена'
         )
         testing_results.append(ars)
+        error_answers.append(1)
         print(ars)
 
 
@@ -156,4 +175,4 @@ def get_test_files(test_path, prefix):
 
 if __name__ == "__main__":
     cube_testing(test_sphere='cube')
-    # cube_testing(test_sphere='minfin')
+    cube_testing(test_sphere='minfin')
