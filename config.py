@@ -92,5 +92,20 @@ class AlexSettings:
     HOST = '0.0.0.0'
 
 
-ss, ds, ms, als = ServerSettings, DimaSettings, MashaSettings, AlexSettings
+class GlebSettings:
+    """Настройки для работы на локальном компьютере Глеба"""
+
+    PATH_TO_KNOWLEDGEBASE = r'/home/larousse/projects/Datatron/kb/knowledge_base.db'
+    PATH_TO_USER_DB = r'/home/larousse/projects/Datatron/db/users.db'
+    #PATH_TO_SOLR_POST_JAR_FILE = r'"C:\Users\RealPC\Desktop\solr-6.6.0\example\exampledocs\post.jar"'
+    #PATH_TO_FFMPEG = r'"C:\Users\RealPC\Desktop\ffmpeg\ffmpeg.exe"'
+    PATH_TO_MINFIN_ATTACHMENTS = r'/home/larousse/projects/Datatron/data/minfin'
+    TELEGRAM_API_TOKEN = '424979246:AAGOwIr1pJCEKukxc3F8w1_cAH6IyoH1Elc'  # GlebDatatronBot
+    SOLR_MAIN_CORE = 'kb_3c'
+    SOLR_MINFIN_CORE = 'minfin'
+    ADMIN_TELEGRAM_ID = (111640236,)
+    SOLR_HOST = 'localhost'
+    HOST = '0.0.0.0'
+
+ss, ds, ms, als, gls = ServerSettings, DimaSettings, MashaSettings, AlexSettings, GlebSettings
 SETTINGS = ss  # Подставь нужную переменную для работы системы
