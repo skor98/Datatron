@@ -37,4 +37,11 @@ _cur_settings_dict = _settings_json["settings"][
     _settings_json["cur_settings"]
 ]
 
+try:
+    LOG_LEVEL = _settings_json["log_level"]
+except:
+    print('Пожалуйста, добавьте значение "log_level" в файл настроек')
+    LOG_LEVEL = "INFO"
+    print("Установлен уровень {}".format(LOG_LEVEL))
+
 SETTINGS = get_class_from_dict(_cur_settings_dict)

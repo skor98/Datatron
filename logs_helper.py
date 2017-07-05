@@ -14,7 +14,7 @@ import sys
 import logging
 from logging import FileHandler, StreamHandler
 
-from config import DATETIME_FORMAT
+from config import DATETIME_FORMAT, LOG_LEVEL
 
 
 def init_logging():
@@ -52,6 +52,7 @@ def set_logging_level(level):
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL
     }
+
     if isinstance(level, str):
         try:
             level_to_set = string_to_level[level.upper()]
@@ -59,6 +60,11 @@ def set_logging_level(level):
             logging.error("Logging level {} не существует".format(level))
             return
     elif isinstance(level, int):
+        if level < 0 or level > 50:
+            logging.error("level должен быть от 0 до 50, а не {}".format(
+                type(level)
+            ))
+            return
         level_to_set = level
     else:
         logging.error("Неверный тип level - {}".format(type(level)))
@@ -66,3 +72,4 @@ def set_logging_level(level):
     logger.setLevel(level_to_set)
 
 init_logging()
+set_logging_level(LOG_LEVEL)
