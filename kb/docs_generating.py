@@ -145,7 +145,10 @@ class DocsGeneration:
         # 1-2-цифренные года: 7 - 17
         year_values.extend([str(i) for i in range(7, current_year - 1999)])
         for _ in range(len(year_values)):
-            year_values.insert(0, {'type': 'year_dimension', 'fvalue': year_values.pop()})
+            year_values.insert(0,
+                               {'type': 'year_dimension',
+                                'name': 'Years',
+                                'fvalue': year_values.pop()})
 
         return year_values
 
@@ -181,7 +184,9 @@ class DocsGeneration:
         territory_values.clear()
 
         for key, value in td.items():
-            d = {'type': 'territory_dimension', 'verbal': key}
+            d = {'type': 'territory_dimension',
+                 'name': 'Territories',
+                 'verbal': key}
             for item in value:
                 d[item['cube']] = item['fvalue']
             territory_values.append(d)

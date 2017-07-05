@@ -15,6 +15,7 @@ from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import cube_testing
 
+
 def set_up_db(overwrite=True):
     """
     Создание и заполнение БД

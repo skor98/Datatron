@@ -13,11 +13,16 @@ import numpy as np
 
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_value_for_dimension
-from kb.kb_support_library import get_default_dimension
+from kb.kb_support_library import get_connected_value_to_given_value
+from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 
 
 class Solr:
+    """
+    Класс для взимодействия с поисковой системой Apache Solr
+    """
+
     def __init__(self, core):
         self.core = core
 
@@ -51,7 +56,7 @@ class Solr:
         """
 
         request = 'http://{}:8983/solr/{}/select'.format(
-            SETTINGS.SOLR_HOST, 
+            SETTINGS.SOLR_HOST,
             self.core
         )
         params = {'q': user_request, 'rows': 20, 'wt': 'json', 'fl': '*,score'}
@@ -60,10 +65,13 @@ class Solr:
 
     @staticmethod
     def _parse_solr_response(solr_docs, solr_result):
-        """Парсер набора документов
+        """
+        Разбивает найденные документы по переменным
 
-        Принимает на вход JSON-объект.
-        Возвращает MDX"""
+        :param solr_docs: JSON-объект с найденными документами
+        :param solr_result: объект класса DrSolrResult()
+        :return:
+        """
 
         minfin_docs = []
         cubes = []
@@ -116,9 +124,11 @@ class Solr:
     @staticmethod
     def _process_cube_question(year, territory, dimensions, cubes, measures):
         solr_cube_result = DrSolrCubeResult()
+        final_dimension_list = []
 
         if year:
             dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
+            final_dimension_list.append(year)
 
         if territory:
             dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'])]
@@ -149,7 +159,6 @@ class Solr:
         except IndexError:
             return solr_cube_result
 
-        final_dimensions = []
         # если какие-то измерения (кроме территории, года) были найдены:
         if dimensions:
             # TODO: доработать определение куба
@@ -161,28 +170,30 @@ class Solr:
                 reference_cube = dimensions[0][0]['cube']
                 reference_cube_score = dimensions[0][0]['score']
 
-            # Максимальная группа измерений от куба лучшего элемента
-            # dimensions = [doc for doc in dimensions if doc['cube'][0] == reference_cube]
-
             # Это часть позволила улучшить алгоритм с 5/39 до 11/39
             # Берем все элементы из первой череды измерений для выбранного куба
             for dim in dimensions[0]:
                 if dim['cube'] == reference_cube:
-                    final_dimensions.append(dim)
+                    final_dimension_list.append(dim)
 
-        if final_dimensions:
+        final_dimension_list.append({
+            'name': territory['name'],
+            'cube': reference_cube,
+            'fvalue': territory[reference_cube],
+            'score': territory['score']
+        })
+
+        if final_dimension_list:
             mdx_request = Solr._build_mdx_request(
-                final_dimensions,
+                final_dimension_list,
                 measures,
-                reference_cube,
-                year,
-                territory
+                reference_cube
             )
             print(mdx_request)
             solr_cube_result.mdx_query = mdx_request
             solr_cube_result.cube_score = reference_cube_score
             Solr._calculate_score_for_cube_questions(
-                final_dimensions,
+                final_dimension_list,
                 measures,
                 year,
                 territory,
@@ -234,61 +245,8 @@ class Solr:
         return solr_minfin_result
 
     @staticmethod
-    def _build_mdx_request(dimensions, measures, cube, year, territory):
-        """Формирование MDX-запроса, на основе найденных документов
-
-        :param dimensions: список документов измерений
-        :param measures: список документов мер
-        :param cube: имя правильного куба
-        :param year: год
-        :param territory: территория
-        :return: MDX-запрос
-        """
-
-        # шаблон MDX-запроса
-        mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
-
-        dim_tmp, dim_str_value = "[{}].[{}]", []
-
-        for doc in dimensions:
-            dim_str_value.append(dim_tmp.format(doc['name'], doc['fvalue']))
-
-        reference_cube_dimensions = get_cube_dimensions(cube)
-
-        # TODO: подправить на капс
-        if 'Years' in reference_cube_dimensions:
-            if year:
-                year_fvalue = year['fvalue']
-            else:
-                year_fvalue = get_default_value_for_dimension(cube, 'Years')
-            dim_str_value.append(dim_tmp.format('YEARS', year_fvalue))
-
-        # TODO: подправить на капс
-        if 'Territories' in reference_cube_dimensions and territory:
-            dim_str_value.append(dim_tmp.format('TERRITORIES', territory[cube]))
-            dim_str_value.append(dim_tmp.format('BGLEVELS', '09-3'))
-        elif 'Territories' in reference_cube_dimensions:
-            dim_str_value.append(dim_tmp.format(
-                'BGLEVELS',
-                get_default_value_for_dimension(cube, 'BGLevels')
-            ))
-        else:
-            pass  # ToDo: тут должно что-то быть или нет?
-
-        measure = get_default_dimension(cube)
-        if measures:
-            measures = [item for item in measures if item['cube'] == cube]
-            if measures:
-                measure = measures[0]['formal']
-
-        return mdx_template.format(measure, cube, ','.join(dim_str_value))
-
-    @staticmethod
-    def _update_connected_values():
-        pass
-
-    @staticmethod
     def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
+        """Подсчет различных видов score для запроса по кубу"""
         scores = []
 
         # ToDo: Проверка, что ['score'] существует и к нему можно обратиться (2!)
@@ -308,6 +266,64 @@ class Solr:
         solr_result.min_score = min(scores)
         solr_result.max_score = max(scores)
         solr_result.sum_score = sum(scores)
+
+    @staticmethod
+    def _build_mdx_request(dimensions, measures, cube):
+        """Формирование MDX-запроса, на основе найденных документов
+
+        :param dimensions: список документов измерений
+        :param measures: список документов мер
+        :param cube: имя правильного куба
+        :param year: год
+        :param territory: территория
+        :return: MDX-запрос
+        """
+
+        # шаблон MDX-запроса
+        mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
+
+        # список измерения для куба
+        all_cube_dimensions = get_cube_dimensions(cube)
+
+        dim_tmp, dim_str_value = "[{}].[{}]", []
+
+        for doc in dimensions:
+            # добавление значений измерений в строку
+            dim_str_value.append(dim_tmp.format(doc['name'], doc['fvalue']))
+
+            # удаление из списка измерений использованное
+            all_cube_dimensions.remove(doc['name'])
+
+            # обработка связанных значений
+            connected_value = get_connected_value_to_given_value(doc['fvalue'])
+
+            # Если у значения есть связанное значение
+            if connected_value:
+                dim_str_value.append(dim_tmp.format(
+                    connected_value['dimension'],
+                    connected_value['fvalue']))
+
+                # удаление из списка измерений использованное
+                all_cube_dimensions.remove(connected_value['dimension'])
+
+        # обработка дефолтных значений для измерейни
+        for ref_dim in all_cube_dimensions:
+            default_value = get_default_value_for_dimension(cube, ref_dim)
+            if default_value:
+                dim_str_value.append(dim_tmp.format(
+                    default_value['dimension'],
+                    default_value['fvalue']))
+
+        measure = get_default_cube_measure(cube)
+
+        # Если Solr нашел какие-нибудь меры
+        if measures:
+            # Фильтрация мер по принадлежности к выбранному кубу
+            measures = [item for item in measures if item['cube'] == cube]
+            if measures:
+                measure = measures[0]['formal']
+
+        return mdx_template.format(measure, cube, ','.join(dim_str_value))
 
 
 class DrSolrCubeResult:

@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from collections import namedtuple
-
 from kb.kb_db_creation import DimensionValue
 from kb.kb_db_creation import Value
 from kb.kb_db_creation import Cube
@@ -110,7 +108,6 @@ def get_full_value_for_measure(cube_value, cube_name):
                .join(Cube)
                .where(Measure.cube_value == cube_value, Cube.name == cube_name))[0]
 
-    print(measure.full_value)
     return measure.full_value
 
 
@@ -178,7 +175,7 @@ def get_representation_format(mdx_query):
     return int(Measure.get(Measure.cube_value == measure_value).format)
 
 
-def get_default_dimension(cube_name):
+def get_default_cube_measure(cube_name):
     """Полчение меры по умолчанию для куба"""
 
     default_measure_id = Cube.get(Cube.name == cube_name).default_measure
@@ -204,10 +201,13 @@ def get_default_value_for_dimension(cube_name, dimension_name):
                  .join(Cube)
                  .where(Cube.name == cube_name, Dimension.label == dimension_name))[0]
 
-    def_value = Value.get(Value.id == dimension.default_value)
+    # Если для измерения указано дефольное значение
+    # И если оно не уровня All (в БД уровень All обозначается 0)
+    if dimension.default_value:
+        def_value = Value.get(Value.id == dimension.default_value)
 
-    print(def_value)
-    return def_value
+        return {'dimension': dimension_name,
+                'fvalue': def_value.cube_value}
 
 
 def get_connected_value_to_given_value(cube_value):
@@ -223,5 +223,5 @@ def get_connected_value_to_given_value(cube_value):
                      .join(Value)
                      .where(Value.id == connected_value.id))[0]
 
-        ConnectedValue = namedtuple('ConnectedValue', ['dimension', 'value'])
-        return ConnectedValue(dimension.label, connected_value.cube_value)
+        return {'dimension': dimension.label,
+                'fvalue': connected_value.cube_value}
