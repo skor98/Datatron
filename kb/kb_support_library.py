@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+from collections import namedtuple
+
 from kb.kb_db_creation import DimensionValue
 from kb.kb_db_creation import Value
 from kb.kb_db_creation import Cube
@@ -65,7 +67,7 @@ def filter_combinations(combs, dim_set, dd):
         for comb in combs:
             formal_values = [i[1] for i in comb]
             if (
-                    bg_level_and_mark_value.intersection(set(formal_values))
+                        bg_level_and_mark_value.intersection(set(formal_values))
                     and not bg_level_and_mark_value.issubset(set(formal_values))
             ):
                 try:
@@ -93,19 +95,23 @@ def get_full_values_for_dimensions(cube_values):
 
     full_values = []
     for cube_value in cube_values:
-        for value in Value.select().where(Value.cube_value == cube_value):
-            full_values.append(value.full_value)
-    return list(set(full_values))
+        given_value = Value.get(Value.cube_value == cube_value)
+        full_values.append(given_value.full_value)
+
+    return full_values
 
 
 def get_full_value_for_measure(cube_value, cube_name):
     """Получение полного вербального значения меры по формальному значению и кубу"""
 
-    for cube in Cube.select().where(Cube.name == cube_name):
-        for cube_measure in CubeMeasure.select().where(CubeMeasure.cube == cube.id):
-            for measure in Measure.select().where(Measure.id == cube_measure.measure_id,
-                                                  Measure.cube_value == cube_value):
-                return measure.full_value
+    measure = (Measure
+               .select(Measure.full_value)
+               .join(CubeMeasure)
+               .join(Cube)
+               .where(Measure.cube_value == cube_value, Cube.name == cube_name))[0]
+
+    print(measure.full_value)
+    return measure.full_value
 
 
 def get_cube_dimensions(cube_name):
@@ -125,7 +131,7 @@ def check_dimension_value_in_cube(cube_name, value):
     for val in Value.select().where(Value.cube_value == value):
         for dimension_value in DimensionValue.select().where(DimensionValue.value_id == val.id):
             for cube_dimension in CubeDimension.select().where(
-                    CubeDimension.dimension_id == dimension_value.dimension_id
+                            CubeDimension.dimension_id == dimension_value.dimension_id
             ):
                 for cube in Cube.select().where(Cube.id == cube_dimension.cube_id):
                     return cube.name == cube_name
@@ -138,7 +144,7 @@ def create_automative_cube_description(cube_name):
     for cube in Cube.select().where(Cube.name == cube_name):
         for dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
             for dim_value in DimensionValue.select().where(
-                    DimensionValue.dimension_id == dimension.dimension_id
+                            DimensionValue.dimension_id == dimension.dimension_id
             ):
                 for value in Value.select().where(Value.id == dim_value.value_id):
                     values.append(value.lem_index_value)
@@ -156,7 +162,7 @@ def get_classification_for_dimension(cube_name, dimension_name):
     for cube in Cube.select().where(Cube.name == cube_name):
         for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube.id):
             for dim in Dimension.select().where(
-                    Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
+                                    Dimension.id == cube_dimension.dimension_id and Dimension.label == dimension_name
             ):
                 for dim_value in DimensionValue.select().where(DimensionValue.dimension_id == dim.id):
                     for value in Value.select().where(Value.id == dim_value.value_id):
@@ -188,23 +194,30 @@ def create_lem_manual_description(cube_name):
     Cube.update(manual_lem_description=lem_manual_description).where(Cube.name == cube_name).execute()
 
 
-def create_lem_synonyms():
-    """Создания нормализованных синонимов для значений измерений"""
-
-    tp = TextPreprocessing('Creating lemmatized manual description')
-    for val in Value.select():
-        syn = val.synonyms
-        if syn:
-            lem_syn = tp.normalization(syn)
-            Value.update(lem_synonyms=lem_syn).where(Value.cube_value == val.cube_value).execute()
-
-
 def get_default_value_for_dimension(cube_name, dimension_name):
     """Получение значения измерения по умолчанию"""
 
     cube_id = Cube.get(Cube.name == cube_name).id
     for cube_dimension in CubeDimension.select().where(CubeDimension.cube_id == cube_id):
         for dim in Dimension.select().where(
-                (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
+                        (Dimension.id == cube_dimension.dimension_id) & (Dimension.label == dimension_name)
         ):
+            print(Value.get(Value.id == dim.default_value).cube_value)
             return Value.get(Value.id == dim.default_value).cube_value
+
+
+def get_connected_value_to_given_value(cube_value):
+    """Возвращает связанное значение измерения с данным"""
+
+    given_value = Value.get(Value.cube_value == cube_value)
+    if given_value.connected_value:
+        connected_value = Value.get(Value.id == given_value.connected_value)
+
+        dimension = (Dimension
+                     .select(Dimension.label)
+                     .join(DimensionValue)
+                     .join(Value)
+                     .where(Value.id == connected_value.id))[0]
+
+        ConnectedValue = namedtuple('ConnectedValue', ['dimension', 'value'])
+        return ConnectedValue(dimension.label, connected_value.cube_value)
