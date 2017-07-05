@@ -397,39 +397,39 @@
   <fieldType name="tints" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
   <fieldType name="tlong" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
   <fieldType name="tlongs" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
-  <field name="CLDO02" type="strings" indexed="false"/>
-  <field name="EXDO01" type="strings" indexed="false"/>
-  <field name="EXYR03" type="strings" indexed="false"/>
-  <field name="FSYR01" type="strings" indexed="false"/>
-  <field name="INDO01" type="strings" indexed="false"/>
-  <field name="INYR03" type="strings" indexed="false"/>
+  <field name="CLDO02" type="string" indexed="false" multiValued="false"/>
+  <field name="EXDO01" type="string" indexed="false" multiValued="false"/>
+  <field name="EXYR03" type="string" indexed="false" multiValued="false"/>
+  <field name="FSYR01" type="string" indexed="false" multiValued="false"/>
+  <field name="INDO01" type="string" indexed="false" multiValued="false"/>
+  <field name="INYR03" type="string" indexed="false" multiValued="false"/>
   <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
-  <field name="cube" type="strings" indexed="false"/>
-  <field name="description" type="strings"/>
+  <field name="cube" type="string" indexed="false" multiValued="false"/>
+  <field name="description" type="string" multiValued="false"/>
   <field name="document" type="strings" indexed="false"/>
   <field name="document_caption" type="strings"/>
-  <field name="formal" type="strings" indexed="false"/>
-  <field name="full_answer" type="strings"/>
-  <field name="fvalue" type="strings" indexed="false"/>
-  <field name="hierarchy_level" type="tlongs" indexed="false"/>
+  <field name="formal" type="string" indexed="false" multiValued="false"/>
+  <field name="full_answer" type="string" multiValued="false"/>
+  <field name="fvalue" type="string" indexed="false" multiValued="false"/>
+  <field name="hierarchy_level" type="tlongs" indexed="false" multiValued="false"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
-  <field name="lem_full_answer" type="strings"/>
-  <field name="lem_key_words" type="strings"/>
-  <field name="lem_question" type="strings"/>
-  <field name="lem_short_answer" type="strings"/>
+  <field name="lem_full_answer" type="string" multiValued="false"/>
+  <field name="lem_key_words" type="string" multiValued="false"/>
+  <field name="lem_question" type="string" multiValued="false"/>
+  <field name="lem_short_answer" type="string" multiValued="false"/>
   <field name="lem_synonym_questions" type="strings"/>
   <field name="link" type="strings" indexed="false"/>
   <field name="link_name" type="strings"/>
-  <field name="name" type="strings"/>
-  <field name="number" type="strings" indexed="false"/>
+  <field name="name" type="string" multiValued="false"/>
+  <field name="number" type="string" indexed="false" multiValued="false"/>
   <field name="picture" type="strings" indexed="false"/>
   <field name="picture_caption" type="strings"/>
-  <field name="question" type="strings"/>
-  <field name="short_answer" type="strings"/>
-  <field name="type" type="strings" indexed="false"/>
-  <field name="verbal" type="strings"/>
+  <field name="question" type="string" multiValued="false"/>
+  <field name="short_answer" type="string" multiValued="false"/>
+  <field name="type" type="string" indexed="false" multiValued="false"/>
+  <field name="verbal" type="string" multiValued="false"/>
   <dynamicField name="*_txt_en_split_tight" type="text_en_splitting_tight" indexed="true" stored="true"/>
   <dynamicField name="*_descendent_path" type="descendent_path" indexed="true" stored="true"/>
   <dynamicField name="*_ancestor_path" type="ancestor_path" indexed="true" stored="true"/>

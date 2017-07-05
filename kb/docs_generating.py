@@ -14,9 +14,9 @@ from config import SETTINGS
 
 
 class DocsGeneration:
-    def __init__(self, core):
+    def __init__(self):
         self.file_name = r'kb\data_for_indexing.json'
-        self.core = core
+        self.core = SETTINGS.SOLR_MAIN_CORE
 
     def generate_docs(self):
         data = (
@@ -85,13 +85,13 @@ class DocsGeneration:
         c.perform()
         print('Документы для кубов проиндексированы через CURL')
 
-    def index_created_documents_via_cmd(self, path_to_post_jar_file):
+    def index_created_documents_via_jar_file(self):
         r"""Индексация средствами post.jar из папки \example\exampledocs"""
 
         path_to_json_data_file = '{}\\{}'.format(getcwd(), self.file_name)
         command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
             self.core,
-            path_to_post_jar_file,
+            SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
             path_to_json_data_file
         )
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
