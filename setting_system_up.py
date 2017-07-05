@@ -5,6 +5,7 @@
 Инициализация системы
 """
 
+import logging
 import sys
 import argparse
 from collections import Counter
@@ -14,6 +15,7 @@ from kb.docs_generating import DocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_core
 from config import SETTINGS
 from manual_testing import cube_testing
+import logs_helper  # pylint: disable=unused-import
 
 def set_up_db(overwrite=True):
     """
@@ -125,7 +127,7 @@ if __name__ == '__main__':
         if not args.disable_testing:
             cube_testing(test_sphere='minfin')
 
-    print("Complete")
+    logging.info("Setting system up complete")
 
 
 # Команда переключение в нужну дерикторию и запуска Solr для Димы
