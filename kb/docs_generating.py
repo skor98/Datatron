@@ -157,39 +157,45 @@ class DocsGeneration:
         # TODO: рефакторинг
         # Отдельно обрабатываются территории, так как они тоже имеют особую структуру документа
         territory_values = []
-        dimension = dbc.Dimension.get(dbc.Dimension.label == 'Territories')
-        for dimension_value in dbc.DimensionValue.select().where(dbc.DimensionValue.dimension_id == dimension.id):
-            for value in dbc.Value.select().where(dbc.Value.id == dimension_value.value_id):
-                index_value = value.lem_index_value
-                if value.lem_synonyms:
-                    index_value += ' {}'.format(value.lem_synonyms)
-                territory_values.append(index_value)
 
-        td = {}  # ToDo: Что это такое?
+        already_used_territory = []
 
-        for item in territory_values:
-            td[item] = []
-            for value in dbc.Value.select().where(dbc.Value.lem_index_value == item):
-                td[item].append({'id': value.id, 'fvalue': value.cube_value})
+        # Все территории по одному разу
+        values = (dbc.Value
+                  .select(dbc.Value)
+                  .join(dbc.DimensionValue)
+                  .join(dbc.Dimension)
+                  .where(dbc.Dimension.label == 'Territories'))
 
-        for key, value in td.items():
-            for item in value:
-                dimension_value_dimension_id = dbc.DimensionValue.get(
-                    dbc.DimensionValue.value_id == item['id']
-                ).dimension_id
-                cube_id = dbc.CubeDimension.get(dbc.CubeDimension.dimension_id == dimension_value_dimension_id).cube_id
-                item['cube'] = dbc.Cube.get(dbc.Cube.id == cube_id).name
-                item.pop('id', None)
+        for val in set(values):
+            # вербальное значение
+            verbal = val.lem_index_value
+            if verbal not in already_used_territory:
+                already_used_territory.append(verbal)
 
-        territory_values.clear()
+                # добавление синонимов, если есть
+                if val.lem_synonyms:
+                    verbal += ' ' + val.lem_synonyms
 
-        for key, value in td.items():
-            d = {'type': 'territory_dimension',
-                 'name': 'Territories',
-                 'verbal': key}
-            for item in value:
-                d[item['cube']] = item['fvalue']
-            territory_values.append(d)
+                # создание исходного словаря
+                d = {'type': 'territory_dimension',
+                     'name': 'Territories',
+                     'verbal': verbal}
+
+                # для всех значений, совпдающих вербально с val
+                for v in dbc.Value.select().where(dbc.Value.lem_index_value == val.lem_index_value):
+                    # находится куб, соответствующий этому значению
+                    cube = (dbc.Cube
+                            .select()
+                            .join(dbc.CubeDimension)
+                            .join(dbc.Dimension)
+                            .join(dbc.DimensionValue)
+                            .where(dbc.DimensionValue.value_id == v.id))[0]
+
+                    # добавление в словарь новой пары
+                    d[cube.name] = v.cube_value
+
+                territory_values.append(d)
 
         return territory_values
 

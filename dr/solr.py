@@ -59,7 +59,7 @@ class Solr:
             SETTINGS.SOLR_HOST,
             self.core
         )
-        params = {'q': user_request, 'rows': 20, 'wt': 'json', 'fl': '*,score'}
+        params = {'q': user_request, 'rows': 50, 'wt': 'json', 'fl': '*,score'}
         docs = requests.get(request, params=params).json()
         return docs
 
@@ -290,8 +290,6 @@ class Solr:
         :param dimensions: список документов измерений
         :param measures: список документов мер
         :param cube: имя правильного куба
-        :param year: год
-        :param territory: территория
         :return: MDX-запрос
         """
 
@@ -300,6 +298,9 @@ class Solr:
 
         # список измерения для куба
         all_cube_dimensions = get_cube_dimensions(cube)
+
+        # найденные значения в Solr
+        found_cube_dimensions = [doc['name'] for doc in dimensions]
 
         dim_tmp, dim_str_value = "[{}].[{}]", []
 
@@ -314,7 +315,7 @@ class Solr:
             connected_value = get_connected_value_to_given_value(doc['fvalue'])
 
             # Если у значения есть связанное значение
-            if connected_value:
+            if connected_value and connected_value['dimension'] not in found_cube_dimensions:
                 dim_str_value.append(dim_tmp.format(
                     connected_value['dimension'],
                     connected_value['fvalue']))

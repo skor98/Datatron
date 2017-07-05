@@ -316,7 +316,7 @@ def process_response(message, input_format='text', file_content=None):
         else:
             bot.send_message(message.chat.id,
                              '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
-                             ' Документ по Минфину (если найден и его score > 20), должен идти в \"смотри также\"',
+                             ' Документ по Минфину (если найден и его score > 10), должен идти в \"смотри также\"',
                              parse_mode='Markdown')
             process_cube_questions(
                 message,
@@ -324,11 +324,12 @@ def process_response(message, input_format='text', file_content=None):
                 request_id,
                 input_format=input_format
             )
-            process_minfin_questions(message, result.minfin_documents)
-
-
-
-
+            if result.minfin_documents.score > 10:
+                bot.send_message(message.chat.id,
+                                 "*Смотри также:*\n{} ({})".format(
+                                     result.minfin_documents.question,
+                                     result.minfin_documents.score),
+                                 parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -410,6 +411,7 @@ def process_minfin_questions(message, minfin_result):
                     ),
                     parse_mode='Markdown'
                 )
+
         # может быть несколько
         if minfin_result.picture_caption:
             if isinstance(minfin_result.picture_caption, list):
@@ -419,6 +421,7 @@ def process_minfin_questions(message, minfin_result):
             else:
                 with open('data/minfin/img/{}'.format(minfin_result.picture), 'rb') as picture:
                     bot.send_photo(message.chat.id, picture, caption=minfin_result.picture_caption)
+
         # может быть несколько
         if minfin_result.document_caption:
             if isinstance(minfin_result.document_caption, list):
