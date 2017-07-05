@@ -14,9 +14,9 @@ import pymorphy2
 
 
 class TextPreprocessing:
-    def __init__(self, request_id, norming_style='lem'):
+    def __init__(self, request_id):
         self.request_id = request_id
-        self.norming_style = norming_style
+        self.norming_style = 'lem'
         self.language = 'russian'
 
     def normalization(self, text, delete_digits=False):
@@ -25,10 +25,10 @@ class TextPreprocessing:
 
         # Замена нижнего подчеркивания встречающегося в caption в метаданных куба на пробел
         text = text.replace('_', ' ')
-        
+
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
         text = re.sub('[^\w\s-]+', '', text)
-        
+
         tokens = nltk.word_tokenize(text.lower())
 
         # TODO: что делать с вопросительными словами?

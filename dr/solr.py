@@ -176,12 +176,14 @@ class Solr:
                 if dim['cube'] == reference_cube:
                     final_dimension_list.append(dim)
 
-        final_dimension_list.append({
-            'name': territory['name'],
-            'cube': reference_cube,
-            'fvalue': territory[reference_cube],
-            'score': territory['score']
-        })
+        # При наличии территории приведение ее к формату других документов
+        if territory:
+            final_dimension_list.append({
+                'name': territory['name'],
+                'cube': reference_cube,
+                'fvalue': territory[reference_cube],
+                'score': territory['score']
+            })
 
         if final_dimension_list:
             mdx_request = Solr._build_mdx_request(

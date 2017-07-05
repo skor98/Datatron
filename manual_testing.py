@@ -156,4 +156,4 @@ def get_test_files(test_path, prefix):
 
 if __name__ == "__main__":
     cube_testing(test_sphere='cube')
-    cube_testing(test_sphere='minfin')
+    # cube_testing(test_sphere='minfin')

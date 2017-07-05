@@ -102,8 +102,8 @@ class DataRetrieving:
                     solr_cube_result.response = formatted_value
                 # Если формат для меры - 1, что означает процент
                 elif value_format == 1:
-                    # Перевод в проценты и округление
-                    formatted_value = '{}%'.format(round(value * 100, 3))
+                    # Перевод округление
+                    formatted_value = '{}%'.format(round(value, 5))
                     solr_cube_result.response = formatted_value
             else:
                 # Если формат меры - 0, то просто целое число без знаков после запятой
