@@ -3,4 +3,4 @@
 
 Intelligent search system for financial data
 
-Краткоу интро в файле `quick_intro.md`.
+Краткое интро в файле `quick_intro.md`.
