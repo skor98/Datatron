@@ -9,7 +9,10 @@ from os import getcwd, listdir
 import requests
 
 from data_retrieving import DataRetrieving
+from config import DATETIME_FORMAT
 
+
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
 def post_request_to_server(request):
     return requests.post('http://api.datatron.ru/test', {"Request": request})
@@ -54,11 +57,24 @@ def cube_testing(local=True, test_sphere='cube'):
                     system_answer = post_request_to_server(req).json()
 
                 if test_sphere == 'cube':
-                    assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers)
+                    assert_cube_requests(
+                        idx,
+                        req,
+                        answer,
+                        system_answer,
+                        testing_results,
+                        true_answers
+                    )
                 else:
-                    assert_minfin_requests(answer, req, system_answer, testing_results, true_answers)
+                    assert_minfin_requests(
+                        answer,
+                        req,
+                        system_answer,
+                        testing_results,
+                        true_answers
+                    )
 
-    current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
 
     true_answers = sum(true_answers)
     false_answers = len(testing_results) - true_answers - len(test_files_paths)

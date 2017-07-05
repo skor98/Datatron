@@ -10,12 +10,14 @@ from speechkit import speech_to_text
 from speechkit import SpeechException
 from data_retrieving import DataRetrieving
 from dr.solr import DrSolrResult
+from config import DATETIME_FORMAT
+
 
 logging.basicConfig(
     handlers=[logging.FileHandler('logs.log', 'a', 'utf-8')],
     level='INFO',
     format='%(asctime)s\t%(levelname)s\t%(message)s',
-    datefmt='%Y-%m-%d %H:%M'
+    datefmt=DATETIME_FORMAT
 )
 
 logging_str = (

@@ -22,7 +22,7 @@ from kb.kb_support_library import get_classification_for_dimension
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 
-from config import SETTINGS
+from config import SETTINGS, DATE_FORMAT
 
 import requests
 import constants
@@ -139,7 +139,7 @@ def get_all_info_logs(message):
                 'info',
                 rnd_str,
                 message.chat.username,
-                datetime.datetime.now().strftime("%d-%m-%Y")
+                datetime.datetime.now().strftime(DATE_FORMAT)
             )
 
             path_to_log_file = path_to_log_file.format(file_name)
@@ -163,10 +163,12 @@ def get_all_warning_logs(message):
         logs = logsRetriever.get_log(kind='warning')
         if logs:
             rnd_str = get_random_id(4)
-            file_name = '{}_{}_{}_{}.log'.format('warning',
-                                                 rnd_str,
-                                                 message.chat.username,
-                                                 datetime.datetime.now().strftime("%d-%m-%Y"))
+            file_name = '{}_{}_{}_{}.log'.format(
+                'warning',
+                 rnd_str,
+                 message.chat.username,
+                 datetime.datetime.now().strftime(DATE_FORMAT)
+            )
             with open(file_name, 'w') as file:
                 file.write(logs)
             try:
@@ -227,8 +229,8 @@ def get_classification(message):
                     proc_values = values
 
                 params = '\n'.join([
-                                       '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                                       ])
+                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
+                ])
                 bot.send_message(message.chat.id, params)
             else:
                 bot.send_message(message.chat.id, 'Классификацию получить не удалось')
