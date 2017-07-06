@@ -6,6 +6,7 @@ Web интерфейс для взаимодействия с Datatron.
 Предназначен для разработки, не является основнымю
 """
 
+import logging
 import codecs
 import uuid
 from os import path, makedirs
@@ -17,12 +18,12 @@ from bottle import Bottle, request, run, BaseRequest
 from messenger_manager import MessengerManager
 from data_retrieving import DataRetrieving
 from config import SETTINGS
-
+import logs_helper  # pylint: disable=unused-import
 # pylint: disable=no-member
 
 # увеличения допустимого размера файла до 3мб для избежания 413 ошибки
 BaseRequest.MEMFILE_MAX = 1024 * 3
-app = Bottle() # pylint: disable=invalid-name
+app = Bottle()  # pylint: disable=invalid-name
 
 
 @app.get('/')
@@ -65,7 +66,10 @@ def post_test():
     request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
 
     if request_text:
-        return DataRetrieving.get_data(request_text, uuid.uuid4(), formatted=False).toJSON()
+        return DataRetrieving.get_data(
+            request_text, uuid.uuid4(),
+            formatted=False
+        ).toJSON()
 
 
 @app.post('/audio')
@@ -85,6 +89,7 @@ def post_audio_file():
 
     # Генерация случайного имени файла
     new_file_name = ''.join(choice(ascii_lowercase + digits) for _ in range(10))
+    logging.debug("Создали новый временный файл {}".format(new_file_name))
 
     # Сохранения полученного файла под новым именем в папку для хранения временных файлов
     file_path = path.join(save_path, '{}.{}'.format(new_file_name, file_extension))

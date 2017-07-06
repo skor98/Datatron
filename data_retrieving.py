@@ -52,7 +52,7 @@ class DataRetrieving:
                 )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
-            logging_str = 'ID-запроса: {}\tОтвет Solr: {}'
+            logging_str = 'Документы не найдены Query_ID: {}\tSolr: {}'
             logging.warning(logging_str.format(request_id, solr_result.error))
 
         return solr_result
@@ -82,8 +82,7 @@ class DataRetrieving:
             solr_cube_result.response = api_response
             value = api_response
         # Обработка случая, когда данных нет
-        # TODO: надо отличать None, как отсутствие данных и 0, как нулевой долг/доход/расход и тд.
-        elif not json.loads(api_response)["cells"][0][0]["value"]:
+        elif json.loads(api_response)["cells"][0][0]["value"] is None:
             solr_cube_result.status = False
             solr_cube_result.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
             solr_cube_result.response = None
@@ -122,7 +121,7 @@ class DataRetrieving:
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
         verbal += ' '.join([str(idx + 1) + '. ' + i for idx, i in enumerate(feedback_verbal['dims'])])
 
-        logging_str = 'ID-запроса: {}\tОтвет Solr: {}\tMDX-запрос: {}\tЧисло: {}'
+        logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
         logging.info(logging_str.format(
             request_id,
             verbal,

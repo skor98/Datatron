@@ -16,8 +16,8 @@ from kb.docs_generating import DocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import cube_testing
-#import logs_helper
-
+# не убирайте эту строчку, иначе логгирование не будет работать
+import logs_helper  # pylint: disable=unused-import
 
 def set_up_db(overwrite=True):
     """
@@ -28,7 +28,7 @@ def set_up_db(overwrite=True):
     :return:
     """
     # 1. Создание и заполнение БД
-    kb_path = SETTINGS.PATH_TO_KNOWLEDGEBASE
+    kb_path = SETTINGS.PATH_TO_KNOWLEDGEBASE  # pylint: disable=no-member
 
     db_file = path.basename(kb_path)
 

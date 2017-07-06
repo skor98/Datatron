@@ -21,6 +21,11 @@ def init_logging():
     """
     Устанавливает обработчики логгирования и другая инициализация логгирования
     """
+    if init_logging.is_inited:
+        logging.warning("Вызываем init_logging повторно. Что-то не так")
+        return
+
+    init_logging.is_inited = True
     logger = logging.getLogger()  # RootLogger
     logger.setLevel(logging.INFO)
 
@@ -70,6 +75,8 @@ def set_logging_level(level):
         logging.error("Неверный тип level - {}".format(type(level)))
     logger = logging.getLogger()
     logger.setLevel(level_to_set)
+
+init_logging.is_inited = False  # Инициализация должна пройти ровно один раз
 
 init_logging()
 set_logging_level(LOG_LEVEL)
