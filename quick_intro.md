@@ -26,8 +26,8 @@ ToDo: написать что-то сюда
 минимизации лишних вычислений исползуем это:
 
 ```
-if logger.isEnabledFor(logging.DEBUG):
-    logger.debug(very_expensive_func())
+if logging.getLogger().isEnabledFor(logging.DEBUG):
+    logging.debug(very_expensive_func())
 ```
 
 Если вы поймали исключение, то оно логгируется с помощью `logging.exception(e)`
