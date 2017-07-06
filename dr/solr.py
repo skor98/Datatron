@@ -168,8 +168,10 @@ class Solr:
                 reference_cube_score = dimensions[0]['score']
             # Если найденный куб и куб верхнего документа совпадают,
             # а также score документа выше, то приоритет куба выше территории
-            if (reference_cube == dimensions[0]['cube']
-                and reference_cube_score < dimensions[0]['score']
+            if ((reference_cube == dimensions[0]['cube'])
+                and (reference_cube_score < dimensions[0]['score']
+                     or abs(reference_cube_score - dimensions[0]['score']) < 0.3 * reference_cube_score
+                     )
                 ):
                 cube_above_territory_priority = True
 

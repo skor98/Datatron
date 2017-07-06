@@ -130,7 +130,7 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             print(ars)
     else:
         ars = '{}. - Запрос "{}" вызвал ошибку: {}'
-        ars = ars.format(idx, req, system_answer['message'])
+        ars = ars.format(idx, req, system_answer['cube_documents']['message'])
         testing_results.append(ars)
         error_answers.append(1)
         print(ars)
@@ -175,4 +175,4 @@ def get_test_files(test_path, prefix):
 
 if __name__ == "__main__":
     cube_testing(test_sphere='cube')
-    cube_testing(test_sphere='minfin')
+    # cube_testing(test_sphere='minfin')
