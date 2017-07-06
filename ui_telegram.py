@@ -307,12 +307,13 @@ def process_response(message, input_format='text', file_content=None):
                              ' Документ по кубам (если найден), должен идти в \"смотри также\"',
                              parse_mode='Markdown')
             process_minfin_questions(message, result.minfin_documents)
-            process_cube_questions(
-                message,
-                result.cube_documents,
-                request_id,
-                input_format=input_format
-            )
+            if result.cube_documents.sum_score > 10:
+                process_cube_questions(
+                    message,
+                    result.cube_documents,
+                    request_id,
+                    input_format=input_format
+                )
         else:
             bot.send_message(message.chat.id,
                              '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
@@ -324,7 +325,7 @@ def process_response(message, input_format='text', file_content=None):
                 request_id,
                 input_format=input_format
             )
-            if result.minfin_documents.score > 10:
+            if result.minfin_documents.score > 15:
                 bot.send_message(message.chat.id,
                                  "*Смотри также:*\n{} ({})".format(
                                      result.minfin_documents.question,

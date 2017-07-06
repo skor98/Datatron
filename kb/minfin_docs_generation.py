@@ -121,8 +121,8 @@ def _refactor_data(data):
                     doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
                     doc.link = [elem.strip() for elem in row.link.split(';')]
                 else:
-                    doc.link_name = row.link_name
-                    doc.link = row.link
+                    doc.link_name = row.link_name.strip()
+                    doc.link = row.link.strip()
 
             # Может быть несколько
             if row.picture_caption:
@@ -130,8 +130,8 @@ def _refactor_data(data):
                     doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
                     doc.picture = [elem.strip() for elem in row.picture.split(';')]
                 else:
-                    doc.picture_caption = row.picture_caption
-                    doc.picture = row.picture
+                    doc.picture_caption = row.picture_caption.strip()
+                    doc.picture = row.picture.strip()
 
             # Может быть несколько
             if row.document_caption:
@@ -141,8 +141,8 @@ def _refactor_data(data):
                         ]
                     doc.document = [elem.strip() for elem in row.document.split(';')]
                 else:
-                    doc.document_caption = row.document_caption
-                    doc.document = row.document
+                    doc.document_caption = row.document_caption.strip()
+                    doc.document = row.document.strip()
 
         docs.append(doc)
     return docs

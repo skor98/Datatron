@@ -151,8 +151,8 @@ class Solr:
             if (reference_cube != dimensions[0]['cube']
                 and reference_cube_score < dimensions[0]['score']
                 ):
-                reference_cube = dimensions[0][0]['cube']
-                reference_cube_score = dimensions[0][0]['score']
+                reference_cube = dimensions[0]['cube']
+                reference_cube_score = dimensions[0]['score']
             # Если найденный куб и куб верхнего документа совпадают,
             # а также score документа выше, то приоритет куба выше территории
             if (reference_cube == dimensions[0]['cube']
