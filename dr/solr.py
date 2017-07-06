@@ -129,8 +129,13 @@ class Solr:
 
         # Фильтрация по году
         if year:
-            dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
-            final_dimension_list.append(year)
+            # Если указан текущий год, то запрос скорее всего относится
+            # К кубу с оперативной информацией (CLDO01), год в которой не указывается
+            if year['fvalue'] == datetime.datetime.now().year:
+                year = None
+            else:
+                dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
+                final_dimension_list.append(year)
 
         # Определение куба
         try:
