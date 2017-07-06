@@ -81,8 +81,7 @@ class DataRetrieving:
             solr_cube_result.response = api_response
             value = api_response
         # Обработка случая, когда данных нет
-        # TODO: надо отличать None, как отсутствие данных и 0, как нулевой долг/доход/расход и тд.
-        elif not json.loads(api_response)["cells"][0][0]["value"]:
+        elif json.loads(api_response)["cells"][0][0]["value"] is None:
             solr_cube_result.status = False
             solr_cube_result.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
             solr_cube_result.response = None
