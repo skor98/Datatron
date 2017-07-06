@@ -51,7 +51,7 @@ class DataRetrieving:
                 )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
-            logging_str = 'ID-запроса: {}\tОтвет Solr: {}'
+            logging_str = 'Документы не найдены Query_ID: {}\tSolr: {}'
             logging.warning(logging_str.format(request_id, solr_result.error))
 
         return solr_result
@@ -121,7 +121,7 @@ class DataRetrieving:
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
         verbal += ' '.join([str(idx + 1) + '. ' + i for idx, i in enumerate(feedback_verbal['dims'])])
 
-        logging_str = 'ID-запроса: {}\tОтвет Solr: {}\tMDX-запрос: {}\tЧисло: {}'
+        logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
         logging.info(logging_str.format(
             request_id,
             verbal,
