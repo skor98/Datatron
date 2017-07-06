@@ -13,7 +13,7 @@ class KnowledgeBaseSupport:
         self.db_file = db_file
 
     def set_up_db(self, overwrite=False):
-        """Метод для настройки из вне"""
+        """Метод для настройки извне"""
 
         self._create_db(overwrite=overwrite)
 
