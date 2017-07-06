@@ -1,5 +1,13 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+"""
+Взаимодействие с Yandex SpeechKit
+"""
+
 import uuid
 import subprocess
+import logging
 
 import xml.etree.ElementTree as XmlElementTree
 import httplib2
@@ -20,83 +28,66 @@ PATH_TO_FFMPEG = SETTINGS.PATH_TO_FFMPEG
 TTS_URL = 'https://tts.voicetech.yandex.net/generate'
 
 
+def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str = None, in_content: bytes = None):
+    """Обобщённый метод для вызова ffmpeg"""
+    ff = FFmpeg(
+        executable=PATH_TO_FFMPEG,
+        inputs=ff_inputs,
+        outputs=ff_outputs
+    )
+    if in_filename:
+        in_content = open(in_filename, 'br').read()
+    else:
+        in_filename = "No file, just bytes"
+
+    if not in_content:
+        raise Exception("Не могу получить контент из {}".format(in_filename))
+
+    stdout, stderr = ff.run(
+        input_data=in_content,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    if len(stderr) > 2:
+        logging.error("FFmpeg error on {}".format(in_filename))
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            logging.debug("FFmpeg output\n{}".format(stderr))
+    return stdout
+
+
 def convert_to_ogg(in_filename: str = None, in_content: bytes = None):
     """Конвертирование файл/байтов в OOG кодировку (необходимую для Telegram)"""
 
-    ff = FFmpeg(
-        executable=PATH_TO_FFMPEG,
-        inputs={'pipe:0': None},
-        outputs={'pipe:1': ['-f', 'ogg', '-acodec', 'libopus']}
+    return run_ffmpeg(
+        {'pipe:0': None},
+        {'pipe:1': ['-f', 'ogg', '-acodec', 'libopus']},
+        in_filename,
+        in_content
     )
-    stdout = None
-
-    if in_filename:
-        stdout, stderr = ff.run(
-            input_data=open(in_filename, 'br').read(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-    elif in_content:
-        stdout, stderr = ff.run(
-            input_data=in_content,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-    return stdout
 
 
 def convert_to_mp3(in_filename: str = None, in_content: bytes = None):
     """Конвертирование файл/байтов в mp3 кодировку (необходимую для Telegram)"""
 
-    ff = FFmpeg(
-        executable=PATH_TO_FFMPEG,
-        inputs={'pipe:0': None},
-        outputs={'pipe:1': ['-f', 'mp3', '-acodec', 'libmp3lame']}
+    return run_ffmpeg(
+        {'pipe:0': None},
+        {'pipe:1': ['-f', 'mp3', '-acodec', 'libmp3lame']},
+        in_filename,
+        in_content
     )
-    stdout = None
-
-    if in_filename:
-        stdout, stderr = ff.run(
-            input_data=open(in_filename, 'br').read(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-    elif in_content:
-        stdout, stderr = ff.run(
-            input_data=in_content,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-    return stdout
 
 
-def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
+def convert_to_pcm16b16000r(in_filename=None, in_content=None):
     """
     Конвертирование файл/байтов в PCM 160000 Гц 16 бит –
     наилучшую кодировку для распознавания Speechkit-ом
     """
-    ff = FFmpeg(
-        executable=PATH_TO_FFMPEG,
-        inputs={'pipe:0': None},
-        outputs={'pipe:1': ['-f', 's16le', '-acodec', 'pcm_s16le', '-ar', '16000']}
+    return run_ffmpeg(
+        {'pipe:0': None},
+        {'pipe:1': ['-f', 's16le', '-acodec', 'pcm_s16le', '-ar', '16000']},
+        in_filename,
+        in_content
     )
-    stdout = None
-
-    if in_filename:
-        stdout, stderr = ff.run(
-            input_data=open(in_filename, 'br').read(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-    elif in_bytes:
-        stdout, stderr = ff.run(
-            input_data=in_bytes,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-
-    return stdout
 
 
 def read_chunks(chunk_size, bytes):
@@ -125,6 +116,7 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     if req.status_code == 200:
         response_content = req.content
     else:
+        logging.error("При запросе к TTS получили не 200 код")
         raise Exception('{}: {}'.format(__name__, req.text))
 
     # Для телеграма файл конвертируется в OGG формат, а не возвращается аудио записью
@@ -132,7 +124,7 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
         response_content = convert_to_ogg(in_content=response_content)
 
     if filename:
-        with open(filename, 'bw') as file:
+        with open(filename, 'wb') as file:
             file.write(response_content)
     elif file_like:
         file_like.write(response_content)
@@ -156,7 +148,7 @@ def speech_to_text(
         raise Exception('Neither file name nor bytes provided.')
 
     # Конвертирование в лучший формат для обработки
-    bytes = convert_to_pcm16b16000r(in_bytes=bytes)
+    bytes = convert_to_pcm16b16000r(in_content=bytes)
 
     # Доопределения URL
     url = YANDEX_ASR_PATH + '?uuid=%s&key=%s&topic=%s&lang=%s' % (
@@ -189,42 +181,42 @@ def speech_to_text(
     response = connection.getresponse()
 
     # Парсинг ответа
-    if response.code == 200:
-        response_text = response.read()
-        xml = XmlElementTree.fromstring(response_text)
-
-        if int(xml.attrib['success']) == 1:
-            max_confidence = - float("inf")
-            text = ''
-
-            for child in xml:
-                if float(child.attrib['confidence']) > max_confidence:
-                    text = child.text
-                    max_confidence = float(child.attrib['confidence'])
-
-            if max_confidence != - float("inf"):
-                return text
-            else:
-                exception_string = (
-                    'No text found.\n\n' +
-                    'Response:\n{}\n\n' +
-                    'Request id: {}'
-                )
-                raise SpeechException(exception_string.format(
-                    response_text,
-                    request_id
-                ))
-        else:
-            exception_string = 'No text found.\n\nResponse:\n{}\n\nRequest id: {}'
-            raise SpeechException(exception_string.format(
-                response_text,
-                request_id
-            ))
-    else:
-        raise SpeechException('Unknown error.\nCode: {}\n\n{}'.format(
+    if response.code != 200:
+        raise SpeechException('При обращении к YANDEX_ASR не 200 код \tCode: {}\tТело:\n{}'.format(
             response.code,
             response.read()
         ))
+
+    response_text = response.read()
+    xml = XmlElementTree.fromstring(response_text)
+
+    if int(xml.attrib['success']) != 1:
+        exception_string = 'No text found.\n\nResponse:\n{}\n\nRequest id: {}'
+        raise SpeechException(exception_string.format(
+            response_text,
+            request_id
+        ))
+
+    max_confidence = - float("inf")
+    text = ''
+
+    for child in xml:
+        if float(child.attrib['confidence']) > max_confidence:
+            text = child.text
+            max_confidence = float(child.attrib['confidence'])
+
+    if max_confidence == - float("inf"):
+        exception_string = (
+            'No text found.\n\n' +
+            'Response:\n{}\n\n' +
+            'Request id: {}'
+        )
+        raise SpeechException(exception_string.format(
+            response_text,
+            request_id
+        ))
+
+    return text
 
 
 class SpeechException(Exception):
