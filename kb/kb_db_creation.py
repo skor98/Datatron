@@ -46,6 +46,7 @@ class DimensionValue(BaseModel):
 
 class Cube(BaseModel):
     name = CharField()
+    description = CharField()
     auto_lem_description = CharField()
     manual_description = CharField(null=True)
     manual_lem_description = CharField(null=True)

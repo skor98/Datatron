@@ -127,16 +127,6 @@ class Solr:
         final_dimension_list = []
         cube_above_territory_priority = False
 
-        # Фильтрация по году
-        if year:
-            # Если указан текущий год, то запрос скорее всего относится
-            # К кубу с оперативной информацией (CLDO01), год в которой не указывается
-            if year['fvalue'] == datetime.datetime.now().year:
-                year = None
-            else:
-                dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
-                final_dimension_list.append(year)
-
         # Определение куба
         try:
             reference_cube = cubes[0]['cube']
@@ -144,6 +134,29 @@ class Solr:
         except IndexError:
             # Если куб не найден (что очень мало вероятно)
             return solr_cube_result
+
+        # Фильтрация по году
+        if year:
+            # Если указан текущий год, то запрос скорее всего относится
+            # К кубу с оперативной информацией (CLDO01), год в которой не указывается
+            if year['fvalue'] == datetime.datetime.now().year:
+                year = None
+            # Приоритет года над кубом
+            else:
+                # фильтр измерений по наличию в их кубах годов
+                dimensions = [item for item in dimensions if 'Years' in get_cube_dimensions(item['cube'])]
+
+                # фильтр списка кубов по наличию в кубе года
+                cubes = [item for item in cubes if 'Years' in get_cube_dimensions(item['cube'])]
+
+                # Если таковые найдены
+                if cubes:
+                    # выбор нового куба
+                    reference_cube = cubes[0]['cube']
+                    reference_cube_score = cubes[0]['score']
+                    final_dimension_list.append(year)
+                else:
+                    return solr_cube_result
 
         # Доопределение куба
         if dimensions:
@@ -168,13 +181,25 @@ class Solr:
         else:
             # Приоритет территории над кубом
             if territory:
+                # Фильтр измерений по наличии в их кубах территории
                 dimensions = [item for item in dimensions if 'Territories' in get_cube_dimensions(item['cube'])]
-                final_dimension_list.append({
-                    'name': territory['name'],
-                    'cube': reference_cube,
-                    'fvalue': territory[reference_cube],
-                    'score': territory['score']
-                })
+
+                # фильтр списка кубов по наличию в кубе территории
+                cubes = [item for item in cubes if 'Territories' in get_cube_dimensions(item['cube'])]
+
+                # Если таковые найдены
+                if cubes:
+                    # выбор нового куба
+                    reference_cube = cubes[0]['cube']
+                    reference_cube_score = cubes[0]['score']
+                    final_dimension_list.append({
+                        'name': territory['name'],
+                        'cube': reference_cube,
+                        'fvalue': territory[reference_cube],
+                        'score': territory['score']
+                    })
+                else:
+                    return solr_cube_result
 
         # Построение иерархического списка измерений
         tmp_dimensions, idx = [], 0

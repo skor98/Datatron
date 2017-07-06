@@ -219,3 +219,9 @@ def get_connected_value_to_given_value(cube_value):
 
         return {'dimension': dimension.label,
                 'fvalue': connected_value.cube_value}
+
+
+def get_cube_description(cube_name):
+    """Возвращает описание куба"""
+
+    return dbc.Cube.get(dbc.Cube.name == cube_name).description

@@ -11,26 +11,29 @@ from constants import CMD_START_MSG
 def parse_feedback(fb):
     fb_exp = fb['formal']
     fb_norm = fb['verbal']
+
     exp = 'Экспертная обратная связь:\nКуб: {}\nМера: {}\nИзмерения: {}'
     norm = 'Дататрон выделил следующие параметры (обычная обратная связь):\n{}'
+
     exp = exp.format(
         fb_exp['cube'],
         fb_exp['measure'],
         ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']])
     )
-    norm = norm.format(
-        '1. {}\n'.format(fb_norm['measure']) +
-        '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
-    )
-    line = "==" * 10
-    cntk_response = 'CNTK разбивка\n{}'
-    r = ['{}. {}: {}'.format(
-        idx + 1,
-        i['tagmeaning'].lower(),
-        i['word'].lower())
-         for idx, i in enumerate(fb['cntk'])]
-    cntk_response = cntk_response.format(', '.join(r))
-    return '{0}\n{1}\n{0}\n{2}\n{0}\n{3}\n{0}'.format(line, exp, norm, cntk_response)
+
+    if fb_norm['measure'] == 'Значение':
+        norm = norm.format(
+            '1. {}\n'.format(fb_norm['domain']) +
+            '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])]))
+
+    else:
+        norm = norm.format(
+            '1. {}\n'.format(fb_norm['domain']) +
+            '2. {}\n'.format(fb_norm['measure']) +
+            '\n'.join([str(idx + 3) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
+        )
+
+    return '{0}\n{1}\n{0}\n{2}\n{0}'.format('='*20, exp, norm)
 
 
 if __name__ == "__main__":

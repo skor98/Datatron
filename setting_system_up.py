@@ -19,6 +19,7 @@ from manual_testing import cube_testing
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
+
 def set_up_db(overwrite=True):
     """
     Создание и заполнение БД
@@ -52,17 +53,6 @@ def set_up_solr_cube_data(index_way='curl'):
         dga.index_created_documents_via_curl()
     else:
         dga.index_created_documents_via_jar_file()
-
-
-def set_up_all_together():
-    """
-    Настройка БД, документов по кубам и минфину одним методом.
-    Если какой-то функционал не нужен, то он комметируется перед выполнением
-    """
-    set_up_db()
-    set_up_solr_cube_data('jar')
-    # pylint: disable=no-member
-    set_up_minfin_data('jar')
 
 
 if __name__ == '__main__':
@@ -125,8 +115,3 @@ if __name__ == '__main__':
             cube_testing(test_sphere='minfin')
 
     logging.info("Setting system up complete")
-
-
-# Команда переключение в нужну дерикторию и запуска Solr для Димы
-# cd C:\Users\User\Desktop\solr\solr-6.3.0\solr-6.3.0\bin
-# solr.cmd start -f
