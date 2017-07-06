@@ -9,6 +9,7 @@ from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA
 from kb.kb_support_library import get_full_values_for_dimensions
 from kb.kb_support_library import get_full_value_for_measure
 from kb.kb_support_library import get_representation_format
+from kb.kb_support_library import get_cube_description
 from text_preprocessing import TextPreprocessing
 from dr.solr import Solr
 from config import SETTINGS
@@ -185,6 +186,7 @@ class DataRetrieving:
                 'dims': dims_vals
             },
             'verbal': {
+                'domain': get_cube_description(cube),
                 'measure': full_verbal_measure_value,
                 'dims': full_verbal_dimensions_value
             },
