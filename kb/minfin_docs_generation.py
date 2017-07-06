@@ -196,7 +196,7 @@ def _index_data_via_curl():
         'fileupload',
         (
             curl_instance.FORM_FILE,
-            path_to_folder_file.format(output_file),
+            path.join(path_to_folder_file, output_file),
             curl_instance.FORM_CONTENTTYPE, 'application/json'
         )
     ), ])

@@ -445,16 +445,26 @@ def process_minfin_questions(message, minfin_result):
 def parse_feedback(fb, user_request_notification=False):
     fb_exp = fb['formal']
     fb_norm = fb['verbal']
+
     exp = '<b>Экспертная обратная связь</b>\nКуб: {}\nМера: {}\nИзмерения: {}'
     norm = '<b>Дататрон выделил следующие параметры (обычная обратная связь)</b>:\n{}'
+
     exp = exp.format(
         fb_exp['cube'], fb_exp['measure'],
         ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']])
     )
-    norm = norm.format(
-        '1. {}\n'.format(fb_norm['measure']) +
-        '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
-    )
+
+    if fb_norm['measure'] == 'Значение':
+        norm = norm.format(
+            'Предметная область – {}\n'.format(fb_norm['domain']) +
+            '\n'.join([str(idx + 1) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
+        )
+    else:
+        norm = norm.format(
+            'Предметная область – {}\n'.format(fb_norm['domain']) +
+            '1. {}\n'.format(fb_norm['measure']) +
+            '\n'.join([str(idx + 3) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
+        )
 
     user_request = ''
     if user_request_notification:

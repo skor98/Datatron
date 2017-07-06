@@ -10,7 +10,11 @@ from nltk.corpus import stopwords
 from nltk import FreqDist
 import nltk
 
+
 import pymorphy2
+
+
+logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
 class TextPreprocessing:
