@@ -5,12 +5,14 @@ import json
 import uuid
 import datetime
 import time
+import logging
 from os import path, listdir
 
 import requests
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT
+import logs_helper
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
@@ -36,16 +38,16 @@ def cube_testing(local=True, test_sphere='cube'):
 
     if test_sphere == 'cube':
         test_files_paths = get_test_files(test_path, "cubes_test")
-        print('Идет тестирование по вопросам к кубам')
+        logging.info('Идет тестирование по вопросам к кубам')
     else:
         test_files_paths = get_test_files(test_path, "minfin_test")
-        print('Идет тестирование по вопросам для Министерства Финансов')
+        logging.info('Идет тестирование по вопросам для Министерства Финансов')
 
     for tf in test_files_paths:
         with open(tf, 'r', encoding='utf-8') as file_in:
             doc_name_output_str = 'Файл: ' + path.basename(tf)
             testing_results.append(doc_name_output_str)
-            print(doc_name_output_str)
+            logging.info(doc_name_output_str)
 
             for idx, line in enumerate(file_in):
                 line = ' '.join(line.split())
@@ -104,8 +106,8 @@ def cube_testing(local=True, test_sphere='cube'):
     with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
 
-    print('Тестирование завершено')
-    print('Лог прогона записан в файл {}'.format(file_name))
+    logging.info('Тестирование завершено')
+    logging.info('Лог прогона записан в файл {}'.format(file_name))
 
 
 def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers, wrong_answers, error_answers):
