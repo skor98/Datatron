@@ -19,6 +19,7 @@ from messenger_manager import MessengerManager
 from data_retrieving import DataRetrieving
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
+
 # pylint: disable=no-member
 
 # увеличения допустимого размера файла до 3мб для избежания 413 ошибки
@@ -55,20 +56,6 @@ def post_basic():
             user_id,
             user_name,
             request_id
-        ).toJSON()
-
-
-@app.post('/test')
-def post_test():
-    """POST запрос для удаленного тестирования системы на сервере"""
-
-    request_text = request.forms.get('Request')
-    request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
-
-    if request_text:
-        return DataRetrieving.get_data(
-            request_text, uuid.uuid4(),
-            formatted=False
         ).toJSON()
 
 
@@ -116,6 +103,7 @@ def error404(error):
     """Чтобы выводилась ошибка, если файл не найден"""
 
     return '<center><h1>Nothing here sorry: %s</h1></center>' % error
+
 
 if __name__ == "__main__":
     run(app, host=SETTINGS.HOST, port=8019, debug=True)

@@ -8,8 +8,6 @@ import time
 import logging
 from os import path, listdir
 
-import requests
-
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT
 import logs_helper
@@ -17,11 +15,7 @@ import logs_helper
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
 
-def post_request_to_server(request):
-    return requests.post('http://api.datatron.ru/test', {"Request": request})
-
-
-def cube_testing(local=True, test_sphere='cube'):
+def cube_testing(test_sphere='cube'):
     """Метод для тестирования работы системы по кубам.
     Тесты находятся в папке tests и имеют следующую структуру названия
     cube_<local/server>_<имя куба>
@@ -56,13 +50,11 @@ def cube_testing(local=True, test_sphere='cube'):
                     continue
 
                 req, answer = line.split(':')
-                if local:
-                    system_answer = json.loads(DataRetrieving.get_data(
-                        req, uuid.uuid4(),
-                        formatted=False
-                    ).toJSON())
-                else:
-                    system_answer = post_request_to_server(req).json()
+
+                system_answer = json.loads(DataRetrieving.get_data(
+                    req, uuid.uuid4(),
+                    formatted=False
+                ).toJSON())
 
                 if test_sphere == 'cube':
                     assert_cube_requests(
