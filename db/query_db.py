@@ -11,7 +11,6 @@ from peewee import SqliteDatabase, DateTimeField, CharField, Model
 
 from config import QUERY_DB_PATH
 
-
 _database = SqliteDatabase(QUERY_DB_PATH)
 
 
@@ -40,6 +39,7 @@ def _init_db():
     _database.create_table(UserQuery, safe=True)
     _is_inited = True
 
+
 def log_query_to_db(request_id, user_id, user_name, platform, query, query_type):
     """
     Выполняет сохранение запроса в БД.
@@ -57,6 +57,7 @@ def log_query_to_db(request_id, user_id, user_name, platform, query, query_type)
         query_type=query_type
     )
     query_to_save.save()
+
 
 def get_queries(user_id, time_delta):
     """
@@ -82,5 +83,6 @@ def get_queries(user_id, time_delta):
         return tuple(["{} {}".format(row.date, row.query) for row in db_res])
 
     return tuple(["{} {}: {}".format(row.date, row.user_id, row.query) for row in db_res])
+
 
 _is_inited = False

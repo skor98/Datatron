@@ -89,7 +89,7 @@ def send_log(message, log_kind, command_name):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    """Обработки команды /start"""
+    """Обработка команды /start"""
 
     bot.send_message(message.chat.id, constants.TELEGRAM_START_MSG, parse_mode='HTML')
     if not check_user_existence(message.chat.id):
