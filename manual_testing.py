@@ -113,20 +113,27 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
     if response:
         try:
             assert int(answer) == response
-            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
+            ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
             testing_results.append(ars)
             true_answers.append(1)
         except AssertionError:
             ars = (
                 '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {})'
+                '(должны получать: {}, получаем: {}) | {}'
             )
-            ars = ars.format(idx, req, int(answer), response)
+            ars = ars.format(idx,
+                             req, int(answer),
+                             response,
+                             system_answer['cube_documents']['mdx_query'])
+
             testing_results.append(ars)
             wrong_answers.append(1)
     else:
-        ars = '{}. - Запрос "{}" вызвал ошибку: {}'
-        ars = ars.format(idx, req, system_answer['cube_documents']['message'])
+        ars = '{}. - Запрос "{}" вызвал ошибку: {} | {}'
+        ars = ars.format(idx,
+                         req,
+                         system_answer['cube_documents']['message'],
+                         system_answer['cube_documents']['mdx_query'])
         testing_results.append(ars)
         error_answers.append(1)
 
@@ -169,5 +176,5 @@ def get_test_files(test_path, prefix):
 
 
 if __name__ == "__main__":
-    cube_testing(test_sphere='cube')
+    # cube_testing(test_sphere='cube')
     cube_testing(test_sphere='minfin')
