@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import re
 import random
+import re
 
 import constants
-from speechkit import speech_to_text
-from speechkit import SpeechException
-from data_retrieving import DataRetrieving
-from dr.solr import DrSolrResult
 from config import DATETIME_FORMAT
-
+from data_retrieving import DataRetrieving
+from solr import DrSolrResult
+from speechkit import SpeechException
+from speechkit import speech_to_text
 
 logging.basicConfig(
     handlers=[logging.FileHandler('logs.log', 'a', 'utf-8')],

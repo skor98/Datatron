@@ -5,15 +5,15 @@ import json
 import logging
 
 import requests
-from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
-from kb.kb_support_library import get_full_value_for_measure
-from kb.kb_support_library import get_representation_format
-from kb.kb_support_library import get_cube_description
-from kb.kb_support_library import get_full_values_for_dimensions
-from text_preprocessing import TextPreprocessing
-from dr.solr import Solr
+
 from config import SETTINGS
-import logs_helper  # pylint: disable=unused-import
+from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from kb.kb_support_library import get_cube_description
+from kb.kb_support_library import get_full_value_for_measure
+from kb.kb_support_library import get_full_values_for_dimensions
+from kb.kb_support_library import get_representation_format
+from solr import Solr
+from text_preprocessing import TextPreprocessing
 
 
 # Module, which is responsible for getting required from user data

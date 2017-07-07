@@ -209,33 +209,6 @@ def get_user_feedbacks(message):
         bot.send_message(message.chat.id, 'Отзывов нет')
 
 
-@bot.message_handler(commands=['class'])
-def get_classification(message):
-    msg = message.text[len('class') + 1:].split()
-    print(msg)
-    if msg:
-        if len(msg) != 2:
-            msg_str = 'Использовано {} параметр(ов). Введите куб, а затем измерение через пробел'
-            bot.send_message(message.chat.id, msg_str.format(len(msg)))
-        else:
-            values = get_classification_for_dimension(msg[0].upper(), msg[1])
-            if values:
-                try:
-                    proc_values = values[:15]
-                except IndexError:
-                    proc_values = values
-
-                params = '\n'.join([
-                                       '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                                       ])
-                bot.send_message(message.chat.id, params)
-            else:
-                bot.send_message(message.chat.id, 'Классификацию получить не удалось')
-    else:
-        bot.send_message(message.chat.id, 'Введите после команды куб и измерение через пробел')
-
-
-# Text handler
 @bot.message_handler(content_types=['text'])
 def salute(message):
     greets = MessengerManager.greetings(message.text.strip())
@@ -472,6 +445,8 @@ def parse_feedback(fb, user_request_notification=False):
 
 
 def send_cube_look_futher(message, cube_result):
+    """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
+
     look_futher_str = []
     fb_norm = cube_result.feedback['verbal']
 
