@@ -12,7 +12,7 @@ import argparse
 from os import path
 
 from kb.db_filling import KnowledgeBaseSupport
-from kb.docs_generating import DocsGeneration
+from kb.docs_generating import CubeDocsGeneration
 from kb.minfin_docs_generation import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import cube_testing
@@ -46,7 +46,7 @@ def set_up_solr_cube_data(index_way='curl'):
     :return:
     """
     # 2. Генерация и индексация документов
-    dga = DocsGeneration()
+    dga = CubeDocsGeneration()
     dga.clear_index()  # Удаление документов из ядра
     dga.generate_docs()  # Генерация документов
     if index_way == 'curl':

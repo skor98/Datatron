@@ -36,8 +36,10 @@ def cube_testing(local=True, test_sphere='cube'):
 
     if test_sphere == 'cube':
         test_files_paths = get_test_files(test_path, "cubes_test")
+        print('Идет тестирование по вопросам к кубам')
     else:
         test_files_paths = get_test_files(test_path, "minfin_test")
+        print('Идет тестирование по вопросам для Министерства Финансов')
 
     for tf in test_files_paths:
         with open(tf, 'r', encoding='utf-8') as file_in:
@@ -97,11 +99,12 @@ def cube_testing(local=True, test_sphere='cube'):
                                  true_answers,
                                  wrong_answers,
                                  error_answers,
-                                 int(time.time()-start_time))
+                                 int(time.time() - start_time))
 
     with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
 
+    print('Тестирование завершено')
     print('Лог прогона записан в файл {}'.format(file_name))
 
 
@@ -113,7 +116,6 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
             testing_results.append(ars)
             true_answers.append(1)
-            print(ars)
         except AssertionError:
             ars = (
                 '{}. - Запрос "{}" отрабатывает некорректно' +
@@ -122,13 +124,11 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             ars = ars.format(idx, req, int(answer), response)
             testing_results.append(ars)
             wrong_answers.append(1)
-            print(ars)
     else:
         ars = '{}. - Запрос "{}" вызвал ошибку: {}'
         ars = ars.format(idx, req, system_answer['cube_documents']['message'])
         testing_results.append(ars)
         error_answers.append(1)
-        print(ars)
 
 
 def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers,
@@ -158,7 +158,6 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
         )
         testing_results.append(ars)
         error_answers.append(1)
-        print(ars)
 
 
 def get_test_files(test_path, prefix):

@@ -458,7 +458,7 @@ def send_cube_look_futher(message, cube_result):
                            for item in fb_norm['dims'])
 
     bot.send_message(message.chat.id,
-                     "*Смотри также* запрос со следующими пораметрами:\n" +
+                     "*Смотри также* запрос со следующими параметрами:\n" +
                      ''.join(['`- {}`\n'.format(elem) for elem in look_futher_str]),
                      parse_mode='Markdown')
 
