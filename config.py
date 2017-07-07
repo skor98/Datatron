@@ -25,6 +25,8 @@ def get_class_from_dict(dict_in):
 
 YANDEX_API_KEY = 'e05f5a12-8e05-4161-ad05-cf435a4e7d5b'
 SETTINGS_PATH = "settings.json"
+QUERY_DB_PATH = "query.db"
+LOGS_PATH = 'logs_new.log'
 
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
