@@ -4,6 +4,7 @@
 import json
 import uuid
 import datetime
+import time
 from os import path, listdir
 
 import requests
@@ -31,6 +32,7 @@ def cube_testing(local=True, test_sphere='cube'):
     true_answers = []
     wrong_answers = []
     error_answers = []
+    start_time = time.time()
 
     if test_sphere == 'cube':
         test_files_paths = get_test_files(test_path, "cubes_test")
@@ -87,22 +89,15 @@ def cube_testing(local=True, test_sphere='cube'):
     error_answers = sum(error_answers)
 
     if test_sphere == 'cube':
-        file_name = 'cube_{}_{}_OK_{}_Wrong_{}_Error_{}.txt'
+        file_name = 'cube_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
     else:
-        file_name = 'minfin_{}_{}_OK_{}_Wrong_{}_Error_{}.txt'
+        file_name = 'minfin_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
 
-    if local:
-        file_name = file_name.format('local',
-                                     current_datetime,
-                                     true_answers,
-                                     wrong_answers,
-                                     error_answers)
-    else:
-        file_name = file_name.format('server',
-                                     current_datetime,
-                                     true_answers,
-                                     wrong_answers,
-                                     error_answers)
+    file_name = file_name.format(current_datetime,
+                                 true_answers,
+                                 wrong_answers,
+                                 error_answers,
+                                 int(time.time()-start_time))
 
     with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
@@ -136,7 +131,8 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
         print(ars)
 
 
-def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers, error_answers):
+def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers,
+                           error_answers):
     response = system_answer['minfin_documents']['number']
     if response:
         try:
@@ -175,4 +171,4 @@ def get_test_files(test_path, prefix):
 
 if __name__ == "__main__":
     cube_testing(test_sphere='cube')
-    # cube_testing(test_sphere='minfin')
+    cube_testing(test_sphere='minfin')

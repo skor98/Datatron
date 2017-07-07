@@ -89,7 +89,7 @@ def _refactor_data(data):
                 row.question,
                 delete_digits=True
             )
-            doc.lem_question = ' '.join([lem_question] * 4)
+            doc.lem_question = ' '.join([lem_question] * 5)
 
             synonym_questions = _get_manual_synonym_questions(doc.number)
 
@@ -113,7 +113,7 @@ def _refactor_data(data):
             kw = tp.normalization(row.key_words)
 
             # Ключевые слова записываются трижды, для увеличения качества поиска документа
-            doc.lem_key_words = ' '.join([kw] * 3)
+            doc.lem_key_words = ' '.join([kw] * 5)
 
             # Может быть несколько
             if row.link_name:

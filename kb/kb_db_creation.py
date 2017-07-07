@@ -33,6 +33,7 @@ class Measure(BaseModel):
 
 class Dimension(BaseModel):
     label = CharField()
+    full_value = CharField()
     default_value = ForeignKeyField(Value, null=True)
 
 

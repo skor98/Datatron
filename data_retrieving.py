@@ -6,10 +6,10 @@ import logging
 
 import requests
 from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
-from kb.kb_support_library import get_full_values_for_dimensions
 from kb.kb_support_library import get_full_value_for_measure
 from kb.kb_support_library import get_representation_format
 from kb.kb_support_library import get_cube_description
+from kb.kb_support_library import get_full_values_for_dimensions
 from text_preprocessing import TextPreprocessing
 from dr.solr import Solr
 from config import SETTINGS
@@ -65,6 +65,8 @@ class DataRetrieving:
 
         # Формирование читабельной обратной связи по результату
         feedback = DataRetrieving._form_feedback(solr_cube_result.mdx_query, cube, user_request)
+        solr_cube_result.feedback = feedback
+
 
         value = None
 
@@ -114,12 +116,13 @@ class DataRetrieving:
                     solr_cube_result.response = str(value)
 
             # добавление обратной связи в поле экземпляра класа
-            solr_cube_result.message = feedback
+            solr_cube_result.message = 'Все ОК'
 
         # Создание фидбека в другом формате для удобного логирования
         feedback_verbal = feedback['verbal']
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
-        verbal += ' '.join([str(idx + 1) + '. ' + i for idx, i in enumerate(feedback_verbal['dims'])])
+        verbal += ' '.join([str(idx + 1) + '. ' + i['full_value']
+                            for idx, i in enumerate(feedback_verbal['dims'])])
 
         logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
         logging.info(logging_str.format(
@@ -174,7 +177,7 @@ class DataRetrieving:
             dims_vals.append({'dim': item[0][1:-1], 'val': item[1][1:-1]})
 
         # Полные вербальные отражения значений измерений и меры
-        full_verbal_dimensions_value = get_full_values_for_dimensions([i['val'] for i in dims_vals])
+        full_verbal_dimensions_value = [get_full_values_for_dimensions(i['val']) for i in dims_vals]
         full_verbal_measure_value = get_full_value_for_measure(measure_value, cube)
 
         # фидбек в удобном виде для конвертации в JSON-объект

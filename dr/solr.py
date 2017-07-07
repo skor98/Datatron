@@ -39,7 +39,9 @@ class Solr:
 
             if docs['response']['numFound']:
                 Solr._parse_solr_response(docs, solr_result)
-                solr_result.status = True
+                # Если найден документ
+                if solr_result.docs_found:
+                    solr_result.status = True
                 return solr_result
             else:
                 raise Exception('Datatron не нашел ответа на Ваш вопрос')
@@ -387,6 +389,7 @@ class DrSolrCubeResult:
         self.mdx_query = None
         self.response = None
         self.message = None
+        self.feedback = None
 
 
 class DrSolrMinfinResult:

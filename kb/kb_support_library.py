@@ -82,17 +82,6 @@ def filter_combinations(combs, dim_set, dd):
     return filtered_combs
 
 
-def get_full_values_for_dimensions(cube_values):
-    """Получение полных вербальных значений измерений по формальным значениями"""
-
-    full_values = []
-    for cube_value in cube_values:
-        given_value = dbc.Value.get(dbc.Value.cube_value == cube_value)
-        full_values.append(given_value.full_value)
-
-    return full_values
-
-
 def get_full_value_for_measure(cube_value, cube_name):
     """Получение полного вербального значения меры по формальному значению и кубу"""
 
@@ -225,3 +214,17 @@ def get_cube_description(cube_name):
     """Возвращает описание куба"""
 
     return dbc.Cube.get(dbc.Cube.name == cube_name).description
+
+
+def get_full_values_for_dimensions(cube_value):
+
+    value = dbc.Value.get(dbc.Value.cube_value == cube_value)
+
+    dim = (dbc.Dimension
+           .select()
+           .join(dbc.DimensionValue)
+           .join(dbc.Value)
+           .where(dbc.Value.cube_value == cube_value))[0]
+
+    return {'dimension': dim.full_value,
+            'full_value': value.full_value}
