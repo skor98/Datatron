@@ -48,10 +48,7 @@ def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str = None, in_content: bytes
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    if len(stderr) > 2:
-        logging.error("FFmpeg error on {}".format(in_filename))
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
-            logging.debug("FFmpeg output\n{}".format(stderr))
+
     return stdout
 
 
