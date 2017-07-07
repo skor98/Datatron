@@ -16,7 +16,7 @@ from kb.kb_support_library import get_default_value_for_dimension
 from kb.kb_support_library import get_connected_value_to_given_value
 from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
-
+import logs_helper
 
 class Solr:
     """
@@ -46,7 +46,8 @@ class Solr:
             else:
                 raise Exception('Datatron не нашел ответа на Ваш вопрос')
         except Exception as err:
-            print('Solr: ' + str(err))
+            logging.error("Solr error")
+            logging.exception(err)
             solr_result.error = str(err)
             return solr_result
 
