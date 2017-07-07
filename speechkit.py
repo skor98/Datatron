@@ -43,11 +43,11 @@ def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str = None, in_content: bytes
     if not in_content:
         raise Exception("Не могу получить контент из {}".format(in_filename))
 
-    stdout, stderr = ff.run(
+    stdout = ff.run(
         input_data=in_content,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
-    )
+    )[0]
 
     return stdout
 
