@@ -10,9 +10,10 @@ import datetime
 import random
 import string
 import os
+import logging
 
 import telebot
-from logs_retriever import LogsRetriever
+
 from db.user_support_library import check_user_existence
 from db.user_support_library import create_user
 from db.user_support_library import create_feedback
@@ -20,8 +21,9 @@ from db.user_support_library import get_feedbacks
 from kb.kb_support_library import get_classification_for_dimension
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
+from logs_helper import LogsRetriever
 
-from config import SETTINGS, DATE_FORMAT
+from config import SETTINGS, DATE_FORMAT, LOGS_PATH
 
 import requests
 import constants
@@ -29,7 +31,7 @@ import constants
 API_TOKEN = SETTINGS.TELEGRAM_API_TOKEN
 bot = telebot.TeleBot(API_TOKEN)
 
-logsRetriever = LogsRetriever('logs.log')
+logsRetriever = LogsRetriever(LOGS_PATH)
 
 user_name_str = '{} {}'
 
@@ -40,6 +42,50 @@ def get_random_id(id_len=4):
     """
     alphabet = string.ascii_lowercase + string.digits
     return ''.join(random.choice(alphabet) for ind in range(id_len))
+
+
+def send_log(message, log_kind, command_name):
+    """
+    Помогает отправлять конкретный тип логов.
+    Также занимается обработкой ввода
+    """
+
+    splitted_message = message.text.split()
+    if len(splitted_message) == 2 and splitted_message[1] == 'help':
+        bot.send_message(
+            message.chat.id,
+            "Для указания времени в минутах исползьуйте " +
+            "{} 15".format(command_name)
+        )
+        return
+    else:
+        try:
+            time_delta = int(splitted_message[1])
+        except:
+            # Значение по умолчание: получает все логи
+            time_delta = 60*24*30  # Месяц
+
+    logs = logsRetriever.get_log(kind=log_kind, time_delta=time_delta)
+    if logs:
+        rnd_str = get_random_id(4)
+        if not os.path.exists("tmp"):
+            os.makedirs("tmp")
+        path_to_log_file = os.path.join('tmp', '{}_{}_{}_{}.log'.format(
+            log_kind,
+            rnd_str,
+            message.chat.username,
+            datetime.datetime.now().strftime(DATE_FORMAT)
+        ))
+
+        with open(path_to_log_file, 'w', encoding='utf-8') as file:
+            file.write(logs)
+        try:
+            with open(path_to_log_file, 'rb') as log_file:
+                bot.send_document(message.chat.id, data=log_file)
+        finally:
+            os.remove(path_to_log_file)
+    else:
+        bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
 
 
 @bot.message_handler(commands=['start'])
@@ -60,7 +106,6 @@ def send_welcome(message):
         )
 
 
-# /help command handler; send hello-message to the user
 @bot.message_handler(commands=['help'])
 def send_help(message):
     bot.send_message(
@@ -72,9 +117,91 @@ def send_help(message):
     )
 
 
+@bot.message_handler(commands=['getqueries'])
+def get_queries_logs(message):
+    """
+    Возвращает запросы к ядру текущего пользователя
+    """
+    try:
+        time_span = None
+        try:
+            time_span = int(message.text.split()[1])
+        except IndexError:
+            pass
+        except ValueError:
+            # Элемент 1 существует, но не число
+            error_message_pattern = (
+                'Не могу перевести {} в число. ' +
+                'Буду использовать значение по умолчанию'
+            )
+            bot.send_message(
+                message.chat.id,
+                error_message_pattern.format(message.text.split()[1])
+            )
+        if time_span:
+            logs = logsRetriever.get_log(
+                kind='queries',
+                user_id=message.chat.id,
+                time_delta=time_span
+            )
+        else:
+            logs = logsRetriever.get_log(kind='queries', user_id=message.chat.id)
+
+        if logs:
+            bot.send_message(message.chat.id, "Ваши запросы:\n")
+            bot.send_message(message.chat.id, logs)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except Exception as err:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        logging.exception(err)
+        logging.warning('Команда /getqueries не сработала')
+
+
+@bot.message_handler(commands=['getallqueries'])
+def get_all_queries_logs(message):
+    """
+    Возвращает все запросы к ядру
+    """
+    try:
+        time_span = None
+        try:
+            time_span = int(message.text.split()[1])
+        except IndexError:
+            pass
+        except ValueError:
+            # Элемент 1 существует, но не число
+            error_message_pattern = (
+                'Не могу перевести {} в число. ' +
+                'Буду использовать значение по умолчанию'
+            )
+            bot.send_message(
+                message.chat.id,
+                error_message_pattern.format(message.text.split()[1])
+            )
+        if time_span:
+            logs = logsRetriever.get_log(
+                kind='queries',
+                user_id=message.chat.id,
+                time_delta=time_span
+            )
+        else:
+            logs = logsRetriever.get_log(kind='queries', user_id="all")
+
+        if logs:
+            bot.send_message(message.chat.id, "Запросы от всех ползьователей:\n")
+            bot.send_message(message.chat.id, logs)
+        else:
+            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
+    except Exception as err:
+        bot.send_message(message.chat.id, 'Данная функция временно не работает')
+        logging.exception(err)
+        logging.warning('Команда /getallqueries не сработала', level='warning')
+
+
 @bot.message_handler(commands=['getlog'])
 def get_all_logs(message):
-    with open('logs.log', 'rb') as log_file:
+    with open(LOGS_PATH, 'rb') as log_file:
         bot.send_document(message.chat.id, data=log_file)
 
 
@@ -109,9 +236,10 @@ def get_session_logs(message):
             bot.send_message(message.chat.id, logs)
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
-    except:
+    except Exception as err:
         bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        MessengerManager.log_data('Команда /getsessionlog не сработала', level='warning')
+        logging.exception(err)
+        logging.warning('Команда /getsessionlog не сработала')
 
 
 @bot.message_handler(commands=['getrequestlog'])
@@ -124,61 +252,27 @@ def get_request_logs(message):
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except:
         bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        MessengerManager.log_data('Команда /getrequestlog не сработала', level='warning')
+        logging.warning('Команда /getrequestlog не сработала')
 
 
 @bot.message_handler(commands=['getinfolog'])
 def get_all_info_logs(message):
     try:
-        logs = logsRetriever.get_log(kind='info')
-        if logs:
-            rnd_str = get_random_id(4)
-            path_to_log_file = os.path.join('tmp', '{}_{}_{}_{}.log'.format(
-                'info',
-                rnd_str,
-                message.chat.username,
-                datetime.datetime.now().strftime(DATE_FORMAT)
-            ))
-
-            with open(path_to_log_file, 'w', encoding='utf-8') as file:
-                file.write(logs)
-            try:
-                with open(path_to_log_file, 'rb') as log_file:
-                    bot.send_document(message.chat.id, data=log_file)
-            finally:
-                os.remove(path_to_log_file)
-        else:
-            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
-    except:
+        send_log(message, "info", "/getinfolog")
+    except Exception as err:
         bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        MessengerManager.log_data('Команда /getinfolog не сработала', level='warning')
+        logging.exception(err)
+        logging.warning('Команда /getinfolog не сработала')
 
 
 @bot.message_handler(commands=['getwarninglog'])
 def get_all_warning_logs(message):
     try:
-        logs = logsRetriever.get_log(kind='warning')
-        if logs:
-            rnd_str = get_random_id(4)
-            file_name = '{}_{}_{}_{}.log'.format(
-                'warning',
-                rnd_str,
-                message.chat.username,
-                datetime.datetime.now().strftime(DATE_FORMAT)
-            )
-            with open(file_name, 'w') as file:
-                file.write(logs)
-            try:
-                log_file = open(file_name, 'rb')
-                bot.send_document(message.chat.id, data=log_file)
-            finally:
-                log_file.close()
-                os.remove(file_name)
-        else:
-            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
-    except:
+        send_log(message, "warning", "/getwarninglog")
+    except Exception as err:
         bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        MessengerManager.log_data('Команда /getwarninglog не сработала', level='warning')
+        logging.exception(err)
+        logging.warning('Команда /getwarninglog не сработала')
 
 
 @bot.message_handler(commands=['search'])
@@ -226,8 +320,8 @@ def get_classification(message):
                     proc_values = values
 
                 params = '\n'.join([
-                                       '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                                       ])
+                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
+                ])
                 bot.send_message(message.chat.id, params)
             else:
                 bot.send_message(message.chat.id, 'Классификацию получить не удалось')
@@ -263,16 +357,14 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, 'https://youtu.be/swok2pcFtNI')
     elif call.data == 'correct_response':
         request_id = call.message.text.split()[-1]
-        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(
+        logging.info('Query_ID: {}\tКорректность: {}'.format(
             request_id,
-            __name__,
             '+'
         ))
     elif call.data == 'incorrect_response':
         request_id = call.message.text.split()[-1]
-        MessengerManager.log_data('ID-запроса: {}\tМодуль: {}\tКорректность: {}'.format(
+        logging.info('Query_ID: {}\tКорректность: {}'.format(
             request_id,
-            __name__,
             '-'
         ))
 
@@ -315,10 +407,12 @@ def process_response(message, input_format='text', file_content=None):
                     input_format=input_format
                 )
         else:
-            bot.send_message(message.chat.id,
-                             '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
-                             ' Документ по Минфину (если найден и его score > 10), должен идти в \"смотри также\"',
-                             parse_mode='Markdown')
+            bot.send_message(
+                message.chat.id,
+                '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
+                ' Документ по Минфину (если найден и его score > 10), должен идти в \"смотри также\"',
+                parse_mode='Markdown'
+            )
             process_cube_questions(
                 message,
                 result.cube_documents,
@@ -326,11 +420,14 @@ def process_response(message, input_format='text', file_content=None):
                 input_format=input_format
             )
             if result.minfin_documents.score > 15:
-                bot.send_message(message.chat.id,
-                                 "*Смотри также:*\n{} ({})".format(
-                                     result.minfin_documents.question,
-                                     result.minfin_documents.score),
-                                 parse_mode='Markdown')
+                bot.send_message(
+                    message.chat.id,
+                    "*Смотри также:*\n{} ({})".format(
+                        result.minfin_documents.question,
+                        result.minfin_documents.score
+                    ),
+                    parse_mode='Markdown'
+                )
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -462,7 +559,7 @@ def parse_feedback(fb, user_request_notification=False):
         user_request = user_request.format(fb['user_request'])
 
     formatted_feedback = '{}{}\n\n{}'.format(user_request, exp, norm)
-    formatted_feedback += '\n\n<b>Ответ: {}</b>\nID-запроса: {}'
+    formatted_feedback += '\n\n<b>Ответ: {}</b>\nQuery_ID: {}'
     return formatted_feedback
 
 
