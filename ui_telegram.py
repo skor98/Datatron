@@ -18,7 +18,6 @@ from db.user_support_library import check_user_existence
 from db.user_support_library import create_user
 from db.user_support_library import create_feedback
 from db.user_support_library import get_feedbacks
-from kb.kb_support_library import get_classification_for_dimension
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 from logs_helper import LogsRetriever
@@ -63,7 +62,7 @@ def send_log(message, log_kind, command_name):
             time_delta = int(splitted_message[1])
         except:
             # Значение по умолчание: получает все логи
-            time_delta = 60*24*30  # Месяц
+            time_delta = 60 * 24 * 30  # Месяц
 
     logs = logsRetriever.get_log(kind=log_kind, time_delta=time_delta)
     if logs:
@@ -303,33 +302,6 @@ def get_user_feedbacks(message):
         bot.send_message(message.chat.id, 'Отзывов нет')
 
 
-@bot.message_handler(commands=['class'])
-def get_classification(message):
-    msg = message.text[len('class') + 1:].split()
-    print(msg)
-    if msg:
-        if len(msg) != 2:
-            msg_str = 'Использовано {} параметр(ов). Введите куб, а затем измерение через пробел'
-            bot.send_message(message.chat.id, msg_str.format(len(msg)))
-        else:
-            values = get_classification_for_dimension(msg[0].upper(), msg[1])
-            if values:
-                try:
-                    proc_values = values[:15]
-                except IndexError:
-                    proc_values = values
-
-                params = '\n'.join([
-                    '{}. {}'.format(idx + 1, val) for idx, val in enumerate(proc_values)
-                ])
-                bot.send_message(message.chat.id, params)
-            else:
-                bot.send_message(message.chat.id, 'Классификацию получить не удалось')
-    else:
-        bot.send_message(message.chat.id, 'Введите после команды куб и измерение через пробел')
-
-
-# Text handler
 @bot.message_handler(content_types=['text'])
 def salute(message):
     greets = MessengerManager.greetings(message.text.strip())
@@ -400,12 +372,7 @@ def process_response(message, input_format='text', file_content=None):
                              parse_mode='Markdown')
             process_minfin_questions(message, result.minfin_documents)
             if result.cube_documents.sum_score > 10:
-                process_cube_questions(
-                    message,
-                    result.cube_documents,
-                    request_id,
-                    input_format=input_format
-                )
+                send_cube_look_futher(message, result.cube_documents)
         else:
             bot.send_message(
                 message.chat.id,
@@ -435,7 +402,7 @@ def process_response(message, input_format='text', file_content=None):
 def process_cube_questions(message, cube_result, request_id, input_format):
     if cube_result.status:
         is_input_text = (input_format == 'text')
-        response_str = parse_feedback(cube_result.message, not is_input_text).format(
+        response_str = parse_feedback(cube_result.feedback, not is_input_text).format(
             cube_result.response,
             request_id
         )
@@ -542,16 +509,26 @@ def process_minfin_questions(message, minfin_result):
 def parse_feedback(fb, user_request_notification=False):
     fb_exp = fb['formal']
     fb_norm = fb['verbal']
+
     exp = '<b>Экспертная обратная связь</b>\nКуб: {}\nМера: {}\nИзмерения: {}'
     norm = '<b>Дататрон выделил следующие параметры (обычная обратная связь)</b>:\n{}'
+
     exp = exp.format(
         fb_exp['cube'], fb_exp['measure'],
         ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']])
     )
-    norm = norm.format(
-        '1. {}\n'.format(fb_norm['measure']) +
-        '\n'.join([str(idx + 2) + '. ' + i for idx, i in enumerate(fb_norm['dims'])])
-    )
+
+    if fb_norm['measure'] == 'Значение':
+        norm = norm.format(
+            'Предметная область – {}\n'.format(fb_norm['domain']) +
+            '\n'.join([str(idx + 1) + '. ' + i['full_value'] for idx, i in enumerate(fb_norm['dims'])])
+        )
+    else:
+        norm = norm.format(
+            'Предметная область – {}\n'.format(fb_norm['domain']) +
+            '1. {}\n'.format(fb_norm['measure']) +
+            '\n'.join([str(idx + 3) + '. ' + i['full_value'] for idx, i in enumerate(fb_norm['dims'])])
+        )
 
     user_request = ''
     if user_request_notification:
@@ -561,6 +538,26 @@ def parse_feedback(fb, user_request_notification=False):
     formatted_feedback = '{}{}\n\n{}'.format(user_request, exp, norm)
     formatted_feedback += '\n\n<b>Ответ: {}</b>\nQuery_ID: {}'
     return formatted_feedback
+
+
+def send_cube_look_futher(message, cube_result):
+    """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
+
+    look_futher_str = []
+    fb_norm = cube_result.feedback['verbal']
+
+    look_futher_str.append('Предметная область: {}'.format(fb_norm['domain'].lower()))
+
+    if fb_norm['measure'] != 'Значение':
+        look_futher_str.append('Мера: ' + fb_norm['measure'].lower())
+
+    look_futher_str.extend('{}: {}'.format(item['dimension'], item['full_value'].lower())
+                           for item in fb_norm['dims'])
+
+    bot.send_message(message.chat.id,
+                     "*Смотри также* запрос со следующими параметрами:\n" +
+                     ''.join(['`- {}`\n'.format(elem) for elem in look_futher_str]),
+                     parse_mode='Markdown')
 
 
 # polling cycle

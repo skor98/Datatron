@@ -27,6 +27,7 @@ path_to_tests = 'tests'
 def set_up_minfin_data(index_way='curl'):
     """Главный API метод к этому модулю"""
 
+    print('Начата работа с документами для Министерства Финансов')
     minfin_docs = _refactor_data(_read_data())
     _add_automatic_key_words(minfin_docs)
     _write_data(minfin_docs)
@@ -85,17 +86,22 @@ def _refactor_data(data):
             doc = ClassicMinfinDocument()
             doc.number = str(row.id)
             doc.question = row.question
+
             lem_question = tp.normalization(
                 row.question,
-                delete_digits=True
+                delete_digits=True,
+                delete_question_words=False
             )
-            doc.lem_question = ' '.join([lem_question] * 3)
+            doc.lem_question = lem_question
 
             synonym_questions = _get_manual_synonym_questions(doc.number)
 
             if synonym_questions:
                 lem_synonym_questions = [
-                    tp.normalization(q, delete_digits=True) for q in synonym_questions
+                    tp.normalization(q,
+                                     delete_digits=True,
+                                     delete_question_words=False)
+                    for q in synonym_questions
                     ]
                 doc.lem_synonym_questions = lem_synonym_questions
 
@@ -110,10 +116,10 @@ def _refactor_data(data):
                     row.full_answer,
                     delete_digits=True
                 )
-            kw = tp.normalization(row.key_words)
+            kw = tp.normalization(row.key_words, delete_question_words=False)
 
             # Ключевые слова записываются трижды, для увеличения качества поиска документа
-            doc.lem_key_words = ' '.join([kw] * 3)
+            doc.lem_key_words = ' '.join([kw] * 5)
 
             # Может быть несколько
             if row.link_name:
@@ -196,7 +202,7 @@ def _index_data_via_curl():
         'fileupload',
         (
             curl_instance.FORM_FILE,
-            path_to_folder_file.format(output_file),
+            path.join(path_to_folder_file, output_file),
             curl_instance.FORM_CONTENTTYPE, 'application/json'
         )
     ), ])

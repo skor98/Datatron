@@ -13,16 +13,16 @@ import kb.kb_db_creation as dbc
 from config import SETTINGS
 
 
-class DocsGeneration:
+class CubeDocsGeneration:
     def __init__(self):
         self.file_name = path.join('kb', 'data_for_indexing.json')
         self.core = SETTINGS.SOLR_MAIN_CORE
 
     def generate_docs(self):
         data = (
-            DocsGeneration._create_values() +
-            DocsGeneration._create_cubes() +
-            DocsGeneration._create_measures()
+            CubeDocsGeneration._create_values() +
+            CubeDocsGeneration._create_cubes() +
+            CubeDocsGeneration._create_measures()
         )
 
         self._write_to_file(data)
@@ -108,8 +108,8 @@ class DocsGeneration:
     def _create_values():
         """Создание на основе БД документов для значений измерений"""
 
-        year_values = DocsGeneration._create_year_values()
-        territory_values = DocsGeneration._create_territory_values()
+        year_values = CubeDocsGeneration._create_year_values()
+        territory_values = CubeDocsGeneration._create_territory_values()
 
         # Здесь обрабатываются прочее значения измерений
         values = []

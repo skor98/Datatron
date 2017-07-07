@@ -33,6 +33,7 @@ class Measure(BaseModel):
 
 class Dimension(BaseModel):
     label = CharField()
+    full_value = CharField()
     default_value = ForeignKeyField(Value, null=True)
 
 
@@ -46,6 +47,7 @@ class DimensionValue(BaseModel):
 
 class Cube(BaseModel):
     name = CharField()
+    description = CharField()
     auto_lem_description = CharField()
     manual_description = CharField(null=True)
     manual_lem_description = CharField(null=True)

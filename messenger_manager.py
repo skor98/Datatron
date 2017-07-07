@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import re
 import random
+import re
 
 import constants
+
 from speechkit import speech_to_text
 from speechkit import SpeechException
 from data_retrieving import DataRetrieving
-from dr.solr import DrSolrResult
+from solr import DrSolrResult
 import logs_helper
 from db.query_db import log_query_to_db
 

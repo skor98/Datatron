@@ -10,9 +10,7 @@ from nltk.corpus import stopwords
 from nltk import FreqDist
 import nltk
 
-
 import pymorphy2
-
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -23,7 +21,7 @@ class TextPreprocessing:
         self.norming_style = 'lem'
         self.language = 'russian'
 
-    def normalization(self, text, delete_digits=False):
+    def normalization(self, text, delete_digits=False, delete_question_words=True):
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -35,20 +33,30 @@ class TextPreprocessing:
 
         tokens = nltk.word_tokenize(text.lower())
 
-        # TODO: что делать с вопросительными словами?
-        stop_words = stopwords.words(self.language)
-        stop_words.remove('не')
-        stop_words += "также иной г. год года году да нет -".split()
-
-        # Убираем стоп-слова
-        tokens = [t for t in tokens if t not in stop_words]
-
         # Убираем цифры
         if delete_digits:
             tokens = [t for t in tokens if not t.isdigit()]
 
         # Лемматизация
         tokens = [morph.parse(t)[0].normal_form for t in tokens]
+
+        # TODO: что делать с вопросительными словами?
+        # Базовый набор стоп-слов
+        stop_words = stopwords.words(self.language)
+
+        # Удаление из него отрицательной частицы
+        stop_words.remove('не')
+
+        # Если вопросительные слова и другие частицы не должны быть
+        # удалены из запроса, так как отражают его смысл
+        if not delete_question_words:
+            delete_stop_words_list = ['кто', 'что', 'это', 'где', 'для', 'зачем', 'какой']
+            stop_words = [sw for sw in stop_words if sw not in delete_stop_words_list]
+
+        stop_words += "также иной год да нет -".split()
+
+        # Убираем стоп-слова
+        tokens = [t for t in tokens if t not in stop_words]
 
         normalized_request = ' '.join(tokens)
 
