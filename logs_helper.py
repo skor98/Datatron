@@ -18,6 +18,7 @@ from logging import FileHandler, StreamHandler
 from config import DATETIME_FORMAT, LOG_LEVEL, LOGS_PATH
 from db.query_db import get_queries
 
+
 def string_to_log_level(in_str, default=logging.INFO):
     """
     Возвращает числовой log level соотвествующий строке in_str
@@ -44,6 +45,7 @@ def string_to_log_level(in_str, default=logging.INFO):
             return default
         else:
             raise KeyError
+
 
 def init_logging():
     """
@@ -108,7 +110,7 @@ class LogsRetriever:
     def get_log(self, kind='all', user_id=None, time_delta=15):
         """Возвращает лог"""
         if not isinstance(time_delta, datetime.timedelta):
-            time_delta = datetime.timedelta(seconds=time_delta*60)
+            time_delta = datetime.timedelta(seconds=time_delta * 60)
         # Все логи
         if kind == 'all':
             return self._get_all_logs()
@@ -235,7 +237,6 @@ class LogsRetriever:
         log_out.reverse()
 
         return ''.join(log_out)  # Перенсо строки не нужен, т.к. уже есть
-
 
     @staticmethod
     def _get_dt_from_line(data_log_part):
