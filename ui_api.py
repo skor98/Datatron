@@ -173,6 +173,11 @@ api.add_resource(VoiceQuery, '/v1/voice')
 api.add_resource(TextQuery, '/v1/text')
 api.add_resource(MinfinList, '/v1/minfin_docs')
 
+@app.route('/')
+def main():
+    """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
+
+    return '<center><h1>Welcome to Datatron Home API page</h1></center>'
 
 if __name__ == '__main__':
     app.run(
