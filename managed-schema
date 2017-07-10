@@ -409,9 +409,9 @@
   <field name="cube" type="string" indexed="false" multiValued="false"/>
   <field name="description" type="string" multiValued="false"/>
   <field name="document" type="strings" indexed="false"/>
-  <field name="document_caption" type="strings"/>
+  <field name="document_caption" type="strings" indexed="false"/>
   <field name="formal" type="string" indexed="false" multiValued="false"/>
-  <field name="full_answer" type="string" multiValued="false"/>
+  <field name="full_answer" type="string" indexed="false" multiValued="false"/>
   <field name="fvalue" type="string" indexed="false" multiValued="false"/>
   <field name="hierarchy_level" type="tlongs" indexed="false" multiValued="false"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
@@ -421,13 +421,13 @@
   <field name="lem_short_answer" type="string" multiValued="false"/>
   <field name="lem_synonym_questions" type="strings"/>
   <field name="link" type="strings" indexed="false"/>
-  <field name="link_name" type="strings"/>
+  <field name="link_name" type="strings" indexed="false"/>
   <field name="name" type="string" multiValued="false"/>
   <field name="number" type="string" indexed="false" multiValued="false"/>
   <field name="picture" type="strings" indexed="false"/>
-  <field name="picture_caption" type="strings"/>
-  <field name="question" type="string" multiValued="false"/>
-  <field name="short_answer" type="string" multiValued="false"/>
+  <field name="picture_caption" type="strings" indexed="false"/>
+  <field name="question" type="string" indexed="false" multiValued="false"/>
+  <field name="short_answer" type="string" indexed="false" multiValued="false"/>
   <field name="type" type="string" indexed="false" multiValued="false"/>
   <field name="verbal" type="string" multiValued="false"/>
   <dynamicField name="*_txt_en_split_tight" type="text_en_splitting_tight" indexed="true" stored="true"/>
