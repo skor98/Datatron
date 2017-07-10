@@ -116,7 +116,9 @@ def _refactor_data(data):
                     row.full_answer,
                     delete_digits=True
                 )
-            kw = tp.normalization(row.key_words, delete_question_words=False)
+            kw = tp.normalization(row.key_words,
+                                  delete_question_words=False,
+                                  delete_repeatings=True)
 
             # Ключевые слова записываются трижды, для увеличения качества поиска документа
             doc.lem_key_words = ' '.join([kw] * 5)
@@ -216,6 +218,7 @@ def _add_automatic_key_words(documents):
     matrix = _calculate_matrix(documents)
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)
+        # extra_key_words *= 5
         doc.lem_key_words += ' {}'.format(' '.join(extra_key_words))
 
 
@@ -309,7 +312,9 @@ class ClassicMinfinDocument:
         return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
 
     def get_string_representation(self):
-        if self.lem_full_answer:
-            return self.lem_question + self.lem_full_answer
-        else:
-            return self.lem_question + self.lem_short_answer
+        lem_synonym_questions = []
+        if self.lem_synonym_questions:
+            lem_synonym_questions = self.lem_synonym_questions
+        return self.lem_key_words + \
+               self.lem_question + \
+               ' '.join(lem_synonym_questions)
