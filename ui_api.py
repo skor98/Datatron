@@ -41,7 +41,6 @@ def _read_minfin_data():
     Возвращает массив из словарей с вопросами
     Почти повторяет _read_data из kb/minfin_docs_generation.py
     """
-    logging.info("Читаю данные минфина...")
     files = []
     file_paths = []
 
@@ -68,7 +67,7 @@ def _read_minfin_data():
 
     # Объединение все датафреймов в один
     data = pd.concat(dfs)
-    logging.debug("Прочитано {} записей минфина".format(data.shape[0]))
+    logging.info("Прочитано {} записей минфина".format(data.shape[0]))
     return tuple({
         "id": item[0],
         "question": item[1]
