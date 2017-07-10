@@ -76,6 +76,6 @@ DEBUG, `INFO`, `WARNING`, `ERROR` и числовые значения от
 ## Кому писать в случае вопросов
 | Нужная часть          | Имя             | VK                 | telegram      |
 |-----------------------|-----------------|--------------------|---------------|
-| Бэкенд, автоматизация | Алексей Лобанов | vk.com/lobanovat23 | Лучше не надо |
+| Бэкенд, автоматизация | Алексей Лобанов | [Алексей Лобанов](vk.com/lobanovat23) | [@hippo23](https://t.me/hippo23), но лучше вк |
 | Бэкенд, лингвистика | Глеб Николаев | [Larousse Nikolaev](https://vk.com/sprakvetenskap) | [@craboo](https://t.me/craboo) |
 | Бэкенд | Дмитрий Елисеев | [Дмитрий Елисеев](https://vk.com/dimaquime) | [@dimaquime](https://t.me/dimaquime) |
