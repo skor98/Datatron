@@ -82,7 +82,7 @@ def is_valid_api_key(api_key):
     Проверяет на правльность ключи доступа к API. На данный момент, один ключ
     может всё, без ограничений
     """
-    return api_key == "lol"
+    return api_key in SETTINGS.API_KEYS  # pylint: disable=no-member
 
 
 class VoiceQuery(Resource):
