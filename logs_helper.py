@@ -96,6 +96,40 @@ def set_logging_level(level):
     logger.setLevel(level_to_set)
 
 
+def time_with_message(message, level="INFO", critical_seconds=None):
+    """
+    Декоратор для просто логгирования времени исполнения.
+    Можно установить уровень: debug или info
+    Можно установить critical_seconds: если займёт больше времени, то будет warning
+    """
+    def proc(func):
+        def func_to_return(*args, **kwargs):
+            dt_now = datetime.datetime.now()
+            func_result = func(*args, **kwargs)
+            time_delta = datetime.datetime.now() - dt_now
+
+            log_string = '"{}" заняло {}'.format(message, time_delta)
+            level.upper()
+            if level == "info":
+                logging.info(log_string)
+            elif level == "debug":
+                logging.debug(log_string)
+            else:
+                raise Exception("Указан неправильный формат логирования")
+
+            if critical_seconds is not None:
+                critical_td = datetime.timedelta(seconds=critical_seconds)
+
+                if time_delta > critical_td:
+                    warning_template = 'ПРЕВЫШЕНО критическое время "{}" реальное: {}'
+                    logging.warning(warning_template.format(message, time_delta))
+
+            return func_result
+
+        return func_to_return
+    return proc
+
+
 class LogsRetriever:
     """
     Класс для вывода логов в Телеграме. Используется как нами,

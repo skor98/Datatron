@@ -33,6 +33,8 @@ DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
 DATETIME_FORMAT = "{} {}".format(DATE_FORMAT, TIME_FORMAT)
 
+API_PORT = 5005
+
 with open(SETTINGS_PATH, 'r') as file_settings:
     _settings_json = json.load(file_settings)
 
