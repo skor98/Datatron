@@ -30,7 +30,8 @@ class DataRetrieving:
         # инстанс класса, производящего нормализацию слов
         text_preprocessor = TextPreprocessing(request_id)
         # нормализация запроса пользователя
-        normalized_user_request = text_preprocessor.normalization(user_request)
+        normalized_user_request = text_preprocessor.normalization(user_request,
+                                                                  delete_question_words=False)
 
         # инстанс класса, ответственного за работу с Apache Solr
         solr = Solr(SETTINGS.SOLR_MAIN_CORE)
