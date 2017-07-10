@@ -157,6 +157,7 @@ class TextQuery(Resource):
 
 class MinfinList(Resource):
     """Возвращает весь список минфин вопросов. Актуально, пока их мало"""
+    @time_with_message("MinfinList API Get", "info", 1)
     def get(self):
         return get_minfin_data()
 
