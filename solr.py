@@ -5,6 +5,7 @@
 Взаимодействие с Solr
 """
 
+import logging
 import datetime
 import json
 
