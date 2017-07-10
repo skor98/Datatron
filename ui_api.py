@@ -176,7 +176,7 @@ api.add_resource(MinfinList, '/v1/minfin_docs')
 
 if __name__ == '__main__':
     app.run(
-        host="0.0.0.0",
+        host=SETTINGS.HOST,
         port=API_PORT,
         debug=False
     )
