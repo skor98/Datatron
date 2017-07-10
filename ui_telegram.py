@@ -372,7 +372,10 @@ def process_response(message, input_format='text', file_content=None):
                              parse_mode='Markdown')
             process_minfin_questions(message, result.minfin_documents)
             if result.cube_documents.sum_score > 10:
-                send_cube_look_futher(message, result.cube_documents)
+                bot.send_message(message.chat.id,
+                                 verbal_feedback(result.cube_documents,
+                                                 title="Смотри также запрос со следующими параметрами:"),
+                                 parse_mode='HTML')
         else:
             bot.send_message(
                 message.chat.id,
@@ -402,11 +405,11 @@ def process_response(message, input_format='text', file_content=None):
 def process_cube_questions(message, cube_result, request_id, input_format):
     if cube_result.status:
         is_input_text = (input_format == 'text')
-        response_str = parse_feedback(cube_result.feedback, not is_input_text).format(
+        response_str = form_feedback(cube_result, not is_input_text).format(
             cube_result.response,
             request_id
         )
-
+        logging.info(response_str)
         bot.send_message(
             message.chat.id,
             response_str,
@@ -506,58 +509,65 @@ def process_minfin_questions(message, minfin_result):
         bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
-def parse_feedback(fb, user_request_notification=False):
-    fb_exp = fb['formal']
-    fb_norm = fb['verbal']
-
-    exp = '<b>Экспертная обратная связь</b>\nКуб: {}\nМера: {}\nИзмерения: {}'
-    norm = '<b>Дататрон выделил следующие параметры (обычная обратная связь)</b>:\n{}'
-
-    exp = exp.format(
-        fb_exp['cube'], fb_exp['measure'],
-        ', '.join([i['dim'] + ': ' + i['val'] for i in fb_exp['dims']])
-    )
-
-    if fb_norm['measure'] == 'Значение':
-        norm = norm.format(
-            'Предметная область – {}\n'.format(fb_norm['domain']) +
-            '\n'.join([str(idx + 1) + '. ' + i['full_value'] for idx, i in enumerate(fb_norm['dims'])])
-        )
-    else:
-        norm = norm.format(
-            'Предметная область – {}\n'.format(fb_norm['domain']) +
-            '1. {}\n'.format(fb_norm['measure']) +
-            '\n'.join([str(idx + 3) + '. ' + i['full_value'] for idx, i in enumerate(fb_norm['dims'])])
-        )
+def form_feedback(cube_result, user_request_notification=False):
+    expert_str = expert_feedback(cube_result)
+    verbal_str = verbal_feedback(cube_result)
 
     user_request = ''
     if user_request_notification:
-        user_request = '<b>Ваш запрос</b>\nДататрон решил, что Вы его спросили следующее: "{}"\n\n'
-        user_request = user_request.format(fb['user_request'])
+        user_request = '<b>Ваш запрос</b>\nДататрон решил, что Вы его спросили: "{}"\n\n'
+        user_request = user_request.format(cube_result['user_request'])
 
-    formatted_feedback = '{}{}\n\n{}'.format(user_request, exp, norm)
-    formatted_feedback += '\n\n<b>Ответ: {}</b>\nQuery_ID: {}'
-    return formatted_feedback
+    feedback = '{}{}\n{}\n{}\n{}'.format(
+        user_request,
+        expert_str,
+        verbal_str,
+        '<b>Ответ: {}</b>',
+        'Query_ID: {}')
+
+    return feedback
 
 
-def send_cube_look_futher(message, cube_result):
+def expert_feedback(cube_result):
+    expert_fb = cube_result.feedback['formal']
+
+    expert_str = '<b>Экспертная обратная связь</b>\n' \
+                 '<code>- Куб: {}\n- Мера: {}\n- Измерения: {}\n</code>'
+
+    expert_str = expert_str.format(
+        expert_fb['cube'],
+        expert_fb['measure'],
+        ', '.join([i['dim'] + ': ' + i['val'] for i in expert_fb['dims']])
+    )
+
+    return expert_str
+
+
+def verbal_feedback(cube_result, title='Обычная обратная связь'):
     """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
 
-    look_futher_str = []
-    fb_norm = cube_result.feedback['verbal']
+    verbal_fb_list = []
+    verbal_fb = cube_result.feedback['verbal']
 
-    look_futher_str.append('Предметная область: {}'.format(fb_norm['domain'].lower()))
+    verbal_fb_list.append('Предметная область: {}'.format(
+        first_letter_lower(verbal_fb['domain'])))
 
-    if fb_norm['measure'] != 'Значение':
-        look_futher_str.append('Мера: ' + fb_norm['measure'].lower())
+    if verbal_fb['measure'] != 'Значение':
+        verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
-    look_futher_str.extend('{}: {}'.format(item['dimension'], item['full_value'].lower())
-                           for item in fb_norm['dims'])
+    verbal_fb_list.extend('{}: {}'.format(item['dimension'],
+                                          first_letter_lower(item['full_value']))
+                          for item in verbal_fb['dims'])
 
-    bot.send_message(message.chat.id,
-                     "*Смотри также* запрос со следующими параметрами:\n" +
-                     ''.join(['`- {}`\n'.format(elem) for elem in look_futher_str]),
-                     parse_mode='Markdown')
+    verbal_str = ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list])
+    return '<b>{}</b>\n<code>{}</code>'.format(title, verbal_str)
+
+
+def first_letter_lower(input_str):
+    if input_str:
+        return input_str[:1].lower() + input_str[1:]
+    else:
+        return ''
 
 
 # polling cycle
