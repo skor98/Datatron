@@ -105,7 +105,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
     def proc(func):
         def func_to_return(*args, **kwargs):
             dt_now = datetime.datetime.now()
-            func(*args, **kwargs)
+            func_result = func(*args, **kwargs)
             time_delta = datetime.datetime.now() - dt_now
 
             log_string = '"{}" заняло {}'.format(message, time_delta)
@@ -123,6 +123,8 @@ def time_with_message(message, level="INFO", critical_seconds=None):
                 if time_delta > critical_td:
                     warning_template = 'ПРЕВЫШЕНО критическое время "{}" реальное: {}'
                     logging.warning(warning_template.format(message, time_delta))
+
+            return func_result
 
         return func_to_return
     return proc
