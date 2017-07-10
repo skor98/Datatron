@@ -49,6 +49,7 @@ def cube_testing(test_sphere='cube'):
                 if line.startswith('*'):
                     continue
 
+                logging.info(line)
                 req, answer = line.split(':')
 
                 system_answer = json.loads(DataRetrieving.get_data(
@@ -95,7 +96,7 @@ def cube_testing(test_sphere='cube'):
                                  error_answers,
                                  int(time.time() - start_time))
 
-    with open(path.join(test_path, file_name), 'w', encoding='utf-8') as file_out:
+    with open(path.join(test_path, 'results', file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
 
     logging.info('Тестирование завершено')
@@ -138,21 +139,25 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
     if response:
         try:
             assert question_id == str(response)
-            ars = '{q_id}  + Запрос "{req}" отрабатывает корректно'
-            ars = ars.format(q_id=question_id, req=req)
+            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['minfin_documents']['score'],
+                             req=req)
             testing_results.append(ars)
             true_answers.append(1)
         except AssertionError:
             ars = (
-                '{q_id} - Запрос "{req}" отрабатывает некорректно ' +
+                '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
                 '(должны получать:{q_id}, получаем:{fl})'
             )
-            ars = ars.format(q_id=question_id, req=req, fl=response)
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['minfin_documents']['score'],
+                             req=req, fl=response)
             testing_results.append(ars)
             wrong_answers.append(1)
     else:
         # TODO: подправить MSG
-        ars = '{q_id}  - Запрос "{req}" вызвал ошибку: {msg}'.format(
+        ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
             q_id=question_id,
             req=req,
             msg='Не определена'
@@ -170,5 +175,5 @@ def get_test_files(test_path, prefix):
 
 
 if __name__ == "__main__":
-    # cube_testing(test_sphere='cube')
+    cube_testing(test_sphere='cube')
     cube_testing(test_sphere='minfin')

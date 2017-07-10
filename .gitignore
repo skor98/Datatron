@@ -201,5 +201,8 @@ $RECYCLE.BIN/
 
 # End of https://www.gitignore.io/api/linux,python,pycharm,windows
 
-# ignoting settings
+# ignoring settings
 settings.json
+
+# ignoring test results
+tests/results/

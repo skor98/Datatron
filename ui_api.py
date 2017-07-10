@@ -16,6 +16,7 @@ from flask_restful import reqparse, abort, Api, Resource
 
 from messenger_manager import MessengerManager
 import logs_helper  # pylint: disable=unused-import
+from logs_helper import time_with_message
 from config import SETTINGS, API_PORT
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
@@ -35,6 +36,7 @@ def get_minfin_data():
 get_minfin_data.data = None
 
 
+@time_with_message("_read_minfin_data", "debug", 10)
 def _read_minfin_data():
     """
     Читает xlsx данные, соединяет в один документ и возвращает словарь с соотв. полями.
@@ -87,6 +89,7 @@ def is_valid_api_key(api_key):
 
 class VoiceQuery(Resource):
     """Обрабатывает отправку файлов голосом"""
+    @time_with_message("VoiceQuery API Get", "info", 7)
     def post(self):
         args = parser.parse_args()
 
@@ -129,6 +132,7 @@ class VoiceQuery(Resource):
 
 class TextQuery(Resource):
     """Обрабатывает простой текстовой зарос"""
+    @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
         args = parser.parse_args()
         logging.info(args)
@@ -153,6 +157,7 @@ class TextQuery(Resource):
 
 class MinfinList(Resource):
     """Возвращает весь список минфин вопросов. Актуально, пока их мало"""
+    @time_with_message("MinfinList API Get", "info", 1)
     def get(self):
         return get_minfin_data()
 
@@ -171,7 +176,7 @@ api.add_resource(MinfinList, '/v1/minfin_docs')
 
 if __name__ == '__main__':
     app.run(
-        host="0.0.0.0",
+        host=SETTINGS.HOST,
         port=API_PORT,
         debug=False
     )
