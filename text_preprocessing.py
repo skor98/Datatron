@@ -21,7 +21,7 @@ class TextPreprocessing:
         self.norming_style = 'lem'
         self.language = 'russian'
 
-    def normalization(self, text, delete_digits=False, delete_question_words=True):
+    def normalization(self, text, delete_digits=False, delete_question_words=True, delete_repeatings=False):
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -39,6 +39,9 @@ class TextPreprocessing:
 
         # Лемматизация
         tokens = [morph.parse(t)[0].normal_form for t in tokens]
+
+        if delete_repeatings:
+            tokens = list(set(tokens))
 
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
@@ -60,8 +63,8 @@ class TextPreprocessing:
 
         normalized_request = ' '.join(tokens)
 
-        logging_str = "ID-запроса: {}\tМодуль: {}\tЗапрос после нормализации: {}"
-        logging.info(logging_str.format(self.request_id, __name__, normalized_request))
+        logging_str = "Query_ID: {}\tЗапрос после нормализации: {}"
+        logging.info(logging_str.format(self.request_id, normalized_request))
 
         return normalized_request
 
