@@ -62,7 +62,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--dbs",
+        "--db",
         action='store_true',
         help='Создание и заполнение БД',
     )
