@@ -20,6 +20,9 @@ from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
 
 
+
+# TODO: доделать логгирование принятия решений
+
 class Solr:
     """
     Класс для взимодействия с поисковой системой Apache Solr
@@ -40,15 +43,34 @@ class Solr:
             docs = self._send_request_to_solr(user_request)
 
             if docs['response']['numFound']:
-                Solr._parse_solr_response(docs, solr_result)
-                # Если найден документ
-                if solr_result.docs_found:
+
+                (minfin_docs, cube_cubes,
+                 cube_territory, cube_year,
+                 cube_dimensions, cube_measures) = Solr._parse_solr_response(docs)
+
+                # все найденные документы по кубам
+                cube_answers = Solr._process_cube_document(cube_year,
+                                                           cube_territory,
+                                                           cube_dimensions,
+                                                           cube_measures,
+                                                           cube_cubes
+                                                           )
+
+                # все найденные документы по Минфину
+                minfin_answers = Solr._process_minfin_question(minfin_docs)
+
+                # Формирование возвращаемого объекта
+                Solr._format_final_response(cube_answers, minfin_answers, solr_result)
+
+                # Если найдены документы
+                if solr_result.doc_found:
                     solr_result.status = True
+
                 return solr_result
             else:
                 raise Exception('Datatron не нашел ответа на Ваш вопрос')
         except Exception as err:
-            logging.error("Solr error")
+            logging.error("Solr error " + str(err))
             logging.exception(err)
             solr_result.error = str(err)
             return solr_result
@@ -69,66 +91,85 @@ class Solr:
         return docs
 
     @staticmethod
-    def _parse_solr_response(solr_docs, solr_result):
+    def _parse_solr_response(solr_docs):
         """
         Разбивает найденные документы по переменным
-
-        :param solr_docs: JSON-объект с найденными документами
-        :param solr_result: объект класса DrSolrResult()
-        :return:
+        для различных типов вопросов
         """
 
+        # Найденные документы по Минфин вопросам
         minfin_docs = []
-        cubes = []
-        territory = None
-        year = None
-        dimensions = []
-        measures = []
 
+        # Найденные документы для запросов к кубам
+        cube_cubes = []
+        cube_territory = None
+        cube_year = None
+        cube_dimensions = []
+        cube_measures = []
+
+        # найденные Solr-ом документы
         solr_docs = solr_docs['response']['docs']
 
         for doc in solr_docs:
             if doc['type'] == 'dimension':
-                dimensions.append(doc)
+                cube_dimensions.append(doc)
             elif doc['type'] == 'year_dimension':
-                year_value = int(doc['fvalue'])
-                # managing two number years
-                if year_value < 2007:
-                    if year_value < 10:
-                        year_value = '0' + str(year_value)
-                    year_value = datetime.datetime.strptime(str(year_value), '%y').year
-                doc['fvalue'] = year_value
-                year = doc
+                # обработка значения года, если он из 1 или 2 цифр
+                doc['fvalue'] = Solr._manage_years(int(doc['fvalue']))
+                cube_year = doc
             elif doc['type'] == 'territory_dimension':
-                territory = doc
+                cube_territory = doc
             elif doc['type'] == 'cube':
-                cubes.append(doc)
+                cube_cubes.append(doc)
             elif doc['type'] == 'measure':
-                measures.append(doc)
+                cube_measures.append(doc)
             elif doc['type'] == 'minfin':
                 minfin_docs.append(doc)
 
-        solr_result.cube_documents = Solr._process_cube_question(
+        return minfin_docs, cube_cubes, cube_territory, cube_year, cube_dimensions, cube_measures
+
+    @staticmethod
+    def _process_cube_document(year, territory, dimensions, measures, cubes):
+        cube_result = DrSolrCubeResult()
+
+        # Фильтрация документов
+        (final_dimensions,
+         final_measures,
+         final_cube,
+         cube_score) = Solr._filter_cube_documents(
             year,
             territory,
             dimensions,
-            cubes,
-            measures
+            measures,
+            cubes
         )
-        if minfin_docs:
-            solr_result.minfin_documents = Solr._process_minfin_question(minfin_docs)
 
-        if solr_result.cube_documents.status:
-            solr_result.docs_found += 1
+        # Сборка MDX запроса, если после фильтрации какие-то измерения остались
+        if final_dimensions:
+            cube_result.mdx_query = Solr._build_mdx_request(
+                final_dimensions,
+                final_measures,
+                final_cube
+            )
 
-        if solr_result.minfin_documents.status:
-            solr_result.docs_found += 1
+            cube_result.cube_score = cube_score
+            Solr._calculate_score_for_cube_questions(
+                final_dimensions,
+                measures,
+                year,
+                territory,
+                cube_result
+            )
 
-        return solr_result
+            cube_result.status = True
+        else:
+            # TODO: исправить
+            cube_result.message = "Все измерения были удалены после фильтрации"
+
+        return cube_result
 
     @staticmethod
-    def _process_cube_question(year, territory, dimensions, cubes, measures):
-        solr_cube_result = DrSolrCubeResult()
+    def _filter_cube_documents(year, territory, dimensions, measures, cubes):
         final_dimension_list = []
         cube_above_territory_priority = False
 
@@ -138,7 +179,7 @@ class Solr:
             reference_cube_score = cubes[0]['score']
         except IndexError:
             # Если куб не найден (что очень мало вероятно)
-            return solr_cube_result
+            raise Exception('Куб для запроса не найден')
 
         # Фильтрация по году
         if year:
@@ -161,7 +202,8 @@ class Solr:
                     reference_cube_score = cubes[0]['score']
                     final_dimension_list.append(year)
                 else:
-                    return solr_cube_result
+                    # TODO: исправить
+                    raise Exception('После фильтра по ГОДУ кубов не осталось')
 
         # Доопределение куба
         if dimensions:
@@ -209,7 +251,8 @@ class Solr:
                         'score': territory['score']
                     })
                 else:
-                    return solr_cube_result
+                    # TODO: исправить
+                    raise Exception('После фильтра по ТЕРРИТОРИИ кубов не осталось')
 
         # Построение иерархического списка измерений
         tmp_dimensions, idx = [], 0
@@ -239,71 +282,19 @@ class Solr:
                 if dim['cube'] == reference_cube:
                     final_dimension_list.append(dim)
 
-        if final_dimension_list:
-            mdx_request = Solr._build_mdx_request(
-                final_dimension_list,
-                measures,
-                reference_cube
-            )
-            print(mdx_request)
-            solr_cube_result.mdx_query = mdx_request
-            solr_cube_result.cube_score = reference_cube_score
-            Solr._calculate_score_for_cube_questions(
-                final_dimension_list,
-                measures,
-                year,
-                territory,
-                solr_cube_result
-            )
-            solr_cube_result.sum_score += solr_cube_result.cube_score
-            solr_cube_result.status = True
-        return solr_cube_result
+        # Если Solr нашел какие-нибудь меры
+        if measures:
+            # Фильтрация мер по принадлежности к выбранному кубу
+            measures = [item for item in measures if item['cube'] == reference_cube]
 
-    @staticmethod
-    def _process_minfin_question(minfin_documents):
-        """Работа с документами для вопросов Минфина
-
-        :param minfin_documents: документы министерства финансов
-        :return: объект класса DrSolrMinfinResult()
-        """
-
-        solr_minfin_result = DrSolrMinfinResult()
-        best_document = minfin_documents[0]
-        solr_minfin_result.score = best_document['score']
-        solr_minfin_result.status = True
-        solr_minfin_result.number = best_document['number']
-        solr_minfin_result.question = best_document['question']
-        solr_minfin_result.short_answer = best_document['short_answer']
-
-        try:
-            solr_minfin_result.full_answer = best_document['full_answer']
-        except KeyError:
-            pass
-
-        try:
-            solr_minfin_result.link_name = best_document['link_name']
-            solr_minfin_result.link = best_document['link']
-        except KeyError:
-            pass
-
-        try:
-            solr_minfin_result.picture_caption = best_document['picture_caption']
-            solr_minfin_result.picture = best_document['picture']
-        except KeyError:
-            pass
-
-        try:
-            solr_minfin_result.document_caption = best_document['document_caption']
-            solr_minfin_result.document = best_document['document']
-        except KeyError:
-            pass
-
-        return solr_minfin_result
+        return final_dimension_list, measures, reference_cube, reference_cube_score
 
     @staticmethod
     def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
         """Подсчет различных видов score для запроса по кубу"""
         scores = []
+
+        scores.append(solr_result.cube_score)
 
         # ToDo: Проверка, что ['score'] существует и к нему можно обратиться (2!)
         for dim in dimensions:
@@ -373,14 +364,80 @@ class Solr:
 
         measure = get_default_cube_measure(cube)
 
-        # Если Solr нашел какие-нибудь меры
         if measures:
-            # Фильтрация мер по принадлежности к выбранному кубу
-            measures = [item for item in measures if item['cube'] == cube]
-            if measures:
-                measure = measures[0]['formal']
+            measure = measures[0]['formal']
 
         return mdx_template.format(measure, cube, ','.join(dim_str_value))
+
+    @staticmethod
+    def _manage_years(year):
+        if year > 2006:
+            return year
+        # работа с годами из одного и двух цифр
+        else:
+            if year < 10:
+                year = '0' + str(year)
+            return datetime.datetime.strptime(str(year), '%y').year
+
+    @staticmethod
+    def _process_minfin_question(minfin_documents):
+        """Работа с документами для вопросов Минфина
+
+        :param minfin_documents: документы министерства финансов
+        :return: объект класса DrSolrMinfinResult()
+        """
+
+        answers = []
+
+        for document in minfin_documents:
+            answer = DrSolrMinfinResult()
+
+            answer.score = document['score']
+            answer.status = True
+            answer.number = document['number']
+            answer.question = document['question']
+            answer.short_answer = document['short_answer']
+
+            try:
+                answer.full_answer = document['full_answer']
+            except KeyError:
+                pass
+
+            try:
+                answer.link_name = document['link_name']
+                answer.link = document['link']
+            except KeyError:
+                pass
+
+            try:
+                answer.picture_caption = document['picture_caption']
+                answer.picture = document['picture']
+            except KeyError:
+                pass
+
+            try:
+                answer.document_caption = document['document_caption']
+                answer.document = document['document']
+            except KeyError:
+                pass
+
+            answers.append(answer)
+
+        return answers
+
+    @staticmethod
+    def _format_final_response(cube_answers, minfin_answers, solr_result):
+        if not isinstance(cube_answers, list):
+            cube_answers = [cube_answers]
+
+        answers = cube_answers + minfin_answers
+        answers = sorted(answers, key=lambda ans: ans.get_key())
+
+        solr_result.response = answers[0]
+        if len(answers) > 1:
+            solr_result.more_answers = answers[1:]
+
+        solr_result.doc_found = len(answers)
 
 
 class DrSolrCubeResult:
@@ -396,6 +453,9 @@ class DrSolrCubeResult:
         self.response = None
         self.message = None
         self.feedback = None
+
+    def get_key(self):
+        return self.sum_score
 
 
 class DrSolrMinfinResult:
@@ -415,15 +475,18 @@ class DrSolrMinfinResult:
         self.document = None
         self.message = None
 
+    def get_key(self):
+        return self.score
+
 
 class DrSolrResult:
     def __init__(self):
         self.status = False
         self.message = ''
         self.error = ''
-        self.docs_found = 0
-        self.cube_documents = DrSolrCubeResult()
-        self.minfin_documents = DrSolrMinfinResult()
+        self.doc_found = 0
+        self.answer = None
+        self.more_answers = None
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)

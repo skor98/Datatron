@@ -6,7 +6,7 @@ import uuid
 import datetime
 import time
 import logging
-from os import path, listdir
+from os import path, listdir, makedirs
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT
@@ -95,6 +95,10 @@ def cube_testing(test_sphere='cube'):
                                  wrong_answers,
                                  error_answers,
                                  int(time.time() - start_time))
+
+    # создание папки для тестов
+    if not path.exists(path.join(test_path, 'results')):
+        makedirs(path.join(test_path, 'results'))
 
     with open(path.join(test_path, 'results', file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
