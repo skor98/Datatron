@@ -26,18 +26,17 @@ from logs_helper import LogsRetriever
 import logs_helper  # pylint: disable=unused-import
 
 from config import DATE_FORMAT, LOGS_PATH
-from config.SETTINGS import TELEGRAM, WEB_SERVER  # pylint: disable=import-error
+from config import SETTINGS
 
 import constants
 
-
-bot = telebot.TeleBot(TELEGRAM.API_TOKEN)
+bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
 
 WEBHOOK_URL_BASE = "https://{}:{}".format(
-    WEB_SERVER.PUBLIC_LINK,
-    TELEGRAM.WEBHOOK_PORT
+    SETTINGS.WEB_SERVER.PUBLIC_LINK,
+    SETTINGS.TELEGRAM.WEBHOOK_PORT
 )
-WEBHOOK_URL_PATH = "/telebot/{}/".format(TELEGRAM.API_TOKEN)
+WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
 app = Flask(__name__)
 
 logsRetriever = LogsRetriever(LOGS_PATH)
@@ -326,7 +325,7 @@ def voice_processing(message):
     file_info = bot.get_file(message.voice.file_id)
     file_data = requests.get(
         'https://api.telegram.org/file/bot{0}/{1}'.format(
-            TELEGRAM.API_TOKEN,
+            SETTINGS.TELEGRAM.API_TOKEN,
             file_info.file_path
         )
     )
@@ -392,47 +391,25 @@ def process_response(message, input_format='text', file_content=None):
         )
 
     if result.docs_found:
-        # TODO: подправить со временем, выдавать только один ответ
-        if result.minfin_documents.score > result.cube_documents.sum_score:
-            bot.send_message(
-                message.chat.id,
-                '_Комментарий:_\nПри этом запросе должен выдаваться только Минфин документ.' +
-                ' Документ по кубам (если найден), должен идти в \"смотри также\"',
-                parse_mode='Markdown'
-            )
-            process_minfin_questions(message, result.minfin_documents)
-            if result.cube_documents.sum_score > 10:
-                bot.send_message(
-                    message.chat.id,
-                    verbal_feedback(
-                        result.cube_documents,
-                        title="Смотри также запрос со следующими параметрами:"
-                    ),
-                    parse_mode='HTML'
-                )
-        else:
-            bot.send_message(
-                message.chat.id,
-                '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
-                ' Документ по Минфину (если найден и его score > 10), ' +
-                'должен идти в \"смотри также\"',
-                parse_mode='Markdown'
-            )
+        if result.answer.type == 'cube':
             process_cube_questions(
                 message,
                 result.cube_documents,
                 request_id,
                 input_format=input_format
             )
-            if result.minfin_documents.score > 15:
-                bot.send_message(
-                    message.chat.id,
-                    "*Смотри также:*\n{} ({})".format(
-                        result.minfin_documents.question,
-                        result.minfin_documents.score
-                    ),
-                    parse_mode='Markdown'
-                )
+        else:
+            process_minfin_questions(message, result.minfin_documents)
+
+            # if result.minfin_documents.score > 15:
+            #     bot.send_message(
+            #         message.chat.id,
+            #         "*Смотри также:*\n{} ({})".format(
+            #             result.minfin_documents.question,
+            #             result.minfin_documents.score
+            #         ),
+            #         parse_mode='Markdown'
+            #     )
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -606,18 +583,18 @@ def first_letter_lower(input_str):
 
 # polling cycle
 if __name__ == '__main__':
-    for admin_id in TELEGRAM.ADMIN_IDS:
+    for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
         bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
 
-    if TELEGRAM.ENABLE_WEBHOOK:
+    if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         bot.remove_webhook()
         bot.set_webhook(
             url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-            certificate=open(WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+            certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
         )
         app.run(
-            host=WEB_SERVER.HOST,
-            port=TELEGRAM.WEBHOOK_PORT,
+            host=SETTINGS.WEB_SERVER.HOST,
+            port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
             debug=False
         )
     else:
