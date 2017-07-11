@@ -103,6 +103,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
     Можно установить critical_seconds: если займёт больше времени, то будет warning
     """
 
+    level_to_pass = level
     def proc(func):
         def func_to_return(*args, **kwargs):
             dt_now = datetime.datetime.now()
@@ -110,7 +111,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
             time_delta = datetime.datetime.now() - dt_now
 
             log_string = '"{}" заняло {}'.format(message, time_delta)
-            level.upper()
+            level = level_to_pass.lower()
             if level == "info":
                 logging.info(log_string)
             elif level == "debug":

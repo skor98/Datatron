@@ -203,6 +203,3 @@ $RECYCLE.BIN/
 
 # ignoring settings
 settings.json
-
-# ignoring test results
-tests/results/
