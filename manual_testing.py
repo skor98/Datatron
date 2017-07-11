@@ -108,7 +108,7 @@ def cube_testing(test_sphere='cube'):
 
 
 def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers, wrong_answers, error_answers):
-    response = system_answer['cube_documents']['response']
+    response = system_answer['answer']['response']
     if response:
         try:
             assert int(answer) == response
@@ -123,7 +123,7 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             ars = ars.format(idx,
                              req, int(answer),
                              response,
-                             system_answer['cube_documents']['mdx_query'])
+                             system_answer['answer']['mdx_query'])
 
             testing_results.append(ars)
             wrong_answers.append(1)
@@ -131,21 +131,21 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
         ars = '{}. - Запрос "{}" вызвал ошибку: {} | {}'
         ars = ars.format(idx,
                          req,
-                         system_answer['cube_documents']['message'],
-                         system_answer['cube_documents']['mdx_query'])
+                         system_answer['answer']['message'],
+                         system_answer['answer']['mdx_query'])
         testing_results.append(ars)
         error_answers.append(1)
 
 
 def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers,
                            error_answers):
-    response = system_answer['minfin_documents']['number']
+    response = system_answer['answer']['number']
     if response:
         try:
             assert question_id == str(response)
             ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
             ars = ars.format(q_id=question_id,
-                             score=system_answer['minfin_documents']['score'],
+                             score=system_answer['answer']['score'],
                              req=req)
             testing_results.append(ars)
             true_answers.append(1)
@@ -155,7 +155,7 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
                 '(должны получать:{q_id}, получаем:{fl})'
             )
             ars = ars.format(q_id=question_id,
-                             score=system_answer['minfin_documents']['score'],
+                             score=system_answer[['answer']]['score'],
                              req=req, fl=response)
             testing_results.append(ars)
             wrong_answers.append(1)
