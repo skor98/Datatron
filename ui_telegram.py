@@ -22,13 +22,19 @@ from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 from logs_helper import LogsRetriever
 
-from config import SETTINGS, DATE_FORMAT, LOGS_PATH
+from config import DATE_FORMAT, LOGS_PATH
+from config.SETTINGS import TELEGRAM, WEB_SERVER
+
+from flask import Flask, request, abort
 
 import requests
 import constants
 
-API_TOKEN = SETTINGS.TELEGRAM_API_TOKEN
-bot = telebot.TeleBot(API_TOKEN)
+bot = telebot.TeleBot(TELEGRAM.API_TOKEN)
+
+webhook_url_base = "https://{}:{}".format(WEB_SERVER.PUBLIC_LINK, TELEGRAM.WEBHOOK_PORT)
+webhook_url_path = "/telebot/{}/".format(TELEGRAM.API_TOKEN)
+app = Flask(__name__)
 
 logsRetriever = LogsRetriever(LOGS_PATH)
 
@@ -316,7 +322,7 @@ def voice_processing(message):
     file_info = bot.get_file(message.voice.file_id)
     file_data = requests.get(
         'https://api.telegram.org/file/bot{0}/{1}'.format(
-            API_TOKEN,
+            TELEGRAM.API_TOKEN,
             file_info.file_path
         )
     )
@@ -339,6 +345,22 @@ def callback_inline(call):
             request_id,
             '-'
         ))
+        
+@app.get('/telebot/')
+def main():
+    """Тестовая страница"""
+
+    return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+
+@app.route(webhook_url_path, methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        abort(403)
 
 
 def process_response(message, input_format='text', file_content=None):
@@ -572,7 +594,16 @@ def first_letter_lower(input_str):
 
 # polling cycle
 if __name__ == '__main__':
-    for admin_id in SETTINGS.ADMIN_TELEGRAM_ID:
+    for admin_id in TELEGRAM.ADMIN_IDS:
         bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
 
-    bot.polling(none_stop=True)
+    if TELEGRAM.ENABLE_WEBHOOK:
+        bot.remove_webhook()
+        bot.set_webhook(url=webhook_url_base+webhook_url_path, certificate=open(WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb'))
+        app.run(
+            host=WEB_SERVER.HOST,
+            port=TELEGRAM.WEBHOOK_PORT,
+            debug=False
+        )
+    else:
+        bot.polling(none_stop=True)
