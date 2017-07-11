@@ -13,6 +13,8 @@ import os
 import logging
 
 import telebot
+import requests
+from flask import Flask, request, abort
 
 from db.user_support_library import check_user_existence
 from db.user_support_library import create_user
@@ -21,19 +23,21 @@ from db.user_support_library import get_feedbacks
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 from logs_helper import LogsRetriever
+import logs_helper  # pylint: disable=unused-import
 
 from config import DATE_FORMAT, LOGS_PATH
-from config.SETTINGS import TELEGRAM, WEB_SERVER
+from config.SETTINGS import TELEGRAM, WEB_SERVER  # pylint: disable=import-error
 
-from flask import Flask, request, abort
-
-import requests
 import constants
+
 
 bot = telebot.TeleBot(TELEGRAM.API_TOKEN)
 
-webhook_url_base = "https://{}:{}".format(WEB_SERVER.PUBLIC_LINK, TELEGRAM.WEBHOOK_PORT)
-webhook_url_path = "/telebot/{}/".format(TELEGRAM.API_TOKEN)
+WEBHOOK_URL_BASE = "https://{}:{}".format(
+    WEB_SERVER.PUBLIC_LINK,
+    TELEGRAM.WEBHOOK_PORT
+)
+WEBHOOK_URL_PATH = "/telebot/{}/".format(TELEGRAM.API_TOKEN)
 app = Flask(__name__)
 
 logsRetriever = LogsRetriever(LOGS_PATH)
@@ -345,14 +349,16 @@ def callback_inline(call):
             request_id,
             '-'
         ))
-        
+
+
 @app.get('/telebot/')
 def main():
     """Тестовая страница"""
 
     return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
 
-@app.route(webhook_url_path, methods=['POST'])
+
+@app.route(WEBHOOK_URL_PATH, methods=['POST'])
 def webhook():
     if request.headers.get('content-type') == 'application/json':
         json_string = request.get_data().decode('utf-8')
@@ -388,21 +394,28 @@ def process_response(message, input_format='text', file_content=None):
     if result.docs_found:
         # TODO: подправить со временем, выдавать только один ответ
         if result.minfin_documents.score > result.cube_documents.sum_score:
-            bot.send_message(message.chat.id,
-                             '_Комментарий:_\nПри этом запросе должен выдаваться только Минфин документ.' +
-                             ' Документ по кубам (если найден), должен идти в \"смотри также\"',
-                             parse_mode='Markdown')
+            bot.send_message(
+                message.chat.id,
+                '_Комментарий:_\nПри этом запросе должен выдаваться только Минфин документ.' +
+                ' Документ по кубам (если найден), должен идти в \"смотри также\"',
+                parse_mode='Markdown'
+            )
             process_minfin_questions(message, result.minfin_documents)
             if result.cube_documents.sum_score > 10:
-                bot.send_message(message.chat.id,
-                                 verbal_feedback(result.cube_documents,
-                                                 title="Смотри также запрос со следующими параметрами:"),
-                                 parse_mode='HTML')
+                bot.send_message(
+                    message.chat.id,
+                    verbal_feedback(
+                        result.cube_documents,
+                        title="Смотри также запрос со следующими параметрами:"
+                    ),
+                    parse_mode='HTML'
+                )
         else:
             bot.send_message(
                 message.chat.id,
                 '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
-                ' Документ по Минфину (если найден и его score > 10), должен идти в \"смотри также\"',
+                ' Документ по Минфину (если найден и его score > 10), ' +
+                'должен идти в \"смотри также\"',
                 parse_mode='Markdown'
             )
             process_cube_questions(
@@ -586,10 +599,9 @@ def verbal_feedback(cube_result, title='Обычная обратная связ
 
 
 def first_letter_lower(input_str):
-    if input_str:
-        return input_str[:1].lower() + input_str[1:]
-    else:
-        return ''
+    if not input_str:
+        return ""
+    return input_str[:1].lower() + input_str[1:]
 
 
 # polling cycle
@@ -599,7 +611,10 @@ if __name__ == '__main__':
 
     if TELEGRAM.ENABLE_WEBHOOK:
         bot.remove_webhook()
-        bot.set_webhook(url=webhook_url_base+webhook_url_path, certificate=open(WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb'))
+        bot.set_webhook(
+            url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+            certificate=open(WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+        )
         app.run(
             host=WEB_SERVER.HOST,
             port=TELEGRAM.WEBHOOK_PORT,
