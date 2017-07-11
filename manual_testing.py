@@ -108,7 +108,7 @@ def cube_testing(test_sphere='cube'):
 
 
 def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers, wrong_answers, error_answers):
-    response = system_answer['answer']['response']
+    response = system_answer['answer'].get('response')
     if response:
         try:
             assert int(answer) == response
@@ -128,18 +128,22 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
             testing_results.append(ars)
             wrong_answers.append(1)
     else:
-        ars = '{}. - Запрос "{}" вызвал ошибку: {} | {}'
-        ars = ars.format(idx,
-                         req,
-                         system_answer['answer']['message'],
-                         system_answer['answer']['mdx_query'])
+        if system_answer['doc_found']:
+            ars = '{}. - Запрос "{}" выдал верхним ответ по Минфину'
+            ars = ars.format(idx, req)
+        else:
+            ars = '{}. - Запрос "{}" вызвал ошибку: {} | {}'
+            ars = ars.format(idx,
+                             req,
+                             system_answer['answer']['message'],
+                             system_answer['answer']['mdx_query'])
         testing_results.append(ars)
         error_answers.append(1)
 
 
 def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers,
                            error_answers):
-    response = system_answer['answer']['number']
+    response = system_answer['answer'].get('number')
     if response:
         try:
             assert question_id == str(response)
@@ -155,17 +159,24 @@ def assert_minfin_requests(question_id, req, system_answer, testing_results, tru
                 '(должны получать:{q_id}, получаем:{fl})'
             )
             ars = ars.format(q_id=question_id,
-                             score=system_answer[['answer']]['score'],
+                             score=system_answer['answer']['score'],
                              req=req, fl=response)
             testing_results.append(ars)
             wrong_answers.append(1)
     else:
-        # TODO: подправить MSG
-        ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-            q_id=question_id,
-            req=req,
-            msg='Не определена'
-        )
+        if system_answer['doc_found']:
+            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                q_id=question_id,
+                req=req,
+                msg='Вверхним документом был ответ по кубу'
+            )
+        else:
+            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                q_id=question_id,
+                req=req,
+                msg='Не определена'
+            )
+
         testing_results.append(ars)
         error_answers.append(1)
 

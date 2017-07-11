@@ -19,6 +19,7 @@ from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
 
+
 # TODO: доделать логгирование принятия решений
 
 
@@ -132,10 +133,7 @@ class Solr:
         cube_result = DrSolrCubeResult()
 
         # Фильтрация документов
-        (final_dimensions,
-         final_measures,
-         final_cube,
-         cube_score) = Solr._filter_cube_documents(
+        filtered_docs = Solr._filter_cube_documents(
             year,
             territory,
             dimensions,
@@ -143,24 +141,30 @@ class Solr:
             cubes
         )
 
-        # Сборка MDX запроса, если после фильтрации какие-то измерения остались
-        if final_dimensions:
-            cube_result.mdx_query = Solr._build_mdx_request(
-                final_dimensions,
-                final_measures,
-                final_cube
-            )
+        if filtered_docs:
+            (final_dimensions,
+             final_measures,
+             final_cube,
+             cube_score) = filtered_docs
 
-            cube_result.cube_score = cube_score
-            Solr._calculate_score_for_cube_questions(
-                final_dimensions,
-                measures,
-                year,
-                territory,
-                cube_result
-            )
+            # Сборка MDX запроса, если после фильтрации какие-то измерения остались
+            if final_dimensions:
+                cube_result.mdx_query = Solr._build_mdx_request(
+                    final_dimensions,
+                    final_measures,
+                    final_cube
+                )
 
-            cube_result.status = True
+                cube_result.cube_score = cube_score
+                Solr._calculate_score_for_cube_questions(
+                    final_dimensions,
+                    measures,
+                    year,
+                    territory,
+                    cube_result
+                )
+
+                cube_result.status = True
         else:
             # TODO: исправить
             cube_result.message = "Все измерения были удалены после фильтрации"
@@ -177,10 +181,12 @@ class Solr:
             reference_cube = cubes[0]['cube']
             reference_cube_score = cubes[0]['score']
         except IndexError:
+            # TODO: придумать более красивый выход
             # Если куб не найден (что очень мало вероятно)
-            raise Exception('Куб для запроса не найден')
+            logging.error('Куб для запроса не найден')
+            return
 
-        # Фильтрация по году
+            # Фильтрация по году
         if year:
             # Если указан текущий год, то запрос скорее всего относится
             # К кубу с оперативной информацией (CLDO01), год в которой не указывается
@@ -201,26 +207,27 @@ class Solr:
                     reference_cube_score = cubes[0]['score']
                     final_dimension_list.append(year)
                 else:
-                    # TODO: исправить без исключения
-                    raise Exception('После фильтра по ГОДУ кубов не осталось')
+                    # TODO: придумать более красивый выход
+                    logging.error('После фильтра по ГОДУ кубов не осталось')
+                    return
 
-        # Доопределение куба
+                    # Доопределение куба
         if dimensions:
             # Замена куба на другой, если score найденного куба меньше score верхнего документа
             if (
-                reference_cube != dimensions[0]['cube'] and
-                reference_cube_score < dimensions[0]['score']
+                            reference_cube != dimensions[0]['cube'] and
+                            reference_cube_score < dimensions[0]['score']
             ):
                 reference_cube = dimensions[0]['cube']
                 reference_cube_score = dimensions[0]['score']
             # Если найденный куб и куб верхнего документа совпадают,
             # а также score документа выше, то приоритет куба выше территории
             if (
-                reference_cube == dimensions[0]['cube'] and
-                (
-                    reference_cube_score < dimensions[0]['score'] or
-                    abs(reference_cube_score - dimensions[0]['score']) < 0.3 * reference_cube_score
-                )
+                            reference_cube == dimensions[0]['cube'] and
+                        (
+                                        reference_cube_score < dimensions[0]['score'] or
+                                        abs(reference_cube_score - dimensions[0]['score']) < 0.3 * reference_cube_score
+                        )
             ):
                 cube_above_territory_priority = True
 
@@ -250,10 +257,11 @@ class Solr:
                         'score': territory['score']
                     })
                 else:
-                    # TODO: исправить без исключения
-                    raise Exception('После фильтра по ТЕРРИТОРИИ кубов не осталось')
+                    # TODO: придумать более красивый выход
+                    logging.error('После фильтра по ТЕРРИТОРИИ кубов не осталось')
+                    return
 
-        # Построение иерархического списка измерений
+                    # Построение иерархического списка измерений
         tmp_dimensions, idx = [], 0
         while dimensions:
             tmp_dimensions.append([])
