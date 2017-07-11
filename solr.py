@@ -201,7 +201,7 @@ class Solr:
                     reference_cube_score = cubes[0]['score']
                     final_dimension_list.append(year)
                 else:
-                    # TODO: исправить
+                    # TODO: исправить без исключения
                     raise Exception('После фильтра по ГОДУ кубов не осталось')
 
         # Доопределение куба
@@ -247,7 +247,7 @@ class Solr:
                         'score': territory['score']
                     })
                 else:
-                    # TODO: исправить
+                    # TODO: исправить без исключения
                     raise Exception('После фильтра по ТЕРРИТОРИИ кубов не осталось')
 
         # Построение иерархического списка измерений
@@ -427,9 +427,11 @@ class Solr:
             cube_answers = [cube_answers]
 
         answers = cube_answers + minfin_answers
-        answers = sorted(answers, key=lambda ans: ans.get_key())
+        answers = sorted(answers,
+                         key=lambda ans: ans.get_key(),
+                         reverse=True)
 
-        solr_result.response = answers[0]
+        solr_result.answer = answers[0]
         if len(answers) > 1:
             solr_result.more_answers = answers[1:]
 
@@ -485,4 +487,8 @@ class DrSolrResult:
         self.more_answers = None
 
     def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self,
+                          default=lambda obj: obj.__dict__,
+                          sort_keys=True,
+                          indent=4,
+                          ensure_ascii=False)
