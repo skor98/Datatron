@@ -5,7 +5,7 @@
 Базовые функции для работы с базой пользователей и их фидбеками
 """
 
-from db.user_db_creation import User, Feedback
+from dbs.user_db_creation import User, Feedback
 
 
 def check_user_existence(user_id):
