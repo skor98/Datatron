@@ -19,9 +19,8 @@ from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
 
-
-
 # TODO: доделать логгирование принятия решений
+
 
 class Solr:
     """
