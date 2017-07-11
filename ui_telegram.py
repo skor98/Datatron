@@ -32,13 +32,6 @@ import constants
 
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
 
-WEBHOOK_URL_BASE = "https://{}:{}".format(
-    SETTINGS.WEB_SERVER.PUBLIC_LINK,
-    SETTINGS.TELEGRAM.WEBHOOK_PORT
-)
-WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
-app = Flask(__name__)
-
 logsRetriever = LogsRetriever(LOGS_PATH)
 
 user_name_str = '{} {}'
@@ -350,24 +343,6 @@ def callback_inline(call):
         ))
 
 
-@app.get('/telebot/')
-def main():
-    """Тестовая страница"""
-
-    return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
-
-
-@app.route(WEBHOOK_URL_PATH, methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    else:
-        abort(403)
-
-
 def process_response(message, input_format='text', file_content=None):
     request_id = uuid.uuid4()
     user_name = user_name_str.format(message.chat.first_name, message.chat.last_name)
@@ -581,17 +556,44 @@ def first_letter_lower(input_str):
     return input_str[:1].lower() + input_str[1:]
 
 
+if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+    
+    WEBHOOK_URL_BASE = "https://{}:{}".format(
+    SETTINGS.WEB_SERVER.PUBLIC_LINK,
+    SETTINGS.TELEGRAM.WEBHOOK_PORT
+)
+    WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
+    app = Flask(__name__)
+    
+    bot.remove_webhook()
+    bot.set_webhook(
+        url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+    )
+
+    @app.get('/telebot/')
+    def main():
+        """Тестовая страница"""
+
+        return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+
+    @app.route(WEBHOOK_URL_PATH, methods=['POST'])
+    def webhook():
+        if request.headers.get('content-type') == 'application/json':
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return ''
+        else:
+            abort(403)
+
+
 # polling cycle
 if __name__ == '__main__':
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
         bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
 
     if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-        bot.remove_webhook()
-        bot.set_webhook(
-            url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-            certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
-        )
         app.run(
             host=SETTINGS.WEB_SERVER.HOST,
             port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
