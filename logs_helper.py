@@ -14,7 +14,7 @@ import logging
 from logging import FileHandler, StreamHandler
 
 from config import DATETIME_FORMAT, LOG_LEVEL, LOGS_PATH
-from db.query_db import get_queries
+from dbs.query_db import get_queries
 
 
 def string_to_log_level(in_str, default=logging.INFO):
