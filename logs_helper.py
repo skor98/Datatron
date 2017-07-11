@@ -110,7 +110,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
             time_delta = datetime.datetime.now() - dt_now
 
             log_string = '"{}" заняло {}'.format(message, time_delta)
-            level = level.upper()
+            level = level.lower()
             if level == "info":
                 logging.info(log_string)
             elif level == "debug":
