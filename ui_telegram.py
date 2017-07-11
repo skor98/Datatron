@@ -14,10 +14,10 @@ import logging
 
 import telebot
 
-from db.user_support_library import check_user_existence
-from db.user_support_library import create_user
-from db.user_support_library import create_feedback
-from db.user_support_library import get_feedbacks
+from dbs.user_support_library import check_user_existence
+from dbs.user_support_library import create_user
+from dbs.user_support_library import create_feedback
+from dbs.user_support_library import get_feedbacks
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 from logs_helper import LogsRetriever

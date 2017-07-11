@@ -28,7 +28,7 @@ class SettingsStorer:
             
     _legacy = {"ADMIN_TELEGRAM_ID": "TELEGRAM.ADMIN_IDS",
                "PATH_TO_SOLR_POST_JAR_FILE": "SOLR.PATH_TO_POST_JAR",
-               "PATH_TO_USER_DB": "*/db/users.db",
+               "PATH_TO_USER_DB": "*/dbs/users.db",
                "PATH_TO_KNOWLEDGEBASE": "*/kb/knowledge_base.db",
                "SOLR_HOST": "SOLR.HOST",
                "SOLR_MAIN_CORE": "SOLR.MAIN_CORE",
@@ -54,7 +54,7 @@ class SettingsStorer:
 
 YANDEX_API_KEY = 'e05f5a12-8e05-4161-ad05-cf435a4e7d5b'
 SETTINGS_PATH = "settings.json"
-QUERY_DB_PATH = path.join("db", "query.db")
+QUERY_DB_PATH = path.join("dbs", "query.db")
 LOGS_PATH = 'logs_new.log'
 
 DATE_FORMAT = "%Y.%m.%d"

@@ -64,7 +64,7 @@ class KnowledgeBaseSupport:
             data = file.read()
         cube_metadata = json.loads(data)
 
-        tp = TextPreprocessing('Filling db')
+        tp = TextPreprocessing('Filling dbs')
 
         for item in cube_metadata:
             cube_data_set = DataSet()

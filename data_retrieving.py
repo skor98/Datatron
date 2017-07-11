@@ -94,7 +94,7 @@ class DataRetrieving:
             # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
             value = float(json.loads(api_response)["cells"][0][0]["value"])
 
-            # Получение из базы знаний (knowledge_base.db) формата для меры
+            # Получение из базы знаний (knowledge_base.dbs) формата для меры
             value_format = get_representation_format(solr_cube_result.mdx_query)
 
             # Если включено форматирование, которое выключено только при тестировании

@@ -12,7 +12,7 @@ from speechkit import SpeechException
 from data_retrieving import DataRetrieving
 from solr import DrSolrResult
 import logs_helper
-from db.query_db import log_query_to_db
+from dbs.query_db import log_query_to_db
 
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):
