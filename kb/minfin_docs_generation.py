@@ -309,7 +309,7 @@ class ClassicMinfinDocument:
         self.document = None
 
     def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
+        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4, ensure_ascii=False)
 
     def get_string_representation(self):
         lem_synonym_questions = []
