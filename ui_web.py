@@ -8,7 +8,6 @@ Web интерфейс для взаимодействия с Datatron.
 
 import logging
 import codecs
-import uuid
 from os import path, makedirs
 from random import choice
 from string import ascii_lowercase, digits
@@ -16,7 +15,6 @@ from string import ascii_lowercase, digits
 from bottle import Bottle, request, run, BaseRequest
 
 from messenger_manager import MessengerManager
-from data_retrieving import DataRetrieving
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
 

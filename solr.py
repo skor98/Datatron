@@ -17,10 +17,10 @@ from kb.kb_support_library import get_default_value_for_dimension
 from kb.kb_support_library import get_connected_value_to_given_value
 from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
-import logs_helper
-
+import logs_helper  # pylint: disable=unused-import
 
 # TODO: доделать логгирование принятия решений
+
 
 class Solr:
     """
@@ -207,18 +207,21 @@ class Solr:
         # Доопределение куба
         if dimensions:
             # Замена куба на другой, если score найденного куба меньше score верхнего документа
-            if (reference_cube != dimensions[0]['cube']
-                and reference_cube_score < dimensions[0]['score']
-                ):
+            if (
+                reference_cube != dimensions[0]['cube'] and
+                reference_cube_score < dimensions[0]['score']
+            ):
                 reference_cube = dimensions[0]['cube']
                 reference_cube_score = dimensions[0]['score']
             # Если найденный куб и куб верхнего документа совпадают,
             # а также score документа выше, то приоритет куба выше территории
-            if ((reference_cube == dimensions[0]['cube'])
-                and (reference_cube_score < dimensions[0]['score']
-                     or abs(reference_cube_score - dimensions[0]['score']) < 0.3 * reference_cube_score
-                     )
-                ):
+            if (
+                reference_cube == dimensions[0]['cube'] and
+                (
+                    reference_cube_score < dimensions[0]['score'] or
+                    abs(reference_cube_score - dimensions[0]['score']) < 0.3 * reference_cube_score
+                )
+            ):
                 cube_above_territory_priority = True
 
         if cube_above_territory_priority:

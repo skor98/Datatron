@@ -1,5 +1,16 @@
-import requests
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import json
+import logging
+
+import requests
+
+import logs_helper  # pylint: disable=unused-import
+
+#ToDo дописать документацию
+#ToDo заменить списки [] на tuple()
+#ToDo переписать в стиле Python: while i < N -> for i in range(N)
 
 
 class Level:
@@ -28,8 +39,17 @@ class Dimension:
 
 
 class CubeData:
-    def __init__(self, name='', caption='', last_update='', dimensions=[], measures=[], values=[], formal_name='',
-                 cube_elements=[]):
+    def __init__(
+            self,
+            name='',
+            caption='',
+            last_update='',
+            dimensions=[],
+            measures=[],
+            values=[],
+            formal_name='',
+            cube_elements=[]
+    ):
         self.name = name  # Для наших кубов DB по дефолту
         self.caption = caption  # Доходы блаблабла
         self.last_update = last_update  # Дата последнего изменения - пока не проставляется в кубах
@@ -37,6 +57,8 @@ class CubeData:
         self.measures = measures  # measures - хранилище value
         self.formal_name = formal_name  # INDO03
         self.cube_elements = cube_elements
+        # ToDo не уверен, что это нужно, иначе аргумент не используется. Потрите, если неправ
+        self.values = values
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4)
@@ -50,8 +72,16 @@ class Measure:
 
 
 class DimensionElement:
-    def __init__(self, name='', caption='', uniqueName='', childCount='', levelDepth='', levelName='',
-                 hierarchyName=''):
+    def __init__(
+            self,
+            name='',
+            caption='',
+            uniqueName='',
+            childCount='',
+            levelDepth='',
+            levelName='',
+            hierarchyName=''
+    ):
         self.name = name
         self.caption = caption
         self.uniqueName = uniqueName
@@ -145,10 +175,9 @@ def get_data(cube_list):
         # массив для хранения тех элементов, у которых есть дочерние.
         ChildArray = []
 
-        i = 0
 
         # Заносим в "детный" массив измерения
-        while i < len(cube.dimensions):
+        for i in range(cube.dimensions):
             dimen = cube.dimensions[i]
             child_request = {
                 'schemaName': cube.formal_name,
@@ -162,18 +191,19 @@ def get_data(cube_list):
                 ChildArray.append(child_json[0])
             else:
                 NoChildren.append(child.text)
-            i += 1
 
         # Дальше логика такая:
         # 1) Берем нулевой элемент из детного массива, называем его материнским элементом
         # 2)Получаем для материнского элемента массив детей
-        # 3) Итерируемся по массиву и проверяем, есть ли дети у детей(те чекаем чайлдкаунт). Если есть, то детей закидываем в детный массив, если нет, то в бездетный
-        # 4) После завершения итераций материнский элемент объявляем бездетным (так как всех детей у него проверили)
+        # 3) Итерируемся по массиву и проверяем, есть ли дети у детей(те чекаем чайлдкаунт).
+        # Если есть, то детей закидываем в детный массив, если нет, то в бездетный
+        # 4) После завершения итераций материнский элемент объявляем бездетным
+        # (так как всех детей у него проверили)
         # 5) Удаляем материнский элемент из детного массива и добавляем в бездетный
 
         # Повторяем цикл пока детный массив не опустеет
         j = 0
-        while len(ChildArray) > 0:
+        while ChildArray:
             mother_element = ChildArray[0]
             request_for_children = {
                 'schemaName': cube.formal_name,
@@ -181,7 +211,10 @@ def get_data(cube_list):
                 'dimensionName': mother_element["hierarchyName"],
                 'rootUniqueName': mother_element["uniqueName"]
             }
-            children = requests.post('http://conf.prod.fm.epbs.ru/mdxexpert/Members', request_for_children)
+            children = requests.post(
+                'http://conf.prod.fm.epbs.ru/mdxexpert/Members',
+                request_for_children
+            )
             children_json = json.loads(children.text)
             i = 0
             while i < len(children_json):
@@ -196,9 +229,13 @@ def get_data(cube_list):
             NoChildren.append(mother_element)
             ChildArray.pop(0)
             j += 1
-            print('Элементов без детей найдено ', len(NoChildren), '; Элементов с детьми найдено ', len(ChildArray))
+            logging_string = (
+                'Элементов без детей найдено {}; ' +
+                'Элементов с детьми найдено {}'
+            ).format(len(NoChildren), len(ChildArray))
+            logging.info(logging_string)
 
-        print('Процесс поиска всех дочерних элементов завершен')
+        logging.info('Процесс поиска всех дочерних элементов завершен')
 
         cube.cube_elements = NoChildren
 
