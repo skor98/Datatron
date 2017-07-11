@@ -42,11 +42,11 @@ class DataRetrieving:
         # Если хотя бы 1 документ найден:
         if solr_result.status:
             # Если документ по кубам найден
-            if solr_result.cube_documents.status:
+            if solr_result.answer.type == 'cube':
                 # Запрос к серверу Кристы по API для получения числа
                 # Обновление переменной solr_result_cube
                 DataRetrieving._format_cube_answer(
-                    solr_result.cube_documents,
+                    solr_result.answer,
                     user_request,
                     request_id,
                     formatted
@@ -67,7 +67,6 @@ class DataRetrieving:
         # Формирование читабельной обратной связи по результату
         feedback = DataRetrieving._form_feedback(solr_cube_result.mdx_query, cube, user_request)
         solr_cube_result.feedback = feedback
-
 
         value = None
 
