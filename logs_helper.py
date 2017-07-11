@@ -102,6 +102,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
     Можно установить уровень: debug или info
     Можно установить critical_seconds: если займёт больше времени, то будет warning
     """
+
     def proc(func):
         def func_to_return(*args, **kwargs):
             dt_now = datetime.datetime.now()
@@ -109,7 +110,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
             time_delta = datetime.datetime.now() - dt_now
 
             log_string = '"{}" заняло {}'.format(message, time_delta)
-            level.upper()
+            level = level.lower()
             if level == "info":
                 logging.info(log_string)
             elif level == "debug":
@@ -127,6 +128,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
             return func_result
 
         return func_to_return
+
     return proc
 
 
@@ -135,6 +137,7 @@ class LogsRetriever:
     Класс для вывода логов в Телеграме. Используется как нами,
     так и методологами для тестирования.
     """
+
     # Должен быть именно в этом файле так как жёстко связан с форматом логов
     def __init__(self, path_to_log_file=LOGS_PATH):
         self.path_to_log_file = path_to_log_file

@@ -201,13 +201,5 @@ $RECYCLE.BIN/
 
 # End of https://www.gitignore.io/api/linux,python,pycharm,windows
 
-# ignoting settings
+# ignoring settings
 settings.json
-
-kb/data_for_indexing\.json
-
-kb/knowledge_base\.db
-
-kb/knowledge_base\.db-journal
-
-tests/cube_local_2017-07-05_19-02-51_OK_0_Fail_46\.txt
