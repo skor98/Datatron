@@ -203,3 +203,9 @@ $RECYCLE.BIN/
 
 # ignoring settings
 settings.json
+
+# ignoring tests results
+tests/results/
+
+# ignoring databases
+*.db

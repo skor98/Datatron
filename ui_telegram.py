@@ -366,47 +366,25 @@ def process_response(message, input_format='text', file_content=None):
         )
 
     if result.docs_found:
-        # TODO: подправить со временем, выдавать только один ответ
-        if result.minfin_documents.score > result.cube_documents.sum_score:
-            bot.send_message(
-                message.chat.id,
-                '_Комментарий:_\nПри этом запросе должен выдаваться только Минфин документ.' +
-                ' Документ по кубам (если найден), должен идти в \"смотри также\"',
-                parse_mode='Markdown'
-            )
-            process_minfin_questions(message, result.minfin_documents)
-            if result.cube_documents.sum_score > 10:
-                bot.send_message(
-                    message.chat.id,
-                    verbal_feedback(
-                        result.cube_documents,
-                        title="Смотри также запрос со следующими параметрами:"
-                    ),
-                    parse_mode='HTML'
-                )
-        else:
-            bot.send_message(
-                message.chat.id,
-                '_Комментарий:_\nПри этом запросе должен выдаваться только документ по кубам.' +
-                ' Документ по Минфину (если найден и его score > 10), ' +
-                'должен идти в \"смотри также\"',
-                parse_mode='Markdown'
-            )
+        if result.answer.type == 'cube':
             process_cube_questions(
                 message,
                 result.cube_documents,
                 request_id,
                 input_format=input_format
             )
-            if result.minfin_documents.score > 15:
-                bot.send_message(
-                    message.chat.id,
-                    "*Смотри также:*\n{} ({})".format(
-                        result.minfin_documents.question,
-                        result.minfin_documents.score
-                    ),
-                    parse_mode='Markdown'
-                )
+        else:
+            process_minfin_questions(message, result.minfin_documents)
+
+            # if result.minfin_documents.score > 15:
+            #     bot.send_message(
+            #         message.chat.id,
+            #         "*Смотри также:*\n{} ({})".format(
+            #             result.minfin_documents.question,
+            #             result.minfin_documents.score
+            #         ),
+            #         parse_mode='Markdown'
+            #     )
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
