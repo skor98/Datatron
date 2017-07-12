@@ -460,6 +460,7 @@ class DrSolrCubeResult:
         self.sum_score = 0
         self.mdx_query = None
         self.response = None
+        self.format_response = None
         self.message = None
         self.feedback = None
 
@@ -498,8 +499,51 @@ class DrSolrResult:
         self.more_answers = None
 
     def toJSON(self):
-        return json.dumps(self,
-                          default=lambda obj: obj.__dict__,
-                          sort_keys=True,
-                          indent=4,
-                          ensure_ascii=False)
+        return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
+
+    def toJSON_API(self):
+        # Если ответ был найден
+        if self.status:
+
+            # преобразование JSON в словарь
+            # TODO: как это сделать менее костыльно?
+            result_to_dict = json.loads(
+                json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
+            )
+
+            # Ключи для удаления из базового класса
+            keys_to_remove_from_base_object = (
+                'message',
+                'error'
+            )
+
+            # Ключи для удаления из ответа по кубам
+            key_to_remove_from_cube_answer = (
+                'min_score', 'max_score', 'avg_score',
+                'sum_score', 'cube_score', 'mdx_query',
+                'status'
+            )
+
+            # Ключи для удаления из ответа по Минфину
+            key_to_remove_from_minfin_answer = (
+                'score',
+                'status'
+            )
+
+            # Удаление ключей из базового класса
+            for key in keys_to_remove_from_base_object:
+                result_to_dict.pop(key, None)
+
+            # Удаление ключей из ответов
+            answers = [result_to_dict['answer']] + result_to_dict['more_answers']
+            for answer in answers:
+                if answer['type'] == 'cube':
+                    for key in key_to_remove_from_cube_answer:
+                        answer.pop(key, None)
+                else:
+                    for key in key_to_remove_from_minfin_answer:
+                        answer.pop(key, None)
+
+            return json.dumps(result_to_dict, ensure_ascii=False)
+        else:
+            return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)

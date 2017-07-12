@@ -7,7 +7,7 @@ import logging
 import requests
 
 from config import SETTINGS
-from constants import ERROR_IN_MDX_REQUEST, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from constants import ERROR_GENERAL, ERROR_NO_DOCS_FOUND, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 from kb.kb_support_library import get_cube_description
 from kb.kb_support_library import get_full_value_for_measure
 from kb.kb_support_library import get_full_values_for_dimensions
@@ -73,16 +73,22 @@ class DataRetrieving:
         # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
         if 'Доступ закрыт!' in api_response:
             solr_cube_result.status = False
-            solr_cube_result.message = "Доступ закрыт"
+            solr_cube_result.message = ERROR_GENERAL
             solr_cube_result.response = api_response
             value = api_response
+            logging.warning("Запрос {} не прошел. Запрещены POST-запросы".format(
+                request_id
+            ))
         # Обработка случая, когда что-то пошло не так, например,
         # в запросе указан неизвестный параметр
         elif '"success":false' in api_response:
             solr_cube_result.status = False
-            solr_cube_result.message = ERROR_IN_MDX_REQUEST
+            solr_cube_result.message = ERROR_GENERAL
             solr_cube_result.response = api_response
             value = api_response
+            logging.warning("Для запроса {} создался MDX-запрос с некорректными параметрами".format(
+                request_id
+            ))
         # Обработка случая, когда данных нет
         elif json.loads(api_response)["cells"][0][0]["value"] is None:
             solr_cube_result.status = False
@@ -116,7 +122,7 @@ class DataRetrieving:
                     solr_cube_result.response = str(value)
 
             # добавление обратной связи в поле экземпляра класа
-            solr_cube_result.message = 'Все ОК'
+            solr_cube_result.message = ''
 
         # Создание фидбека в другом формате для удобного логирования
         feedback_verbal = feedback['verbal']

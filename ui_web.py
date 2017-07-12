@@ -44,7 +44,8 @@ def post_basic():
     request_id = request.forms.get('RequestId')
 
     # Исправление кодировки для кириллицы
-    request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
+    if request_text:
+        request_text = codecs.decode(bytes(request_text, 'iso-8859-1'), 'utf-8')
 
     # если все поля заполнены
     if request_text and source and user_id and user_name and request_id:
@@ -54,7 +55,7 @@ def post_basic():
             user_id,
             user_name,
             request_id
-        ).toJSON()
+        ).toJSON_API()
 
 
 @app.post('/audio')

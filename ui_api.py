@@ -127,7 +127,7 @@ class VoiceQuery(Resource):
             "",
             request_id,
             filename=file_path
-        ).toJSON()
+        ).toJSON_API()
 
 
 class TextQuery(Resource):
@@ -152,7 +152,7 @@ class TextQuery(Resource):
             args["apikey"],
             "",
             request_id
-        ).toJSON()
+        ).toJSON_API()
 
 
 class MinfinList(Resource):

@@ -380,8 +380,6 @@ def process_response(message, input_format='text', file_content=None):
         else:
             process_minfin_questions(message, result.answer)
 
-        logging.info(result.toJSON())
-
         # Реализация смотри также
         if result.more_answers:
             look_also = []
