@@ -402,7 +402,7 @@ def process_cube_questions(message, cube_result, request_id, input_format):
     if cube_result.status:
         is_input_text = (input_format == 'text')
         response_str = form_feedback(cube_result, not is_input_text).format(
-            cube_result.response,
+            cube_result.formatted_response,
             request_id
         )
         bot.send_message(
@@ -412,7 +412,7 @@ def process_cube_questions(message, cube_result, request_id, input_format):
             reply_markup=constants.RESPONSE_QUALITY
         )
         bot.send_chat_action(message.chat.id, 'upload_audio')
-        bot.send_voice(message.chat.id, text_to_speech(cube_result.response))
+        bot.send_voice(message.chat.id, text_to_speech(cube_result.formatted_response))
         stats_pattern = (
             'Сред. score: {}\n' +
             'Мин. score: {}\n' +

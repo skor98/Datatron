@@ -6,7 +6,6 @@ from peewee import Model, SqliteDatabase, CharField, ForeignKeyField, CompositeK
 from config import SETTINGS
 
 
-# ToDo: Какая-то подозрительная глобальная переменная. Нужно что-то сделать
 database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 
 

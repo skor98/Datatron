@@ -19,7 +19,7 @@ from text_preprocessing import TextPreprocessing
 # Module, which is responsible for getting required from user data
 class DataRetrieving:
     @staticmethod
-    def get_data(user_request, request_id, formatted=True):
+    def get_data(user_request, request_id):
         """основной API метод для модуля
 
         :param user_request: запрос от пользователя
@@ -50,8 +50,7 @@ class DataRetrieving:
                 DataRetrieving._format_cube_answer(
                     solr_result.answer,
                     user_request,
-                    request_id,
-                    formatted
+                    request_id
                 )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
@@ -61,7 +60,7 @@ class DataRetrieving:
         return solr_result
 
     @staticmethod
-    def _format_cube_answer(solr_cube_result, user_request, request_id, formatted=True):
+    def _format_cube_answer(solr_cube_result, user_request, request_id):
         # Запрос отправка на серверы Кристы MDX-запроса по HTTP
         api_response, cube = DataRetrieving._send_request_to_server(solr_cube_result.mdx_query)
         api_response = api_response.text
@@ -100,28 +99,29 @@ class DataRetrieving:
         else:
             # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
             value = float(json.loads(api_response)["cells"][0][0]["value"])
+            solr_cube_result.response = value
 
             # Получение из базы знаний (knowledge_base.dbs) формата для меры
             value_format = get_representation_format(solr_cube_result.mdx_query)
 
-            # Если включено форматирование, которое выключено только при тестировании
-            if formatted:
-                # Если формат для меры - 0, что означает число
-                if not value_format:
-                    formatted_value = DataRetrieving._format_numerical(value)
-                    solr_cube_result.response = formatted_value
-                # Если формат для меры - 1, что означает процент
-                elif value_format == 1:
-                    # Перевод округление
-                    formatted_value = '{}%'.format(round(value, 5))
-                    solr_cube_result.response = formatted_value
-            else:
-                # Если формат меры - 0, то просто целое число без знаков после запятой
-                if not value_format:
-                    solr_cube_result.response = int(str(value).split('.')[0])
-                # Если формат для меры - 1, то возращается полученный неокругленный результат
-                elif value_format == 1:
-                    solr_cube_result.response = str(value)
+            # Добавление форматированного результата
+            # Если формат для меры - 0, что означает число
+            if not value_format:
+                formatted_value = DataRetrieving._format_numerical(value)
+                solr_cube_result.formatted_response = formatted_value
+            # Если формат для меры - 1, что означает процент
+            elif value_format == 1:
+                # Перевод округление
+                formatted_value = '{}%'.format(round(value, 5))
+                solr_cube_result.formatted_response = formatted_value
+
+            # Добавление к неформатированного результата
+            # Если формат меры - 0, то просто целое число без знаков после запятой
+            if not value_format:
+                solr_cube_result.response = int(str(value).split('.')[0])
+            # Если формат для меры - 1, то возращается полученный неокругленный результат
+            elif value_format == 1:
+                solr_cube_result.response = str(value)
 
             # добавление обратной связи в поле экземпляра класа
             solr_cube_result.message = ''
