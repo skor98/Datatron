@@ -460,7 +460,7 @@ class DrSolrCubeResult:
         self.sum_score = 0
         self.mdx_query = None
         self.response = None
-        self.format_response = None
+        self.formatted_response = None
         self.message = None
         self.feedback = None
 

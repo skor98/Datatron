@@ -53,8 +53,7 @@ def cube_testing(test_sphere='cube'):
                 req, answer = line.split(':')
 
                 system_answer = json.loads(DataRetrieving.get_data(
-                    req, uuid.uuid4(),
-                    formatted=False
+                    req, uuid.uuid4()
                 ).toJSON())
 
                 if test_sphere == 'cube':
