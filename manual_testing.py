@@ -9,32 +9,39 @@ import logging
 from os import path, listdir, makedirs
 
 from data_retrieving import DataRetrieving
-from config import DATETIME_FORMAT
+from config import DATETIME_FORMAT, LOG_LEVEL
 import logs_helper
+from logs_helper import string_to_log_level
+
+logging.getLogger("requests").setLevel(logging.WARNING)
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+TEST_PATH = 'tests'
+RESULTS_FOLDER = 'results'
 
 
+@logs_helper.time_with_message("cube_testing")
 def cube_testing(test_sphere='cube'):
     """Метод для тестирования работы системы по кубам.
     Тесты находятся в папке tests и имеют следующую структуру названия
     cube_<local/server>_<имя куба>
 
-    :param local: если True, то тестируется локальная система, если False, то стоящая на сервере
-    :return: None
+    :return: Словарь с ключами true, long, error и значениями -- количеством документов
+    Также ключ time содержит перцентили по времени выполнения запроса
     """
-    test_path = 'tests'
+
     testing_results = []
     true_answers = []
     wrong_answers = []
     error_answers = []
+    seconds = []
     start_time = time.time()
 
     if test_sphere == 'cube':
-        test_files_paths = get_test_files(test_path, "cubes_test")
+        test_files_paths = get_test_files(TEST_PATH, "cubes_test")
         logging.info('Идет тестирование по вопросам к кубам')
     else:
-        test_files_paths = get_test_files(test_path, "minfin_test")
+        test_files_paths = get_test_files(TEST_PATH, "minfin_test")
         logging.info('Идет тестирование по вопросам для Министерства Финансов')
 
     for tf in test_files_paths:
@@ -52,6 +59,8 @@ def cube_testing(test_sphere='cube'):
                 logging.info(line)
                 req, answer = line.split(':')
 
+                # Посчитаем время
+                dt_now = datetime.datetime.now()
                 system_answer = json.loads(DataRetrieving.get_data(
                     req, uuid.uuid4()
                 ).toJSON())
@@ -77,6 +86,8 @@ def cube_testing(test_sphere='cube'):
                         wrong_answers,
                         error_answers
                     )
+                time_for_request = datetime.datetime.now() - dt_now
+                seconds.append(time_for_request.total_seconds())
 
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
 
@@ -89,24 +100,51 @@ def cube_testing(test_sphere='cube'):
     else:
         file_name = 'minfin_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
 
-    file_name = file_name.format(current_datetime,
-                                 true_answers,
-                                 wrong_answers,
-                                 error_answers,
-                                 int(time.time() - start_time))
+    file_name = file_name.format(
+        current_datetime,
+        true_answers,
+        wrong_answers,
+        error_answers,
+        int(time.time() - start_time)
+    )
 
     # создание папки для тестов
-    if not path.exists(path.join(test_path, 'results')):
-        makedirs(path.join(test_path, 'results'))
+    if not path.exists(path.join(TEST_PATH, RESULTS_FOLDER)):
+        makedirs(path.join(TEST_PATH, RESULTS_FOLDER))
 
-    with open(path.join(test_path, 'results', file_name), 'w', encoding='utf-8') as file_out:
+    with open(path.join(TEST_PATH, RESULTS_FOLDER, file_name), 'w', encoding='utf-8') as file_out:
         file_out.write('\n'.join(testing_results))
 
     logging.info('Тестирование завершено')
     logging.info('Лог прогона записан в файл {}'.format(file_name))
 
+    # Подготавливаемся для счёта перцентилей
+    seconds.sort()
 
-def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_answers, wrong_answers, error_answers):
+    return {
+        "true": true_answers,
+        "wrong": wrong_answers,
+        "error": error_answers,
+        "time": {
+            "25": seconds[round(len(seconds) * 0.25)],
+            "50": seconds[round(len(seconds) * 0.50)],
+            "75": seconds[round(len(seconds) * 0.75)],
+            "90": seconds[round(len(seconds) * 0.90)],
+            "95": seconds[round(len(seconds) * 0.95)]
+        }
+    }
+
+
+def assert_cube_requests(
+        idx,
+        req,
+        answer,
+        system_answer,
+        testing_results,
+        true_answers,
+        wrong_answers,
+        error_answers
+):
     response = system_answer['answer'].get('response')
     if response:
         try:
@@ -140,8 +178,15 @@ def assert_cube_requests(idx, req, answer, system_answer, testing_results, true_
         error_answers.append(1)
 
 
-def assert_minfin_requests(question_id, req, system_answer, testing_results, true_answers, wrong_answers,
-                           error_answers):
+def assert_minfin_requests(
+        question_id,
+        req,
+        system_answer,
+        testing_results,
+        true_answers,
+        wrong_answers,
+        error_answers
+):
     response = system_answer['answer'].get('number')
     if response:
         try:
@@ -188,6 +233,50 @@ def get_test_files(test_path, prefix):
     return test_files_paths
 
 
+@logs_helper.time_with_message("get_results")
+def get_results(write_logs=False):
+    """
+    Возвращает результаты по всем тестам.
+    Сначала общий скор, потом детальный скор
+    На данный момент, общий скор -- accuracy
+    Если write_logs=False, то логи не пишутся
+    :return: score, {"cube": cube_results,"minfin":minfin_results}
+    """
+    if not write_logs:
+        # Временно отключаем логи
+        logging.getLogger().setLevel(logging.ERROR)
+
+    cube_res = cube_testing(test_sphere='cube')
+    cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
+    cube_score = float(cube_res["true"]) / cube_total
+
+    minfin_res = cube_testing(test_sphere='minfin')
+    minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
+    minfin_score = float(minfin_res["true"]) / minfin_total
+
+    if not write_logs:
+        # Возвращаем логи обратно
+        logging.getLogger().setLevel(string_to_log_level(LOG_LEVEL))
+
+    # Accuracy по всем результатам
+    total_trues = cube_res["true"] + minfin_res["true"]
+    total_tests = cube_total + minfin_total
+    total_score = float(total_trues) / total_tests
+
+    # Добавим это также к остальным
+    cube_res["score"] = cube_score
+    minfin_res["score"] = minfin_score
+
+    return total_score, {"cube": cube_res, "minfin": minfin_res}
+
+
+def _main():
+    score, results = get_results(write_logs=True)
+    with open(path.join(TEST_PATH, RESULTS_FOLDER, "results.json"), 'w') as f_out:
+        json.dump(results, f_out, indent=4)
+    print("Results: {}".format(results))
+    print("Score: {:.4f}".format(score))
+
+
 if __name__ == "__main__":
-    cube_testing(test_sphere='cube')
-    cube_testing(test_sphere='minfin')
+    _main()
