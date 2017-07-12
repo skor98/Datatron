@@ -96,7 +96,7 @@ class KnowledgeBaseSupport:
 
     @staticmethod
     def _transfer_data_to_db(data_set):
-        """Перенос данных из определнной структуры в БД"""
+        """Перенос данных из определенной структуры в БД"""
 
         for item in data_set:
             # Занесение куба
