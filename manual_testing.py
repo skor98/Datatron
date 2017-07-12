@@ -9,8 +9,9 @@ import logging
 from os import path, listdir, makedirs
 
 from data_retrieving import DataRetrieving
-from config import DATETIME_FORMAT
+from config import DATETIME_FORMAT, LOG_LEVEL
 import logs_helper
+from logs_helper import string_to_log_level
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -233,22 +234,33 @@ def get_test_files(test_path, prefix):
 
 
 @logs_helper.time_with_message("get_results")
-def get_results():
+def get_results(write_logs=False):
     """
     Возвращает результаты по всем тестам.
     Сначала общий скор, потом детальный скор
     На данный момент, общий скор -- accuracy
+    Если write_logs=False, то логи не пишутся
     :return: score, {"cube": cube_results,"minfin":minfin_results}
     """
+    if not write_logs:
+        # Временно отключаем логи
+        logging.getLogger().setLevel(logging.ERROR)
+
     cube_res = cube_testing(test_sphere='cube')
-    cube_score = float(cube_res["true"]) / sum(cube_res.values())
+    cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
+    cube_score = float(cube_res["true"]) / cube_total
 
     minfin_res = cube_testing(test_sphere='minfin')
-    minfin_score = float(minfin_res["true"]) / sum(minfin_res.values())
+    minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
+    minfin_score = float(minfin_res["true"]) / minfin_total
+
+    if not write_logs:
+        # Возвращаем логи обратно
+        logging.getLogger().setLevel(string_to_log_level(LOG_LEVEL))
 
     # Accuracy по всем результатам
     total_trues = cube_res["true"] + minfin_res["true"]
-    total_tests = sum(cube_res.values()) + sum(minfin_res.values())
+    total_tests = cube_total + minfin_total
     total_score = float(total_trues) / total_tests
 
     # Добавим это также к остальным
@@ -259,7 +271,7 @@ def get_results():
 
 
 def _main():
-    score, results = get_results()
+    score, results = get_results(write_logs=True)
     with open(path.join(TEST_PATH, RESULTS_FOLDER, "results.json"), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(results))
