@@ -6,12 +6,13 @@ from peewee import Model, SqliteDatabase, CharField, ForeignKeyField, CompositeK
 from config import SETTINGS
 
 
-_database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
+# ToDo: Какая-то подозрительная глобальная переменная. Нужно что-то сделать
+database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 
 
 class BaseModel(Model):
     class Meta:
-        _database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
+        database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 
 
 class Value(BaseModel):
@@ -71,8 +72,8 @@ class CubeMeasure(BaseModel):
 
 def create_tables():
     """Создаёт таблицы с базой знаний"""
-    _database.connect()
-    _database.create_tables([
+    database.connect()
+    database.create_tables([
         Dimension,
         Cube,
         Measure,
@@ -85,7 +86,7 @@ def create_tables():
 
 def drop_tables():
     """Удаляет таблицы с базой знаний"""
-    _database.drop_tables([
+    database.drop_tables([
         Dimension,
         Cube,
         Measure,
