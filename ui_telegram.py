@@ -365,26 +365,37 @@ def process_response(message, input_format='text', file_content=None):
             bytes=file_content
         )
 
-    if result.docs_found:
+    # Если ответ найден
+    if result.status:
+        # Если ответ является ответом по кубам
         if result.answer.type == 'cube':
             process_cube_questions(
                 message,
-                result.cube_documents,
+                result.answer,
                 request_id,
                 input_format=input_format
             )
-        else:
-            process_minfin_questions(message, result.minfin_documents)
 
-            # if result.minfin_documents.score > 15:
-            #     bot.send_message(
-            #         message.chat.id,
-            #         "*Смотри также:*\n{} ({})".format(
-            #             result.minfin_documents.question,
-            #             result.minfin_documents.score
-            #         ),
-            #         parse_mode='Markdown'
-            #     )
+        # Если ответ является ответом по минфину
+        else:
+            process_minfin_questions(message, result.answer)
+
+        logging.info(result.toJSON())
+
+        # Реализация смотри также
+        if result.more_answers:
+            look_also = []
+            for answer in result.more_answers:
+                look_also.append(
+                    answer_to_look_also_format(answer)
+                )
+
+            look_also = ['{}. {}\n'.format(idx + 1, elem)
+                         for idx, elem in enumerate(look_also)]
+
+            bot.send_message(message.chat.id,
+                             "*Смотри также:*\n" + ''.join(look_also),
+                             parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -396,7 +407,6 @@ def process_cube_questions(message, cube_result, request_id, input_format):
             cube_result.response,
             request_id
         )
-        logging.info(response_str)
         bot.send_message(
             message.chat.id,
             response_str,
@@ -550,6 +560,16 @@ def verbal_feedback(cube_result, title='Обычная обратная связ
     return '<b>{}</b>\n<code>{}</code>'.format(title, verbal_str)
 
 
+def answer_to_look_also_format(answer):
+    if answer.type == 'cube':
+        return verbal_feedback(answer, title='')
+    else:
+        return '{} ({})'.format(
+            answer.question,
+            answer.score
+        )
+
+
 def first_letter_lower(input_str):
     if not input_str:
         return ""
@@ -557,25 +577,27 @@ def first_letter_lower(input_str):
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-    
+
     WEBHOOK_URL_BASE = "https://{}:{}".format(
-    SETTINGS.WEB_SERVER.PUBLIC_LINK,
-    SETTINGS.TELEGRAM.WEBHOOK_PORT
-)
+        SETTINGS.WEB_SERVER.PUBLIC_LINK,
+        SETTINGS.TELEGRAM.WEBHOOK_PORT
+    )
     WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
     app = Flask(__name__)
-    
+
     bot.remove_webhook()
     bot.set_webhook(
         url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
+
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
@@ -586,7 +608,6 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
             return ''
         else:
             abort(403)
-
 
 # polling cycle
 if __name__ == '__main__':

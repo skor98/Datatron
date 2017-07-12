@@ -100,7 +100,7 @@ class CubeDocsGeneration:
     def _write_to_file(self, docs):
         """Запись имеющейся структуры в файл для последующей индексации"""
 
-        json_data = json.dumps(docs)
+        json_data = json.dumps(docs, ensure_ascii=False)
         with open(self.file_name, 'a', encoding='utf-8') as file:
             file.write(json_data)
 
