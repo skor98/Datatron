@@ -3,7 +3,6 @@
 
 
 import logging
-import json
 import re
 
 from nltk.corpus import stopwords
@@ -16,12 +15,21 @@ logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
 class TextPreprocessing:
+    """
+    Класс для предварительной обработки текста
+    """
     def __init__(self, request_id):
         self.request_id = request_id
         self.norming_style = 'lem'
         self.language = 'russian'
 
-    def normalization(self, text, delete_digits=False, delete_question_words=True, delete_repeatings=False):
+    def normalization(
+            self,
+            text,
+            delete_digits=False,
+            delete_question_words=True,
+            delete_repeatings=False
+    ):
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -29,7 +37,7 @@ class TextPreprocessing:
         text = text.replace('_', ' ')
 
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
-        text = re.sub('[^\w\s-]+', '', text)
+        text = re.sub(r'[^\w\s-]+', '', text)
 
         tokens = nltk.word_tokenize(text.lower())
 
@@ -67,25 +75,6 @@ class TextPreprocessing:
         logging.info(logging_str.format(self.request_id, normalized_request))
 
         return normalized_request
-
-    @staticmethod
-    def log_to_dict(log):
-        """Принимает строку логов и возрврашает dict отображение, если это возможно"""
-        json_str = ''
-        try:
-            log = log.split('\t')[1:]
-            for log_line in log:
-                log_line_parts = log_line.split(':')
-                json_str += '"{}": "{}",'.format(
-                    log_line_parts[0].strip(),
-                    log_line_parts[1].strip()
-                )
-
-            json_str = '{' + json_str[:-1] + '}'
-            return json.loads(json_str)
-        except IndexError as ind_error:
-            print('TextPreprocessing: ' + str(ind_error))
-            return None
 
     @staticmethod
     def frequency_destribution(word_list, num=5):
