@@ -18,6 +18,8 @@ from messenger_manager import MessengerManager
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
 from config import SETTINGS, API_PORT
+
+
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
 
@@ -71,9 +73,9 @@ def _read_minfin_data():
     data = pd.concat(dfs)
     logging.info("Прочитано {} записей минфина".format(data.shape[0]))
     return tuple({
-        "id": item[0],
-        "question": item[1]
-    } for item in zip(
+                     "id": item[0],
+                     "question": item[1]
+                 } for item in zip(
         data["id"].tolist(),
         data["question"].tolist()
     ))
@@ -89,6 +91,7 @@ def is_valid_api_key(api_key):
 
 class VoiceQuery(Resource):
     """Обрабатывает отправку файлов голосом"""
+
     @time_with_message("VoiceQuery API Get", "info", 7)
     def post(self):
         args = parser.parse_args()
@@ -132,6 +135,7 @@ class VoiceQuery(Resource):
 
 class TextQuery(Resource):
     """Обрабатывает простой текстовой зарос"""
+
     @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
         args = parser.parse_args()
@@ -157,6 +161,7 @@ class TextQuery(Resource):
 
 class MinfinList(Resource):
     """Возвращает весь список минфин вопросов. Актуально, пока их мало"""
+
     @time_with_message("MinfinList API Get", "info", 1)
     def get(self):
         return get_minfin_data()
@@ -173,11 +178,13 @@ api.add_resource(VoiceQuery, '/v1/voice')
 api.add_resource(TextQuery, '/v1/text')
 api.add_resource(MinfinList, '/v1/minfin_docs')
 
+
 @app.route('/')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
 
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
+
 
 if __name__ == '__main__':
     app.run(
