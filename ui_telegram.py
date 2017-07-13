@@ -130,6 +130,17 @@ def get_query_examples(message):
                      parse_mode='HTML')
 
 
+@bot.message_handler(commands=['about'])
+def send_about(message):
+    bot.send_message(
+        message.chat.id,
+        constants.ABOUT_MSG,
+        parse_mode='HTML',
+        reply_markup=constants.ABOUT_KEYBOARD,
+        disable_web_page_preview=True
+    )
+
+
 @bot.message_handler(commands=['getqueries'])
 def get_queries_logs(message):
     """
