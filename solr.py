@@ -438,6 +438,7 @@ class Solr:
         if not isinstance(cube_answers, list):
             cube_answers = [cube_answers]
 
+        cube_answers = [elem for elem in cube_answers if elem.status]
         answers = cube_answers + minfin_answers
         answers = sorted(answers,
                          key=lambda ans: ans.get_key(),
