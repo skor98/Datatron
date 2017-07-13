@@ -401,33 +401,27 @@ def process_response(message, input_format='text', file_content=None):
 def process_cube_questions(message, cube_result, request_id, input_format):
     if cube_result.status:
         is_input_text = (input_format == 'text')
-        response_str = form_feedback(cube_result, not is_input_text).format(
-            cube_result.formatted_response,
-            request_id
-        )
-        bot.send_message(
-            message.chat.id,
-            response_str,
-            parse_mode='HTML',
-            reply_markup=constants.RESPONSE_QUALITY
-        )
+        form_feedback(message, request_id, cube_result, not is_input_text)
+
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(cube_result.formatted_response))
-        stats_pattern = (
-            'Сред. score: {}\n' +
-            'Мин. score: {}\n' +
-            'Макс. score: {}\n' +
-            'Score куба: {}\n' +
-            'Суммарный score: {}'
-        )
-        stats = stats_pattern.format(
-            cube_result.avg_score,
-            cube_result.min_score,
-            cube_result.max_score,
-            cube_result.cube_score,
-            cube_result.sum_score
-        )
-        bot.send_message(message.chat.id, stats)
+
+        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+            stats_pattern = (
+                'Сред. score: {}\n' +
+                'Мин. score: {}\n' +
+                'Макс. score: {}\n' +
+                'Score куба: {}\n' +
+                'Суммарный score: {}'
+            )
+            stats = stats_pattern.format(
+                cube_result.avg_score,
+                cube_result.min_score,
+                cube_result.max_score,
+                cube_result.cube_score,
+                cube_result.sum_score
+            )
+            bot.send_message(message.chat.id, stats)
     else:
         if cube_result.message:
             bot.send_message(message.chat.id, cube_result.message)
@@ -504,23 +498,36 @@ def process_minfin_questions(message, minfin_result):
         bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
-def form_feedback(cube_result, user_request_notification=False):
-    expert_str = expert_feedback(cube_result)
+def form_feedback(message, request_id, cube_result, user_request_notification=False):
+    feedback_str = '{user_req}{expert_fb}{separator}{verbal_fb}\n' \
+                   '<b>Ответ: {answer}</b>\nQuery_ID: {query_id}'
+    separator = ''
+    expert_str = ''
     verbal_str = verbal_feedback(cube_result)
 
     user_request = ''
     if user_request_notification:
         user_request = '<b>Ваш запрос</b>\nДататрон решил, что Вы его спросили: "{}"\n\n'
-        user_request = user_request.format(cube_result['user_request'])
+        user_request = user_request.format(cube_result.feedback['user_request'])
 
-    feedback = '{}{}\n{}\n{}\n{}'.format(
-        user_request,
-        expert_str,
-        verbal_str,
-        '<b>Ответ: {}</b>',
-        'Query_ID: {}')
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        expert_str = expert_feedback(cube_result)
+        separator = '\n'
 
-    return feedback
+    feedback = feedback_str.format(
+        user_req=user_request,
+        expert_fb=expert_str,
+        separator=separator,
+        verbal_fb=verbal_str,
+        answer=cube_result.formatted_response,
+        query_id=request_id)
+
+    bot.send_message(
+        message.chat.id,
+        feedback,
+        parse_mode='HTML',
+        reply_markup=constants.RESPONSE_QUALITY
+    )
 
 
 def expert_feedback(cube_result):
@@ -538,14 +545,13 @@ def expert_feedback(cube_result):
     return expert_str
 
 
-def verbal_feedback(cube_result, title='Обычная обратная связь'):
+def verbal_feedback(cube_result, title='Найдено в базе данных:'):
     """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
 
     verbal_fb_list = []
     verbal_fb = cube_result.feedback['verbal']
 
-    verbal_fb_list.append('Предметная область: {}'.format(
-        first_letter_lower(verbal_fb['domain'])))
+    verbal_fb_list.append(verbal_fb['domain'])
 
     if verbal_fb['measure'] != 'Значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
@@ -554,7 +560,8 @@ def verbal_feedback(cube_result, title='Обычная обратная связ
                                           first_letter_lower(item['full_value']))
                           for item in verbal_fb['dims'])
 
-    verbal_str = ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list])
+    verbal_str = '{}\n'.format(verbal_fb_list[0])
+    verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
     return '<b>{}</b>\n<code>{}</code>'.format(title, verbal_str)
 
 

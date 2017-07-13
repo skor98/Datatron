@@ -544,6 +544,6 @@ class DrSolrResult:
                     for key in key_to_remove_from_minfin_answer:
                         answer.pop(key, None)
 
-            return json.dumps(result_to_dict, indent=4)
+            return json.dumps(result_to_dict)
         else:
             return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
