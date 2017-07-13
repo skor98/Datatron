@@ -525,7 +525,7 @@ class DrSolrResult:
             key_to_remove_from_cube_answer = (
                 'min_score', 'max_score', 'avg_score',
                 'sum_score', 'cube_score', 'mdx_query',
-                'status'
+                'status', 'cube'
             )
 
             # Ключи для удаления из ответа по Минфину
