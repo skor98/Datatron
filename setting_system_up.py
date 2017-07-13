@@ -12,29 +12,24 @@ import argparse
 from os import path
 
 from kb.db_filling import KnowledgeBaseSupport
-from kb.docs_generating import CubeDocsGeneration
-from kb.minfin_docs_generation import set_up_minfin_data
+from kb.docs_generation_for_cubes import CubeDocsGeneration
+from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import cube_testing
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
 
-def set_up_db(overwrite=True):
-    """
-    Создание и заполнение БД
+def set_up_db():
+    """Создание и заполнение БД"""
 
-    :param overwrite: если True, то БД будет создана полностью заново,
-    если False - то будет дополнена
-    :return:
-    """
     # 1. Создание и заполнение БД
     kb_path = SETTINGS.PATH_TO_KNOWLEDGEBASE  # pylint: disable=no-member
 
     db_file = path.basename(kb_path)
 
     kbs = KnowledgeBaseSupport('knowledge_base.db.sql', db_file)
-    kbs.set_up_db(overwrite=overwrite)
+    kbs.set_up_db()
 
 
 def set_up_solr_cube_data(index_way='curl'):
@@ -56,6 +51,7 @@ def set_up_solr_cube_data(index_way='curl'):
 
 
 if __name__ == '__main__':
+    set_up_solr_cube_data('jar')
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(
         description="Иниициализация системы"

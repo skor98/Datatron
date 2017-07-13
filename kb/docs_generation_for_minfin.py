@@ -14,7 +14,7 @@ from text_preprocessing import TextPreprocessing
 from config import SETTINGS
 
 input_data_file_name = 'data.xlsx'
-output_file = 'minfin_data_for_indexing_in_solr.json'
+output_file = 'minfin_data_for_indexing.json'
 solr_clear_req = (
     'http://' + SETTINGS.SOLR_HOST + ':8983/solr/{}/' +
     'update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/' +

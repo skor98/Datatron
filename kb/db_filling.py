@@ -12,12 +12,12 @@ class KnowledgeBaseSupport:
         self.data_source_file = data_source_file
         self.db_file = db_file
 
-    def set_up_db(self, overwrite=False):
-        """Метод для настройки извне"""
+    def set_up_db(self):
+        """Метод для настройки базы данных извне"""
 
-        self._create_db(overwrite=overwrite)
+        self._create_db()
 
-        # Если заполнение БД должно идти из SQL скрипта (в 95% случаев)
+        # Если заполнение БД должно идти из SQL скрипта
         if self.data_source_file.endswith('.sql'):
             # Указания пути к sql файлу
             data_source_file_path = path.join('kb', self.data_source_file)
@@ -31,7 +31,8 @@ class KnowledgeBaseSupport:
                 dbc.database.execute_sql(i)
         else:
             # Если же оно должно идти из метаданных полученных с серверов Кристы
-            # Что очень редко, так как обновление БД на основе этих данных удалит ручные дополнения
+            # Что очень редко, так как в настоящий момент обновление БД на основе
+            # этих данных удалит ручные дополнения и все порушит
             data_set_list = KnowledgeBaseSupport._read_data()
 
             if not isinstance(data_set_list, list):
@@ -40,21 +41,27 @@ class KnowledgeBaseSupport:
             KnowledgeBaseSupport._transfer_data_to_db(data_set_list)
             KnowledgeBaseSupport._create_cube_lem_description(data_set_list)
 
-    def _create_db(self, overwrite=False):
-        """Создание БД"""
+    def _create_db(self):
+        """Пересоздание базы данных"""
 
-        db_file_path = path.join('kb', self.db_file)
-        if path.exists(db_file_path):
-            if overwrite:
-                remove(db_file_path)
-            else:
-                return None
-            
+        try:
+            remove(path.join('kb', self.db_file))
+        except FileNotFoundError:
+            pass
+
         dbc.create_tables()
 
     @staticmethod
     def _read_data():
-        """Перенос данных из текстового вида в определенную структуру класса DataSet"""
+        """
+        НЕ актуальный в настойщий момент метод.
+
+
+        При загрузки информации про куба в БД не из SQL-скрипта (knowledge_base.db.sql),
+        а из данных (cubes_metadata.txt) полученных от Кристы по API (get_metadata.py),
+        эти данные преобразуются в удобную структуру для записи в БД - структуру
+        класса DataSet
+        """
 
         data_set_list = []
 
@@ -96,7 +103,11 @@ class KnowledgeBaseSupport:
 
     @staticmethod
     def _transfer_data_to_db(data_set):
-        """Перенос данных из определенной структуры в БД"""
+        """
+        НЕ актуальный в настойщий момент метод.
+
+        Перенос данных из массива объектов класса DataSet в БД
+        """
 
         for item in data_set:
             # Занесение куба
@@ -117,7 +128,12 @@ class KnowledgeBaseSupport:
 
     @staticmethod
     def _create_cube_lem_description(data_set):
-        """Нормализованное описание куба на основе частотного распределения слов в значениях его измерений"""
+        """
+        НЕ актуальный в настойщий момент метод.
+
+        Созание автоматического нормализованного описания куба
+        на основе частотного распределения слов в значениях его измерений
+        """
 
         cubes = [item.cube['name'] for item in data_set]
         for cube in dbc.Cube.select().where(dbc.Cube.name in cubes):
@@ -127,6 +143,10 @@ class KnowledgeBaseSupport:
 
 
 class DataSet:
+    """
+    Класс для хранения метаданных по кубам
+    """
+
     def __init__(self):
         self.cube = None
         self.dimensions = {}
