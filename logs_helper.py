@@ -55,7 +55,7 @@ def init_logging():
 
     init_logging.is_inited = True
     logger = logging.getLogger()  # RootLogger
-    logger.setLevel(logging.INFO)
+    logger.setLevel(string_to_log_level(LOG_LEVEL))
 
     file_handler = FileHandler(LOGS_PATH, 'a', 'utf-8')
     file_handler.setFormatter(logging.Formatter(
