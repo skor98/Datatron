@@ -53,13 +53,15 @@ class DataRetrieving:
                     request_id
                 )
 
-            for answer in solr_result.more_answers:
-                if answer.type == 'cube':
-                    answer.feedback = DataRetrieving._form_feedback(
-                        answer.mdx_query,
-                        answer.cube,
-                        user_request
-                    )
+            # Если дополнительные ответы найдены
+            if solr_result.more_answers:
+                for answer in solr_result.more_answers:
+                    if answer.type == 'cube':
+                        answer.feedback = DataRetrieving._form_feedback(
+                            answer.mdx_query,
+                            answer.cube,
+                            user_request
+                        )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
             logging_str = 'Документы не найдены Query_ID: {}\tSolr: {}'
