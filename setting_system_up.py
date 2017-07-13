@@ -51,7 +51,6 @@ def set_up_solr_cube_data(index_way='curl'):
 
 
 if __name__ == '__main__':
-    set_up_solr_cube_data('jar')
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(
         description="Иниициализация системы"
