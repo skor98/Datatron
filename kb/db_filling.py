@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
+from os import remove, path
+import json
+
 import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
@@ -93,10 +99,12 @@ class KnowledgeBaseSupport:
                 # игнорирование "не указанных", "не определенных" параметров
                 normalized_elem = tp.normalization(element['caption'])
                 if not [item for item in ('неуказанный', 'не определить') if item in normalized_elem]:
-                    cube_data_set.dimensions[dim_name].append({'full_value': element['caption'],
-                                                               'lem_index_value': normalized_elem,
-                                                               'cube_value': element['name'],
-                                                               'hierarchy_level': int(element['levelDepth'])})
+                    cube_data_set.dimensions[dim_name].append({
+                        'full_value': element['caption'],
+                        'lem_index_value': normalized_elem,
+                        'cube_value': element['name'],
+                        'hierarchy_level': int(element['levelDepth'])
+                    })
             data_set_list.append(cube_data_set)
 
         return data_set_list
