@@ -52,6 +52,16 @@ class DataRetrieving:
                     user_request,
                     request_id
                 )
+
+            # Если дополнительные ответы найдены
+            if solr_result.more_answers:
+                for answer in solr_result.more_answers:
+                    if answer.type == 'cube':
+                        answer.feedback = DataRetrieving._form_feedback(
+                            answer.mdx_query,
+                            answer.cube,
+                            user_request
+                        )
         else:
             solr_result.message = ERROR_NO_DOCS_FOUND
             logging_str = 'Документы не найдены Query_ID: {}\tSolr: {}'
@@ -62,12 +72,18 @@ class DataRetrieving:
     @staticmethod
     def _format_cube_answer(solr_cube_result, user_request, request_id):
         # Запрос отправка на серверы Кристы MDX-запроса по HTTP
-        api_response, cube = DataRetrieving._send_request_to_server(solr_cube_result.mdx_query)
+        api_response = DataRetrieving._send_request_to_server(
+            solr_cube_result.mdx_query,
+            solr_cube_result.cube
+        )
         api_response = api_response.text
 
         # Формирование читабельной обратной связи по результату
-        feedback = DataRetrieving._form_feedback(solr_cube_result.mdx_query, cube, user_request)
-        solr_cube_result.feedback = feedback
+        solr_cube_result.feedback = DataRetrieving._form_feedback(
+            solr_cube_result.mdx_query,
+            solr_cube_result.cube,
+            user_request
+        )
 
         value = None
 
@@ -127,7 +143,7 @@ class DataRetrieving:
             solr_cube_result.message = ''
 
         # Создание фидбека в другом формате для удобного логирования
-        feedback_verbal = feedback['verbal']
+        feedback_verbal = solr_cube_result.feedback['verbal']
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
         verbal += ' '.join([str(idx + 1) + '. ' + i['full_value']
                             for idx, i in enumerate(feedback_verbal['dims'])])
@@ -141,17 +157,12 @@ class DataRetrieving:
         ))
 
     @staticmethod
-    def _send_request_to_server(mdx_query):
+    def _send_request_to_server(mdx_query, cube):
         """Отправка запроса к серверу
 
         :param mdx_query: MDX-запрос
         :return: объект класса request.model.Response, название куба
         """
-
-        # Выделение из MDX-запроса названия куба
-        query_by_elements = mdx_query.split(' ')
-        from_element = query_by_elements[query_by_elements.index('FROM') + 1]
-        cube = from_element[1:len(from_element) - 4]
 
         # Подготовка POST-данных и запрос к серверу
         data_to_post = {'dataMartCode': cube, 'mdxQuery': mdx_query}
@@ -160,7 +171,7 @@ class DataRetrieving:
             data_to_post
         )
 
-        return api_response, cube
+        return api_response
 
     @staticmethod
     def _form_feedback(mdx_query, cube, user_request):

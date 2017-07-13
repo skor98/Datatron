@@ -272,7 +272,8 @@ def get_results(write_logs=False):
 
 def _main():
     score, results = get_results(write_logs=True)
-    with open(path.join(TEST_PATH, RESULTS_FOLDER, "results.json"), 'w') as f_out:
+    result_file_name = "results_{}.json".format(CURRENT_DATETIME_FORMAT)
+    with open(path.join(TEST_PATH, RESULTS_FOLDER, result_file_name), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(json.dumps(results, indent=4)))
     print("Score: {:.4f}".format(score))

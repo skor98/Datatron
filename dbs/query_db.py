@@ -7,7 +7,7 @@
 
 import datetime
 
-from peewee import SqliteDatabase, DateTimeField, CharField, Model
+from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
 from config import QUERY_DB_PATH
 
@@ -83,6 +83,20 @@ def get_queries(user_id, time_delta):
         return tuple(["{} {}".format(row.date, row.query) for row in db_res])
 
     return tuple(["{} {}: {}".format(row.date, row.user_id, row.query) for row in db_res])
+
+
+def get_random_requests(num=5):
+    user_requests = []
+    query = (UserQuery
+             .select(UserQuery.query)
+             .order_by(fn.Random())
+             .distinct()
+             .limit(num))
+
+    for elem in query:
+        user_requests.append(elem.query)
+
+    return user_requests
 
 
 _is_inited = False

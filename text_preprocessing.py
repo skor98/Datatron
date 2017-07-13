@@ -28,8 +28,6 @@ class TextPreprocessing:
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
         self.stop_words = stopwords.words(self.language)
-
-        # Удаление из него отрицательной частицы
         self.stop_words.remove('не')
         self.stop_words += "также иной год да нет -".split()
 
@@ -63,6 +61,7 @@ class TextPreprocessing:
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
+
         stop_words = self.stop_words[:]  # копия, чтобы не испортить
         if not delete_question_words:
             delete_stop_words_list = ['кто', 'что', 'это', 'где', 'для', 'зачем', 'какой']

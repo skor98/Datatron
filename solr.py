@@ -155,6 +155,7 @@ class Solr:
                     final_cube
                 )
 
+                cube_result.cube = final_cube
                 cube_result.cube_score = cube_score
                 Solr._calculate_score_for_cube_questions(
                     final_dimensions,
@@ -437,14 +438,17 @@ class Solr:
         if not isinstance(cube_answers, list):
             cube_answers = [cube_answers]
 
+        cube_answers = [elem for elem in cube_answers if elem.status]
         answers = cube_answers + minfin_answers
         answers = sorted(answers,
                          key=lambda ans: ans.get_key(),
                          reverse=True)
 
         solr_result.answer = answers[0]
+
+        # Добавление до 5 дополнительных ответов
         if len(answers) > 1:
-            solr_result.more_answers = answers[1:]
+            solr_result.more_answers = answers[1:6]
 
         solr_result.doc_found = len(answers)
 
@@ -459,6 +463,7 @@ class DrSolrCubeResult:
         self.min_score = 0
         self.sum_score = 0
         self.mdx_query = None
+        self.cube = None
         self.response = None
         self.formatted_response = None
         self.message = None
@@ -521,7 +526,7 @@ class DrSolrResult:
             key_to_remove_from_cube_answer = (
                 'min_score', 'max_score', 'avg_score',
                 'sum_score', 'cube_score', 'mdx_query',
-                'status'
+                'status', 'cube'
             )
 
             # Ключи для удаления из ответа по Минфину
