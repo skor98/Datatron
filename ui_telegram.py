@@ -20,6 +20,7 @@ from dbs.user_support_library import check_user_existence
 from dbs.user_support_library import create_user
 from dbs.user_support_library import create_feedback
 from dbs.user_support_library import get_feedbacks
+from dbs.query_db import get_random_requests
 from speechkit import text_to_speech
 from messenger_manager import MessengerManager
 from logs_helper import LogsRetriever
@@ -116,6 +117,17 @@ def send_help(message):
         reply_markup=constants.HELP_KEYBOARD,
         disable_web_page_preview=True
     )
+
+
+@bot.message_handler(commands=['idea'])
+def get_query_examples(message):
+    possible_queries = get_random_requests()
+    message_str = "<b>Идеи</b> возможных запросов:\n{}"
+    possible_queries = ['- {}\n'.format(query) for query in possible_queries]
+    message_str = message_str.format(''.join(possible_queries))
+    bot.send_message(message.chat.id,
+                     message_str,
+                     parse_mode='HTML')
 
 
 @bot.message_handler(commands=['getqueries'])
