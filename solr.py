@@ -155,6 +155,7 @@ class Solr:
                     final_cube
                 )
 
+                cube_result.cube = final_cube
                 cube_result.cube_score = cube_score
                 Solr._calculate_score_for_cube_questions(
                     final_dimensions,
@@ -443,8 +444,10 @@ class Solr:
                          reverse=True)
 
         solr_result.answer = answers[0]
+
+        # Добавление до 5 дополнительных ответов
         if len(answers) > 1:
-            solr_result.more_answers = answers[1:]
+            solr_result.more_answers = answers[1:6]
 
         solr_result.doc_found = len(answers)
 
@@ -459,6 +462,7 @@ class DrSolrCubeResult:
         self.min_score = 0
         self.sum_score = 0
         self.mdx_query = None
+        self.cube = None
         self.response = None
         self.formatted_response = None
         self.message = None

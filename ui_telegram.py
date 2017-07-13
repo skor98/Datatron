@@ -392,8 +392,8 @@ def process_response(message, input_format='text', file_content=None):
                          for idx, elem in enumerate(look_also)]
 
             bot.send_message(message.chat.id,
-                             "*Смотри также:*\n" + ''.join(look_also),
-                             parse_mode='Markdown')
+                             "<b>Смотри также:</b>\n" + ''.join(look_also),
+                             parse_mode='HTML')
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -565,12 +565,33 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
     return '<b>{}</b>\n<code>{}</code>'.format(title, verbal_str)
 
 
+def loof_also_for_cube(cube_result):
+    verbal_fb_list = []
+    verbal_fb = cube_result.feedback['verbal']
+
+    verbal_fb_list.append(verbal_fb['domain'])
+
+    if verbal_fb['measure'] != 'Значение':
+        verbal_fb_list.append(verbal_fb['measure'].lower())
+
+    verbal_fb_list.extend(
+        first_letter_lower(item['full_value']) for item in verbal_fb['dims'])
+
+    verbal_fb_list.append('({}: {})'.format(
+        "<b>База знаний</b>",
+        cube_result.sum_score
+    ))
+
+    return ' '.join(verbal_fb_list)
+
+
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
-        return verbal_feedback(answer, title='')
+        return loof_also_for_cube(answer)
     else:
-        return '{} ({})'.format(
+        return '{} ({}: {})'.format(
             answer.question,
+            "<b>Минфин</b>",
             answer.score
         )
 
