@@ -663,7 +663,7 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     def main():
         """Тестовая страница"""
 
-        return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+        return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
