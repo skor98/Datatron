@@ -315,14 +315,18 @@ def repeat_all_messages(message):
 def leave_feedback(message):
     feedback = message.text[4:].strip()
     if feedback:
-        create_feedback(message.chat.id,
-                        datetime.datetime.fromtimestamp(message.date),
-                        feedback)
+        create_feedback(
+            message.chat.id,
+            datetime.datetime.fromtimestamp(message.date),
+            feedback
+        )
         bot.send_message(message.chat.id, constants.MSG_WE_GOT_YOUR_FEEDBACK)
     else:
-        bot.send_message(message.chat.id,
-                         constants.MSG_LEAVE_YOUR_FEEDBACK,
-                         parse_mode='HTML')
+        bot.send_message(
+            message.chat.id,
+            constants.MSG_LEAVE_YOUR_FEEDBACK,
+            parse_mode='Markdown'
+        )
 
 
 @bot.message_handler(commands=['getfeedback'])
@@ -538,14 +542,14 @@ def process_minfin_questions(message, minfin_result):
 
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
     feedback_str = '{user_req}{expert_fb}{separator}{verbal_fb}\n' \
-                   '<b>Ответ: {answer}</b>\nQuery_ID: {query_id}'
+                   '**Ответ: {answer}**\nQuery_ID: {query_id}'
     separator = ''
     expert_str = ''
     verbal_str = verbal_feedback(cube_result)
 
     user_request = ''
     if user_request_notification:
-        user_request = '<b>Ваш запрос</b>\nДататрон решил, что Вы его спросили: "{}"\n\n'
+        user_request = '**Ваш запрос**\nДататрон решил, что Вы его спросили: "{}"\n\n'
         user_request = user_request.format(cube_result.feedback['user_request'])
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -563,7 +567,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     bot.send_message(
         message.chat.id,
         feedback,
-        parse_mode='HTML',
+        parse_mode='Markdown',
         reply_markup=constants.RESPONSE_QUALITY
     )
 
@@ -571,8 +575,8 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 def expert_feedback(cube_result):
     expert_fb = cube_result.feedback['formal']
 
-    expert_str = '<b>Экспертная обратная связь</b>\n' \
-                 '<code>- Куб: {}\n- Мера: {}\n- Измерения: {}\n</code>'
+    expert_str = '**Экспертная обратная связь**\n' \
+                 '`- Куб: {}\n- Мера: {}\n- Измерения: {}\n`'
 
     expert_str = expert_str.format(
         expert_fb['cube'],
@@ -600,7 +604,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
-    return '<b>{}</b>\n<code>{}</code>'.format(title, verbal_str)
+    return '**{}**\n`{}`'.format(title, verbal_str)
 
 
 def loof_also_for_cube(cube_result):
@@ -655,13 +659,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
-
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
-
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
