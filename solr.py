@@ -566,8 +566,12 @@ class DrSolrResult:
             for key in keys_to_remove_from_base_object:
                 result_to_dict.pop(key, None)
 
+            # Объединение всех ответов в один список
+            answers = [result_to_dict['answer']]
+            if result_to_dict['more_answers']:
+                answers.extend(result_to_dict['more_answers'])
+
             # Удаление ключей из ответов
-            answers = [result_to_dict['answer']] + result_to_dict['more_answers']
             for answer in answers:
                 if answer['type'] == 'cube':
                     for key in key_to_remove_from_cube_answer:
