@@ -82,56 +82,6 @@ class CubeDocsGeneration:
             else:
                 print('Что-то пошло не так: ошибка {}'.format(solr_response.status_code))
 
-    def index_created_documents_via_curl(self):
-        """
-        Отправа JSON файла с документами по кубам
-        на индексацию в Apache Solr через cURL
-        """
-
-        c = pycurl.Curl()
-        curl_addr = (
-            'http://' +
-            SETTINGS.SOLR_HOST +
-            ':8983/solr/{}/update?commit=true'
-        )
-        c.setopt(c.URL, curl_addr.format(self.core))
-        c.setopt(c.HTTPPOST,
-                 [
-                     ('fileupload',
-                      (c.FORM_FILE, self.file_name,
-                       c.FORM_CONTENTTYPE, 'application/json')
-                      ),
-                 ])
-        c.perform()
-        print('Документы для кубов проиндексированы через CURL')
-
-    def index_created_documents_via_jar_file(self):
-        """
-        Отправа JSON файла с документами по кубам
-        на индексацию в Apache Solr через файл
-        встроенный инструмент от Apache Solr – файл post.jar
-        из папки /example/exampledocs
-        """
-
-        path_to_json_data_file = self.file_name
-        command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
-            self.core,
-            SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
-            path_to_json_data_file
-        )
-        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
-        print('Документы для кубов проиндексированы через JAR файл')
-
-    def _write_to_file(self, docs):
-        """
-        Преобразование сгенерированных документов по кубам в JSON и
-        запись файл cube_data_for_indexing.json для последующей
-        индексации в Apache Solr
-        """
-
-        with open(self.file_name, 'a', encoding='utf-8') as file:
-            file.write(json.dumps(docs, ensure_ascii=False))
-
     @staticmethod
     def _create_values():
         """
@@ -178,22 +128,22 @@ class CubeDocsGeneration:
         У Кристы есть данные только с 2007 года
         """
 
+        year_values = []
         current_year = datetime.datetime.now().year
 
         # 4-цифренные года: 2007 - current_year
-        year_values = [str(i) for i in range(2007, current_year + 1)]
+        years = [str(i) for i in range(2007, current_year + 1)]
 
         # 1-2-цифренные года: 7 - 17
-        year_values.extend([str(i) for i in range(7, current_year - 1999)])
+        years.extend([str(i) for i in range(7, current_year - 1999)])
 
         # создание документов нужной структуры
-        for _ in range(len(year_values)):
-            year_values.insert(
-                0,
+        for year in years:
+            year_values.append(
                 {
                     'type': 'year_dimension',
                     'name': 'Years',
-                    'fvalue': year_values.pop()
+                    'fvalue': year
                 }
             )
 
@@ -292,3 +242,53 @@ class CubeDocsGeneration:
             })
 
         return measures
+
+    def _write_to_file(self, docs):
+        """
+        Преобразование сгенерированных документов по кубам в JSON и
+        запись файл cube_data_for_indexing.json для последующей
+        индексации в Apache Solr
+        """
+
+        with open(self.file_name, 'a', encoding='utf-8') as file:
+            file.write(json.dumps(docs, ensure_ascii=False))
+
+    def index_created_documents_via_curl(self):
+        """
+        Отправа JSON файла с документами по кубам
+        на индексацию в Apache Solr через cURL
+        """
+
+        c = pycurl.Curl()
+        curl_addr = (
+            'http://' +
+            SETTINGS.SOLR_HOST +
+            ':8983/solr/{}/update?commit=true'
+        )
+        c.setopt(c.URL, curl_addr.format(self.core))
+        c.setopt(c.HTTPPOST,
+                 [
+                     ('fileupload',
+                      (c.FORM_FILE, self.file_name,
+                       c.FORM_CONTENTTYPE, 'application/json')
+                      ),
+                 ])
+        c.perform()
+        print('Документы для кубов проиндексированы через CURL')
+
+    def index_created_documents_via_jar_file(self):
+        """
+        Отправа JSON файла с документами по кубам
+        на индексацию в Apache Solr через файл
+        встроенный инструмент от Apache Solr – файл post.jar
+        из папки /example/exampledocs
+        """
+
+        path_to_json_data_file = self.file_name
+        command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
+            self.core,
+            SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
+            path_to_json_data_file
+        )
+        subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
+        print('Документы для кубов проиндексированы через JAR файл')

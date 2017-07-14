@@ -5,27 +5,32 @@ import json
 import math
 import uuid
 import subprocess
-from os import listdir, path
-
+import logging
 import pycurl
 import pandas as pd
+from os import listdir, path
 
 from text_preprocessing import TextPreprocessing
 from config import SETTINGS
+import logs_helper  # pylint: disable=unused-import
 
-input_data_file_name = 'data.xlsx'
+# Название файла с готовой структурой данных
+# по вопросам Минфина для последующей индексации в Apache Solr
 output_file = 'minfin_data_for_indexing.json'
-solr_clear_req = (
-    'http://' + SETTINGS.SOLR_HOST + ':8983/solr/{}/' +
-    'update?stream.body=%3Cdelete%3E%3Cquery%3E*:*%3C/' +
-    'query%3E%3C/delete%3E&commit=true'
-)
+
+# Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
-path_to_tests = 'tests'
+
+# Путь к папке, в которую будут записываться автоматические
+# тесты по вопросам от Минфина
+TEST_PATH = 'tests'
 
 
 def set_up_minfin_data(index_way='curl'):
-    """Главный API метод к этому модулю"""
+    """
+    Метод для создания и индексации в Apache Solr
+    документов для ответа на вопросы Минфина
+    """
 
     print('Начата работа с документами для Министерства Финансов')
     minfin_docs = _refactor_data(_read_data())
@@ -38,7 +43,9 @@ def set_up_minfin_data(index_way='curl'):
 
 
 def _read_data():
-    """Чтение данных из xlsx с помощью pandas и их очистка"""
+    """
+    Чтение данных из xlsx с помощью pandas и их переработка
+    """
 
     files = []
     file_paths = []
@@ -49,13 +56,17 @@ def _read_data():
             file_paths.append(path.join(path_to_folder_file, file))
             files.append(file)
 
-    # Создания листа dataframe по документам
+    # Создания листа с датафреймами по всем документам
     dfs = []
     for file_path in file_paths:
         # id документа имеет структуру {партия}.{порядковый номер}
-        # если не переводить id к строке, то pandas воспринимает их как float и 3.10 становится 3.1
-        # что приводит к ошибкам в тестировании
-        df = pd.read_excel(open(file_path, 'rb'), sheetname='questions', converters={'id': str})
+        # id необходимо имплицитно привести к типу str, чтобы
+        # номер вопроса 3.10 не становился 3.1
+        df = pd.read_excel(
+            open(file_path, 'rb'),
+            sheetname='questions',
+            converters={'id': str}
+        )
         df = df.fillna(0)
         dfs.append(df)
 
@@ -63,19 +74,19 @@ def _read_data():
     _create_tests(files, dfs)
 
     # Объединение все датафреймов в один
-    data = pd.concat(dfs)
-    return data
-
-
-def _write_data(data):
-    """Запись всех документов в файл"""
-
-    with open(path.join(path_to_folder_file, output_file), 'w', encoding='utf-8') as file:
-        data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
-        file.write(data_to_str)
+    return pd.concat(dfs)
 
 
 def _refactor_data(data):
+    """
+    Преобразование датафрейма в список объектов типа
+    MinfinDocument
+    """
+
+    # количество повторений ключевых слов прописанных методологом
+    MANUAL_KEY_WORDS_REPETITION = 5
+
+    # объекта класса, осуществляющего нормализацию
     tp = TextPreprocessing(uuid.uuid4())
 
     docs = []
@@ -83,7 +94,7 @@ def _refactor_data(data):
         # Если запрос не параметризованных
         # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
         if not row.parameterized:
-            doc = ClassicMinfinDocument()
+            doc = MinfinDocument()
             doc.number = str(row.id)
             doc.question = row.question
 
@@ -121,7 +132,7 @@ def _refactor_data(data):
                                   delete_repeatings=True)
 
             # Ключевые слова записываются трижды, для увеличения качества поиска документа
-            doc.lem_key_words = ' '.join([kw] * 5)
+            doc.lem_key_words = ' '.join([kw] * MANUAL_KEY_WORDS_REPETITION)
 
             # Может быть несколько
             if row.link_name:
@@ -156,23 +167,39 @@ def _refactor_data(data):
     return docs
 
 
-def _get_manual_synonym_questions(question_number):
-    """Получение списка вопросов из minfin_test_manual документов для конктертного вопроса
-
-    :param question_number: номер вопроса документа
-    :return: list перефразированных запросов
+def _write_data(data):
     """
+    Преобразование списка объектов типа MinfinDocument
+    в JSON-строку и ее запись в файл
+    """
+
+    with open(path.join(path_to_folder_file, output_file), 'w', encoding='utf-8') as file:
+        data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
+        file.write(data_to_str)
+
+
+def _get_manual_synonym_questions(question_number):
+    """
+    Получение списка вопросов из minfin_test_manual документов
+    для конктертного вопроса (т.е. списка синонимичных запросов
+    к данному, прописанных вручную)
+    """
+
     extra_requests = []
 
+    # Номер партии
     port_num = question_number.split('.')[0]
 
+    # Выбор файла, который соответствует партии вопроса
     is_portion_func = lambda f: f.endswith('.txt') and port_num in f and 'manual' in f
-    file_with_portion = [f for f in listdir(path_to_tests) if is_portion_func(f)]
+    file_with_portion = [f for f in listdir(TEST_PATH) if is_portion_func(f)]
 
+    # Если такого файла еще нет, так как его не успели написать
     if not file_with_portion:
         return None
 
-    with open(path.join(path_to_tests, file_with_portion[0]), 'r', encoding='utf-8') as file:
+    # Добавление синонимичных запросов
+    with open(path.join(TEST_PATH, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
             line = line.split(':')
             if line[1].strip() == question_number:
@@ -181,25 +208,21 @@ def _get_manual_synonym_questions(question_number):
     return extra_requests
 
 
-def _index_data_via_jar_file():
-    path_to_json_data_file = path_to_folder_file.format(output_file)
-    path_to_solr_jar_file = SETTINGS.PATH_TO_SOLR_POST_JAR_FILE
-
-    command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
-        SETTINGS.SOLR_MAIN_CORE,
-        path_to_solr_jar_file,
-        path_to_json_data_file
-    )
-    subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
-    print('Минфин-документы проиндексированы через JAR файл')
-
-
 def _index_data_via_curl():
+    """
+    Отправа JSON файла с документами по кубам
+    на индексацию в Apache Solr через cURL
+    """
+
     curl_instance = pycurl.Curl()
     curl_instance.setopt(
         curl_instance.URL,
-        'http://' + SETTINGS.SOLR_HOST + ':8983/solr/{}/update?commit=true'.format(SETTINGS.SOLR_MAIN_CORE)
+        'http://{}:8983/solr/{}/update?commit=true'.format(
+            SETTINGS.SOLR_HOST,
+            SETTINGS.SOLR_MAIN_CORE
+        )
     )
+
     curl_instance.setopt(curl_instance.HTTPPOST, [(
         'fileupload',
         (
@@ -209,54 +232,91 @@ def _index_data_via_curl():
         )
     ), ])
     curl_instance.perform()
-    print('Минфин-документы проиндексированы через CURL')
+
+    logging.info('Минфин-документы проиндексированы через CURL')
+
+
+def _index_data_via_jar_file():
+    """
+    Отправа JSON файла с документами по кубам
+    на индексацию в Apache Solr через файл
+    встроенный инструмент от Apache Solr – файл post.jar
+    из папки /example/exampledocs
+    """
+
+    path_to_json_data_file = path_to_folder_file.format(output_file)
+    path_to_solr_jar_file = SETTINGS.PATH_TO_SOLR_POST_JAR_FILE
+
+    command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
+        SETTINGS.SOLR_MAIN_CORE,
+        path_to_solr_jar_file,
+        path_to_json_data_file
+    )
+    subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
+
+    logging.info('Минфин-документы проиндексированы через JAR файл')
 
 
 def _add_automatic_key_words(documents):
-    """Добавление автоматических ключевых слов с помощью TF-IDF"""
+    """
+    Добавление автоматических ключевых слов с помощью TF-IDF
+    """
+
+    # Количество повторений ключевых слов, созданных
+    # с помощью TF-IDF метода
+    TF_IDF_KEY_WORDS_REPETITION = 1
 
     matrix = _calculate_matrix(documents)
+
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)
-        # extra_key_words *= 5
+        extra_key_words *= TF_IDF_KEY_WORDS_REPETITION
         doc.lem_key_words += ' {}'.format(' '.join(extra_key_words))
 
 
-def _tf(word, doc):
-    """TF: частота слова в документе"""
-    return doc.count(word)
-
-
-def _documents_contain_word(word, doc_list):
-    """количество документов, в которых встречается слово"""
-    return 1 + sum(1 for document in doc_list if word in document.get_string_representation())
-
-
-def _idf(word, doc_list):
+def _create_tests(files_names, data_frames):
     """
-    IDF: логарифм от общего количества документов деленного
-    на количество документов, в которых встречается слово
+    Создание автоматических тестов по Минфину формата:
+    <запрос по шаблону из .xlsx>: <номер запроса>
     """
-    return math.log(len(doc_list) / float(_documents_contain_word(word, doc_list)))
 
+    for file_name, df in zip(files_names, data_frames):
+        file_path = path.join(
+            TEST_PATH,
+            'minfin_test_auto_for_{}.txt'.format(file_name.rsplit('.', 1)[0])
+        )
 
-def _tfidf(word, doc, doc_list):
-    # TFхIDF
-    return _tf(word, doc) * _idf(word, doc_list)
+        with open(file_path, 'w', encoding='utf-8') as file_out:
+            for row in df[['id', 'question']].itertuples():
+                file_out.write('{}:{}\n'.format(row.question, row.id))
+                # ToDo обработка ошибок открытия файлов
 
 
 def _calculate_matrix(documents):
+    """
+    Расчет матрицы TF-IDF по всем входных документами
+    """
+
     # Словарь с рассчетами
     score = {}
     for idx, doc in enumerate(documents):
+        # получение строкового предстваления документа Минфина
+        # результат алгоритма зависит от определения строкового представления
         doc_string_representation = doc.get_string_representation()
+
+        # токенизация с удалением повторяющихся слов
         tokens = set(doc_string_representation.split())
+
         score[idx] = []
         for token in tokens:
-            score[idx].append({'term': token,
-                               'tf': _tf(token, doc_string_representation),
-                               'idf': _idf(token, documents),
-                               'tfidf': _tfidf(token, doc_string_representation, documents)})
+            score[idx].append(
+                {
+                    'term': token,
+                    'tf': _tf(token, doc_string_representation),
+                    'idf': _idf(token, documents),
+                    'tfidf': _tfidf(token, doc_string_representation, documents)
+                }
+            )
 
     # сортировка элементов в словаре в порядке убывания индекса TF-IDF
     for document_id in score:
@@ -280,16 +340,39 @@ def _key_words_for_doc(document_id, score, top=5):
     return key_words
 
 
-def _create_tests(files, data_frames):
-    for file_name, df in zip(files, data_frames):
-        file_path = path.join(path_to_tests, 'minfin_test_auto_for_{}.txt'.format(file_name.rsplit('.', 1)[0]))
-        with open(file_path, 'w', encoding='utf-8') as file_out:
-            for row in df[['id', 'question']].itertuples():
-                file_out.write('{}:{}\n'.format(row.question, row.id))
-                # ToDo обработка ошибок открытия файлов
+def _tf(word, doc):
+    """TF: частота слова в документе"""
+
+    return doc.count(word)
 
 
-class ClassicMinfinDocument:
+def _documents_contain_word(word, doc_list):
+    """количество документов, в которых встречается слово"""
+
+    return 1 + sum(1 for document in doc_list if word in document.get_string_representation())
+
+
+def _idf(word, doc_list):
+    """
+    IDF: логарифм от общего количества документов, деленного
+    на количество документов, в которых встречается данное слово
+    """
+
+    return math.log(len(doc_list) / float(_documents_contain_word(word, doc_list)))
+
+
+def _tfidf(word, doc, doc_list):
+    """Подсчет метрики TF-IDF"""
+
+    return _tf(word, doc) * _idf(word, doc_list)
+
+
+class MinfinDocument:
+    """
+    Класс для хранения структуры документа
+    для ответа по вопросам от Минфина
+    """
+
     def __init__(self):
         self.type = 'minfin'
         self.number = 0
@@ -309,12 +392,27 @@ class ClassicMinfinDocument:
         self.document = None
 
     def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4, ensure_ascii=False)
+        """Перевод класса в JSON-строку"""
+
+        return json.dumps(
+            self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4, ensure_ascii=False)
 
     def get_string_representation(self):
+        """Cтроковое представление документа"""
+
+        # Здесь есть над чем подумать, так как в зависимости
+        # от того, данные из каких полей берутся, результат
+        # может как улучшаться, так и ухудшаться
         lem_synonym_questions = []
+
+        # Если синонимичные вопросы вручную уже прописаны
         if self.lem_synonym_questions:
             lem_synonym_questions = self.lem_synonym_questions
-        return self.lem_key_words + \
-               self.lem_question + \
-               ' '.join(lem_synonym_questions)
+
+        # Ручные нормализованные ключевые слова по одному разу
+        # Плюс нормализованный запрос
+        # Плюс синонимичные запросы, если прописаны
+        return ('{} {} {}'.format(
+            set(self.lem_key_words),
+            self.lem_question,
+            ' '.join(lem_synonym_questions)))

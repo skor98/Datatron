@@ -11,7 +11,7 @@ from speechkit import speech_to_text
 from speechkit import SpeechException
 from data_retrieving import DataRetrieving
 from solr import DrSolrResult
-import logs_helper
+import logs_helper  # pylint: disable=unused-import
 from dbs.query_db import log_query_to_db
 
 
@@ -117,7 +117,6 @@ class MessengerManager:
 
         if greets is not None:
             return greets
-
 
     @staticmethod
     def _querying(user_request_string, request_id):
