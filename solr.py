@@ -2,7 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-Взаимодействие с Solr
+Взаимодействие с Solr. Логику необходимо разбить.
+
+В данном файле лишь в одном методе происходит взаимодействие
+с Solr, а во всех остальных идет работа с его выдачей.
+
+На текущей момент:
+1. Здесь идет обращение с нормализованным запросом в Solr
+2. Сборка запроса по куба
+3. Выбор ответов по Минфину
+4. Формирование структуры финального возвращаемого объекта,
+который далее пройдет обратно через data_retrieving, message_manager
+к ui-элементу.
 """
 
 import logging
@@ -42,6 +53,7 @@ class Solr:
         try:
             docs = self._send_request_to_solr(user_request)
 
+            # Если был найден хотя бы один документ
             if docs['response']['numFound']:
 
                 (minfin_docs, cube_cubes,
@@ -75,7 +87,7 @@ class Solr:
             solr_result.error = str(err)
             return solr_result
 
-    def _send_request_to_solr(self, user_request):
+    def _send_request_to_solr(self, user_request: str):
         """Метод для отправки запроса к Solr
 
         :param user_request: запрос пользователя
@@ -86,12 +98,14 @@ class Solr:
             SETTINGS.SOLR_HOST,
             self.core
         )
+
+        # Просим Solr выдать 50 документов в формате json, а также указать score каждого
         params = {'q': user_request, 'rows': 50, 'wt': 'json', 'fl': '*,score'}
         docs = requests.get(request, params=params).json()
         return docs
 
     @staticmethod
-    def _parse_solr_response(solr_docs):
+    def _parse_solr_response(solr_docs: list):
         """
         Разбивает найденные документы по переменным
         для различных типов вопросов
@@ -130,6 +144,8 @@ class Solr:
 
     @staticmethod
     def _process_cube_document(year, territory, dimensions, measures, cubes):
+        """Сборка одного запроса по кубу"""
+
         cube_result = DrSolrCubeResult()
 
         # Фильтрация документов
@@ -174,6 +190,8 @@ class Solr:
 
     @staticmethod
     def _filter_cube_documents(year, territory, dimensions, measures, cubes):
+        """Фильтрация найденных измерений"""
+
         final_dimension_list = []
         cube_above_territory_priority = False
 
@@ -300,6 +318,7 @@ class Solr:
     @staticmethod
     def _calculate_score_for_cube_questions(dimensions, measures, year, territory, solr_result):
         """Подсчет различных видов score для запроса по кубу"""
+
         scores = []
 
         scores.append(solr_result.cube_score)
@@ -378,7 +397,9 @@ class Solr:
         return mdx_template.format(measure, cube, ','.join(dim_str_value))
 
     @staticmethod
-    def _manage_years(year):
+    def _manage_years(year: int):
+        """Обработка лет из 1 и 2 цифр"""
+
         if year > 2006:
             return year
         # работа с годами из одного и двух цифр
@@ -435,15 +456,21 @@ class Solr:
 
     @staticmethod
     def _format_final_response(cube_answers, minfin_answers, solr_result):
+        """Формирование финального объекта"""
+
         if not isinstance(cube_answers, list):
             cube_answers = [cube_answers]
 
+        # Выбор только корректных запросов по кубам
         cube_answers = [elem for elem in cube_answers if elem.status]
+
+        # Фильтрация выборки в порядке убывания по score
         answers = cube_answers + minfin_answers
         answers = sorted(answers,
                          key=lambda ans: ans.get_key(),
                          reverse=True)
 
+        # Выбор наиболее подходящего ответа
         solr_result.answer = answers[0]
 
         # Добавление до 5 дополнительных ответов

@@ -1,6 +1,18 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+Сейчас структура файла плохая. Логику solr.py и data_retrieving.py
+необходимо реструктурировать.
+
+На текущий момент:
+1. Здесь находится API метод (get_data) к сердцу системы
+2. Здесь продолжается работа ответам по кубу: MDX
+2.1 Получается ответ на основе MDX-запроса от сервера Кристы (_sent\d_request_to_server)
+2.2 Форматируется ответ в число/процент (_format_numerical)
+2.3 Формируется обратная связь (_form_feedback)
+"""
+
 import json
 import logging
 
@@ -19,8 +31,9 @@ from text_preprocessing import TextPreprocessing
 # Module, which is responsible for getting required from user data
 class DataRetrieving:
     @staticmethod
-    def get_data(user_request, request_id):
-        """основной API метод для модуля
+    def get_data(user_request: str, request_id: str):
+        """
+        API метод к сердцу системы.
 
         :param user_request: запрос от пользователя
         :param request_id: идентификатор запроса
@@ -71,6 +84,11 @@ class DataRetrieving:
 
     @staticmethod
     def _format_cube_answer(solr_cube_result, user_request, request_id):
+        """
+        Работа над ответом по кубу: получение данных, форматирование
+        ответа, добавление обратной связи
+        """
+
         # Запрос отправка на серверы Кристы MDX-запроса по HTTP
         api_response = DataRetrieving._send_request_to_server(
             solr_cube_result.mdx_query,
@@ -157,11 +175,10 @@ class DataRetrieving:
         ))
 
     @staticmethod
-    def _send_request_to_server(mdx_query, cube):
-        """Отправка запроса к серверу
-
-        :param mdx_query: MDX-запрос
-        :return: объект класса request.model.Response, название куба
+    def _send_request_to_server(mdx_query: str, cube: str):
+        """
+        Отправка запроса к серверу Кристы для получения
+        ответа по MDX-запросу
         """
 
         # Подготовка POST-данных и запрос к серверу
@@ -174,13 +191,10 @@ class DataRetrieving:
         return api_response
 
     @staticmethod
-    def _form_feedback(mdx_query, cube, user_request):
-        """Формирование обратной связи
-
-        :param mdx_query: MDX-запрос
-        :param cube: название куба
-        :param user_request: запрос пользователя
-        :return: словарь
+    def _form_feedback(mdx_query: str, cube: str, user_request: str):
+        """
+        Формирование обратной связи по запросу
+        для экспертной и обычной обратной связи
         """
 
         # Разбиваем MDX-запрос на две части
@@ -218,16 +232,16 @@ class DataRetrieving:
         return feedback
 
     @staticmethod
-    def _format_numerical(number):
-        """Перевод числа в млн, млрд и трл вид. Например, 123 111 298 -> 123,1 млн
-
-        :param number: число для форматирования
-        :return: отфоратированное число в виде строки
+    def _format_numerical(number: float):
+        """
+        Перевод числа в млн, млрд и трл вид.
+        Например, 123 111 298 -> 123,1 млн.
         """
 
         str_num = str(number)
 
-        # Если число через точку
+        # Если число через точку, что должно
+        # выполняться всегда для рублевых мер
         if '.' in str_num:
             str_num = str_num.split('.')[0]
 

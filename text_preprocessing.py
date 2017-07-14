@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+Работа с текстом: нормализация, частотное распределение
+"""
 
 import logging
 import re
@@ -38,6 +41,8 @@ class TextPreprocessing:
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
             delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"]
     ):
+        """Метод для нормализации текста"""
+
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -47,6 +52,7 @@ class TextPreprocessing:
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
         text = re.sub(r'[^\w\s-]+', '', text)
 
+        # Токенизируем
         tokens = nltk.word_tokenize(text.lower())
 
         # Убираем цифры
@@ -56,12 +62,12 @@ class TextPreprocessing:
         # Лемматизация
         tokens = [morph.parse(t)[0].normal_form for t in tokens]
 
+        # Убираем повторяющиеся слова
         if delete_repeatings:
             tokens = list(set(tokens))
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
-
         stop_words = self.stop_words[:]  # копия, чтобы не испортить
         if not delete_question_words:
             delete_stop_words_list = ['кто', 'что', 'это', 'где', 'для', 'зачем', 'какой']
@@ -79,7 +85,10 @@ class TextPreprocessing:
 
     @staticmethod
     def frequency_destribution(word_list, quantity):
-        """Строит частотное распределение слов в тексте и возврашает num наиболее популярных"""
+        """
+        Частотное распределение слов в тексте и возврашает
+        n=quantity наиболее популярных
+        """
 
         freq_dist = FreqDist(word_list)
         most_popular_words = freq_dist.most_common(quantity)

@@ -489,7 +489,7 @@ def process_minfin_questions(message, minfin_result):
                     0,
                     '*Дополнительные результаты* можно посмотреть по ссылкам:'
                 )
-                
+
                 bot.send_message(
                     message.chat.id,
                     '\n'.join(link_output_str),
