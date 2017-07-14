@@ -470,12 +470,13 @@ class Solr:
                          key=lambda ans: ans.get_key(),
                          reverse=True)
 
-        # Выбор наиболее подходящего ответа
-        solr_result.answer = answers[0]
+        if answers:
+            # Выбор наиболее подходящего ответа
+            solr_result.answer = answers[0]
 
-        # Добавление до 5 дополнительных ответов
-        if len(answers) > 1:
-            solr_result.more_answers = answers[1:6]
+            # Добавление до 5 дополнительных ответов
+            if len(answers) > 1:
+                solr_result.more_answers = answers[1:6]
 
         solr_result.doc_found = len(answers)
 
