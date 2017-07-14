@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-"""
+r"""
 Сейчас структура файла плохая. Логику solr.py и data_retrieving.py
 необходимо реструктурировать.
 
@@ -26,10 +26,13 @@ from kb.kb_support_library import get_full_values_for_dimensions
 from kb.kb_support_library import get_representation_format
 from solr import Solr
 from text_preprocessing import TextPreprocessing
+import logs_helper  # pylint: disable=unused-import
 
 
-# Module, which is responsible for getting required from user data
 class DataRetrieving:
+    """
+    Module, which is responsible for getting required from user data
+    """
     @staticmethod
     def get_data(user_request: str, request_id: str):
         """
@@ -163,8 +166,10 @@ class DataRetrieving:
         # Создание фидбека в другом формате для удобного логирования
         feedback_verbal = solr_cube_result.feedback['verbal']
         verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
-        verbal += ' '.join([str(idx + 1) + '. ' + i['full_value']
-                            for idx, i in enumerate(feedback_verbal['dims'])])
+
+        # pylint: disable=invalid-sequence-index
+        verbal += ' '.join([str(idx + 1) + '. ' + val['full_value']
+                            for idx, val in enumerate(feedback_verbal['dims'])])
 
         logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
         logging.info(logging_str.format(
