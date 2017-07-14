@@ -678,7 +678,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 # polling cycle
 if __name__ == '__main__':
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
-        bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+        # Если бот не добавлен
+        try:
+            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+        except:
+            pass
 
     if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         app.run(
