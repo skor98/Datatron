@@ -14,7 +14,7 @@ import httplib2
 import requests
 from ffmpy import FFmpeg
 
-from config import SETTINGS, YANDEX_API_KEY
+from config import SETTINGS
 
 # Yandex URL для API
 YANDEX_ASR_HOST = 'asr.yandex.net'
@@ -107,7 +107,7 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
         text = text.replace('%', 'процентов')
 
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
-        text, 'mp3', lang, 'oksana', YANDEX_API_KEY, 'neutral', '1.0')
+        text, 'mp3', lang, 'oksana', SETTINGS.YANDEX_API_KEY, 'neutral', '1.0')
 
     req = requests.get(url)
     if req.status_code == 200:
@@ -150,7 +150,7 @@ def speech_to_text(
     # Доопределения URL
     url = YANDEX_ASR_PATH + '?uuid=%s&key=%s&topic=%s&lang=%s' % (
         request_id,
-        YANDEX_API_KEY,
+        SETTINGS.YANDEX_API_KEY,
         topic,
         lang
     )
