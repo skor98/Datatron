@@ -187,42 +187,50 @@ def assert_minfin_requests(
         wrong_answers,
         error_answers
 ):
-    response = system_answer['answer'].get('number')
+    response = system_answer['answer']
     if response:
-        try:
-            assert question_id == str(response)
-            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
-            ars = ars.format(q_id=question_id,
-                             score=system_answer['answer']['score'],
-                             req=req)
-            testing_results.append(ars)
-            true_answers.append(1)
-        except AssertionError:
-            ars = (
-                '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
-                '(должны получать:{q_id}, получаем:{fl})'
-            )
-            ars = ars.format(q_id=question_id,
-                             score=system_answer['answer']['score'],
-                             req=req, fl=response)
-            testing_results.append(ars)
-            wrong_answers.append(1)
-    else:
-        if system_answer['doc_found']:
-            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-                q_id=question_id,
-                req=req,
-                msg='Вверхним документом был ответ по кубу'
-            )
+        response = response.get('number')
+        if response:
+            try:
+                assert question_id == str(response)
+                ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req)
+                testing_results.append(ars)
+                true_answers.append(1)
+            except AssertionError:
+                ars = (
+                    '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
+                    '(должны получать:{q_id}, получаем:{fl})'
+                )
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req, fl=response)
+                testing_results.append(ars)
+                wrong_answers.append(1)
         else:
-            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-                q_id=question_id,
-                req=req,
-                msg='Не определена'
-            )
+            if system_answer['doc_found']:
+                ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                    q_id=question_id,
+                    req=req,
+                    msg='Вверхним документом был ответ по кубу'
+                )
+            else:
+                ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                    q_id=question_id,
+                    req=req,
+                    msg='Не определена'
+                )
+    else:
+        ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+            q_id=question_id,
+            req=req,
+            msg='Не определена'
+        )
 
-        testing_results.append(ars)
-        error_answers.append(1)
+    testing_results.append(ars)
+    error_answers.append(1)
 
 
 def get_test_files(test_path, prefix):
@@ -272,7 +280,8 @@ def get_results(write_logs=False):
 
 def _main():
     score, results = get_results(write_logs=True)
-    result_file_name = "results_{}.json".format(CURRENT_DATETIME_FORMAT)
+    current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
+    result_file_name = "results_{}.json".format(current_datetime)
     with open(path.join(TEST_PATH, RESULTS_FOLDER, result_file_name), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(json.dumps(results, indent=4)))

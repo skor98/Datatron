@@ -169,14 +169,15 @@ class MinfinList(Resource):
 
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
+api_version = SETTINGS.WEB_SERVER.VERSION
 
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
 parser.add_argument('query', type=str)
 
-api.add_resource(VoiceQuery, '/v1/voice')
-api.add_resource(TextQuery, '/v1/text')
-api.add_resource(MinfinList, '/v1/minfin_docs')
+api.add_resource(VoiceQuery, '/{}/voice'.format(api_version))
+api.add_resource(TextQuery, '/{}/text'.format(api_version))
+api.add_resource(MinfinList, '/{}/minfin_docs'.format(api_version))
 
 
 @app.route('/')
