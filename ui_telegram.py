@@ -477,18 +477,35 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        bot.send_message(message.chat.id,
-                         'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-                         parse_mode='Markdown')
         if minfin_result.score < 20:
-            msg_str = (
-                'Score найденного Минфин документа *({})* равен *{}*, ' +
-                'что меньше порогового значений в *20*.'
-            )
-            bot.send_message(message.chat.id,
-                             msg_str.format(minfin_result.number, minfin_result.score),
-                             parse_mode='Markdown')
-            return
+            if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+                bot.send_message(
+                    message.chat.id,
+                    'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
+                    parse_mode='Markdown'
+                )
+
+                msg_str = (
+                    'Score найденного Минфин документа *({})* равен *{}*, ' +
+                    'что меньше порогового значений в *20*.'
+                )
+
+                bot.send_message(
+                    message.chat.id,
+                    msg_str.format(minfin_result.number, minfin_result.score),
+                    parse_mode='Markdown'
+                )
+
+                return
+            else:
+                bot.send_message(message.chat.id, "Ответ на Ваш вопрос не был найден :(")
+                return
+
+        bot.send_message(
+            message.chat.id,
+            'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
+            parse_mode='Markdown'
+        )
 
         if minfin_result.full_answer:
             bot.send_message(
@@ -673,11 +690,13 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
+
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
