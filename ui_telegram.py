@@ -123,7 +123,7 @@ def send_welcome(message):
                 full_name
             )
     except Exception as err:
-        catch_bot_exception(message, "/getallqueries", err)
+        catch_bot_exception(message, "/start", err)
 
 
 @bot.message_handler(commands=['help'])
