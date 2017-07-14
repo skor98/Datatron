@@ -11,7 +11,10 @@ from text_preprocessing import TextPreprocessing
 
 
 def get_full_value_for_measure(cube_value, cube_name):
-    """Получение полного вербального значения меры по формальному значению и кубу"""
+    """
+    Получение полного вербального значения меры
+    по формальному значению и кубу
+    """
 
     measure = (dbc.Measure
                .select(dbc.Measure.full_value)
@@ -37,7 +40,13 @@ def get_cube_dimensions(cube_name):
 
 
 def create_automative_cube_description(cube_name):
-    """Генерация автоматического описания к кубу"""
+    """
+    Генерация автоматического описания к кубу на основе
+    частотного распределения слов в значениях его измерений
+    """
+
+    TOP_WORDS_QUANTITY = 5
+    WORDS_REPETITION = 3
 
     query = (dbc.Value
              .select()
@@ -52,16 +61,21 @@ def create_automative_cube_description(cube_name):
     # токенизация по словам
     values = ' '.join(values).split()
 
-    popular_words = TextPreprocessing.frequency_destribution(values)
+    popular_words = TextPreprocessing.frequency_destribution(
+        values,
+        TOP_WORDS_QUANTITY
+    )
 
     # увеличиваем вес популярных слов и сортируем их
-    popular_words = sorted(popular_words * 3)
+    popular_words = sorted(popular_words * WORDS_REPETITION)
 
     return ' '.join(popular_words)
 
 
 def get_representation_format(mdx_query):
-    """Получение формата меры (рубли, проценты) для куба"""
+    """
+    Получение формата меры (рубли, проценты, штуки) для куба
+    """
 
     left_part = mdx_query.split('(')[0]
     measure_value = left_part.split('}')[0].split('.')[1][1:-1]
@@ -70,7 +84,7 @@ def get_representation_format(mdx_query):
 
 
 def get_default_cube_measure(cube_name):
-    """Полчение меры по умолчанию для куба"""
+    """Получение меры для куба по умолчанию"""
 
     cube = dbc.Cube.get(dbc.Cube.name == cube_name)
     default_measure = dbc.Measure.get(dbc.Measure.id == cube.default_measure_id)

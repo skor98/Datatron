@@ -78,10 +78,10 @@ class TextPreprocessing:
         return normalized_request
 
     @staticmethod
-    def frequency_destribution(word_list, num=5):
+    def frequency_destribution(word_list, quantity):
         """Строит частотное распределение слов в тексте и возврашает num наиболее популярных"""
 
         freq_dist = FreqDist(word_list)
-        most_popular_words = freq_dist.most_common(num)
+        most_popular_words = freq_dist.most_common(quantity)
         popular_words = [i[0] for i in most_popular_words]
         return popular_words

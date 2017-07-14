@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+Определение структуры базы знаний по OLAP-кубам
+"""
+
 from peewee import Model, SqliteDatabase, CharField, ForeignKeyField, CompositeKey
 
 from config import SETTINGS
@@ -15,28 +19,72 @@ class BaseModel(Model):
 
 
 class Value(BaseModel):
+    """Значение измерения куба"""
+
+    # Полное вербальное значение
     full_value = CharField()
+
+    # Нормализованное вербальное значение
     lem_index_value = CharField()
+
+    # Нормализованные синонимы
     lem_synonyms = CharField(null=True)
+
+    # Формальное значение для куба
     cube_value = CharField()
+
+    # Уровень значения измерения в иерархии измерения
     hierarchy_level = CharField(null=True)
+
+    # Значение измерения, которое также должно быть
+    # в запросе, если указано данное
     connected_value = CharField(null=True)
 
 
 class Measure(BaseModel):
+    """Мера куба"""
+
+    # Полное вербальное значение
     full_value = CharField()
+
+    # Нормализованное вербальное значение
     lem_index_value = CharField()
+
+    # Формальное значение для куба
     cube_value = CharField()
+
+    # Формат, в котором предоставляются данные из этой меры
+    # Если 0 - то данные в рублях
+    # Если 1 - то данные в процентах
+    # Если 2 – то данные в штуках (сейчас кубов с такими мерами в БД нет)
     format = CharField()
 
 
 class Dimension(BaseModel):
+    """Измерение куба"""
+
+    # Название измерения
     label = CharField()
+
+    # Полное вербальное значение
     full_value = CharField()
+
+    # Значение измерения по умолчанию
     default_value = ForeignKeyField(Value, null=True)
 
 
 class DimensionValue(BaseModel):
+    """
+    Перекрестная сущность между измерением и значением для
+    реализации соотношения many-to-many. Зачем нужно M:M?
+    Для упрощения жизни. Например, многие кубы имеют
+    измерение территория, но иногда куб поддерживает не
+    все значения измерения. Именно поэтому в БД в таблице Value
+    много одинаковых строк. Это также сделано, возможно,
+    ради упрощения дальнейшего обновления данных в базе знаний
+    по API Кристы.
+    """
+
     value = ForeignKeyField(Value)
     dimension = ForeignKeyField(Dimension)
 
@@ -45,15 +93,34 @@ class DimensionValue(BaseModel):
 
 
 class Cube(BaseModel):
+    """Данные по кубу"""
+
+    # Формальное название куба, например, "CLMR02"
     name = CharField()
+
+    # Тема куба, например, "Госдолг РФ"
     description = CharField()
+
+    # Наиболее часто встречающиеся слова в значениях
+    # измерения куба в нормализованном виде с повторениями
     auto_lem_description = CharField()
+
+    # Ключевые слова, составленные методологом
     manual_description = CharField(null=True)
+
+    # Нормализованые ключевые слова от методолога
     manual_lem_description = CharField(null=True)
+
+    # Мера для куба по умолчанию
     default_measure = ForeignKeyField(Measure)
 
 
 class CubeDimension(BaseModel):
+    """
+    Перекрестная сущность между кубом и измерением.
+    Уместно все, что сказано выше для перекрестной таблицы.
+    """
+
     dimension = ForeignKeyField(Dimension)
     cube = ForeignKeyField(Cube)
 
@@ -62,6 +129,11 @@ class CubeDimension(BaseModel):
 
 
 class CubeMeasure(BaseModel):
+    """
+    Перекрестная сущность между кубом и мерой.
+    Уместно все, что сказано выше для перекрестной таблицы.
+    """
+
     measure = ForeignKeyField(Measure)
     cube = ForeignKeyField(Cube)
 
@@ -70,7 +142,8 @@ class CubeMeasure(BaseModel):
 
 
 def create_tables():
-    """Создаёт таблицы с базой знаний"""
+    """Создание таблиц базы знаний по кубам"""
+
     database.connect()
     database.create_tables([
         Dimension,
@@ -84,7 +157,8 @@ def create_tables():
 
 
 def drop_tables():
-    """Удаляет таблицы с базой знаний"""
+    """Удаление таблиц базы знаний"""
+
     database.drop_tables([
         Dimension,
         Cube,
