@@ -87,15 +87,15 @@ def convert_to_pcm16b16000r(in_filename=None, in_content=None):
     )
 
 
-def read_chunks(chunk_size, bytes):
+def read_chunks(chunk_size, bin_data):
     """Реализация отправки файла по блокам, чтобы передовать объекты весом более 1 мб"""
     while True:
-        chunk = bytes[:chunk_size]
-        bytes = bytes[chunk_size:]
+        chunk = bin_data[:chunk_size]
+        bin_data = bin_data[chunk_size:]
 
         yield chunk
 
-        if not bytes:
+        if not bin_data:
             break
 
 
@@ -131,7 +131,7 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
 
 def speech_to_text(
         filename=None,
-        bytes=None,
+        bin_audio=None,
         request_id=uuid.uuid4().hex,
         topic='notes',
         lang='ru-RU'
@@ -140,12 +140,12 @@ def speech_to_text(
 
     if filename:
         with open(filename, 'br') as file:
-            bytes = file.read()
-    if not bytes:
+            bin_audio = file.read()
+    if not bin_audio:
         raise Exception('Neither file name nor bytes provided.')
 
     # Конвертирование в лучший формат для обработки
-    bytes = convert_to_pcm16b16000r(in_content=bytes)
+    bin_audio = convert_to_pcm16b16000r(in_content=bin_audio)
 
     # Доопределения URL
     url = YANDEX_ASR_PATH + '?uuid=%s&key=%s&topic=%s&lang=%s' % (
@@ -156,7 +156,7 @@ def speech_to_text(
     )
 
     # Получение блоков аудиозаписи
-    chunks = read_chunks(CHUNK_SIZE, bytes)
+    chunks = read_chunks(CHUNK_SIZE, bin_audio)
 
     # Настройка подключения
     connection = httplib2.HTTPConnectionWithTimeout(YANDEX_ASR_HOST)

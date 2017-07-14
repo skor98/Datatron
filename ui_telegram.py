@@ -30,7 +30,7 @@ from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
 
 import constants
-
+# pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
 
 logsRetriever = LogsRetriever(LOGS_PATH)
@@ -90,58 +90,83 @@ def send_log(message, log_kind, command_name):
         bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
 
 
+def catch_bot_exception(message, command_name: str, err):
+    """
+    Обрабатывает исключения на самом верху обработчиков бота
+    """
+
+    bot.send_message(message.chat.id, 'Данная функция временно не работает')
+    logging.exception(err)
+    logging.warning('Команда {} не сработала'.format(command_name))
+
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     """Обработка команды /start"""
 
-    bot.send_message(
-        message.chat.id,
-        constants.TELEGRAM_START_MSG,
-        parse_mode='Markdown')
-
-    if not check_user_existence(message.chat.id):
-        try:
-            full_name = ' '.join([message.chat.first_name, message.chat.last_name])
-        except TypeError:
-            full_name = None
-
-        create_user(
+    try:
+        bot.send_message(
             message.chat.id,
-            message.chat.username,
-            full_name
+            constants.TELEGRAM_START_MSG,
+            parse_mode='Markdown'
         )
+
+        if not check_user_existence(message.chat.id):
+            try:
+                full_name = ' '.join([message.chat.first_name, message.chat.last_name])
+            except TypeError:
+                full_name = None
+
+            create_user(
+                message.chat.id,
+                message.chat.username,
+                full_name
+            )
+    except Exception as err:
+        catch_bot_exception(message, "/start", err)
 
 
 @bot.message_handler(commands=['help'])
 def send_help(message):
-    bot.send_message(
-        message.chat.id,
-        constants.HELP_MSG,
-        parse_mode='Markdown',
-        disable_web_page_preview=True
-    )
+    try:
+        bot.send_message(
+            message.chat.id,
+            constants.HELP_MSG,
+            parse_mode='Markdown',
+            disable_web_page_preview=True
+        )
+    except Exception as err:
+        catch_bot_exception(message, "/help", err)
 
 
 @bot.message_handler(commands=['idea'])
 def get_query_examples(message):
-    possible_queries = get_random_requests()
-    message_str = "Что *спрашивают* другие пользователи:\n{}"
-    possible_queries = ['- {}\n'.format(query) for query in possible_queries]
-    message_str = message_str.format(''.join(possible_queries))
-    bot.send_message(message.chat.id,
-                     message_str,
-                     parse_mode='Markdown')
+    try:
+        possible_queries = get_random_requests()
+        message_str = "Что *спрашивают* другие пользователи:\n{}"
+        possible_queries = ['- {}\n'.format(query) for query in possible_queries]
+        message_str = message_str.format(''.join(possible_queries))
+        bot.send_message(
+            message.chat.id,
+            message_str,
+            parse_mode='Markdown'
+        )
+    except Exception as err:
+        catch_bot_exception(message, "/idea", err)
 
 
 @bot.message_handler(commands=['about'])
 def send_about(message):
-    bot.send_message(
-        message.chat.id,
-        constants.ABOUT_MSG,
-        parse_mode='Markdown',
-        reply_markup=constants.ABOUT_KEYBOARD,
-        disable_web_page_preview=True
-    )
+    try:
+        bot.send_message(
+            message.chat.id,
+            constants.ABOUT_MSG,
+            parse_mode='Markdown',
+            reply_markup=constants.ABOUT_KEYBOARD,
+            disable_web_page_preview=True
+        )
+    except Exception as err:
+        catch_bot_exception(message, "/about", err)
 
 
 @bot.message_handler(commands=['getqueries'])
@@ -180,9 +205,7 @@ def get_queries_logs(message):
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.exception(err)
-        logging.warning('Команда /getqueries не сработала')
+        catch_bot_exception(message, "/getqueries", err)
 
 
 @bot.message_handler(commands=['getallqueries'])
@@ -221,9 +244,7 @@ def get_all_queries_logs(message):
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.exception(err)
-        logging.warning('Команда /getallqueries не сработала', level='warning')
+        catch_bot_exception(message, "/getallqueries", err)
 
 
 @bot.message_handler(commands=['getlog'])
@@ -264,22 +285,7 @@ def get_session_logs(message):
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.exception(err)
-        logging.warning('Команда /getsessionlog не сработала')
-
-
-@bot.message_handler(commands=['getrequestlog'])
-def get_request_logs(message):
-    try:
-        logs = logsRetriever.get_log(kind='request', user_id=message.chat.id)
-        if logs:
-            bot.send_message(message.chat.id, logs)
-        else:
-            bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
-    except:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.warning('Команда /getrequestlog не сработала')
+        catch_bot_exception(message, "/getsessionlog", err)
 
 
 @bot.message_handler(commands=['getinfolog'])
@@ -287,9 +293,7 @@ def get_all_info_logs(message):
     try:
         send_log(message, "info", "/getinfolog")
     except Exception as err:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.exception(err)
-        logging.warning('Команда /getinfolog не сработала')
+        catch_bot_exception(message, "/getinfolog", err)
 
 
 @bot.message_handler(commands=['getwarninglog'])
@@ -297,54 +301,64 @@ def get_all_warning_logs(message):
     try:
         send_log(message, "warning", "/getwarninglog")
     except Exception as err:
-        bot.send_message(message.chat.id, 'Данная функция временно не работает')
-        logging.exception(err)
-        logging.warning('Команда /getwarninglog не сработала')
+        catch_bot_exception(message, "/getwarninglog", err)
 
 
 @bot.message_handler(commands=['search'])
 def repeat_all_messages(message):
-    bot.send_message(
-        message.chat.id,
-        constants.MSG_NO_BUTTON_SUPPORT,
-        parse_mode='Markdown'
-    )
+    try:
+        bot.send_message(
+            message.chat.id,
+            constants.MSG_NO_BUTTON_SUPPORT,
+            parse_mode='Markdown'
+        )
+    except Exception as err:
+        catch_bot_exception(message, "/search", err)
 
 
 @bot.message_handler(commands=['fb'])
 def leave_feedback(message):
-    feedback = message.text[4:].strip()
-    if feedback:
-        create_feedback(
-            message.chat.id,
-            datetime.datetime.fromtimestamp(message.date),
-            feedback
-        )
-        bot.send_message(message.chat.id, constants.MSG_WE_GOT_YOUR_FEEDBACK)
-    else:
-        bot.send_message(
-            message.chat.id,
-            constants.MSG_LEAVE_YOUR_FEEDBACK,
-            parse_mode='Markdown'
-        )
+    try:
+        feedback = message.text[4:].strip()
+        if feedback:
+            create_feedback(
+                message.chat.id,
+                datetime.datetime.fromtimestamp(message.date),
+                feedback
+            )
+            bot.send_message(message.chat.id, constants.MSG_WE_GOT_YOUR_FEEDBACK)
+        else:
+            bot.send_message(
+                message.chat.id,
+                constants.MSG_LEAVE_YOUR_FEEDBACK,
+                parse_mode='Markdown'
+            )
+    except Exception as err:
+        catch_bot_exception(message, "/fb", err)
 
 
 @bot.message_handler(commands=['getfeedback'])
 def get_user_feedbacks(message):
-    fbs = get_feedbacks()
-    if fbs:
-        bot.send_message(message.chat.id, fbs)
-    else:
-        bot.send_message(message.chat.id, 'Отзывов нет')
+    try:
+        fbs = get_feedbacks()
+        if fbs:
+            bot.send_message(message.chat.id, fbs)
+        else:
+            bot.send_message(message.chat.id, 'Отзывов нет')
+    except Exception as err:
+        catch_bot_exception(message, "/getfeedback", err)
 
 
 @bot.message_handler(content_types=['text'])
 def salute(message):
-    greets = MessengerManager.greetings(message.text.strip())
-    if greets:
-        bot.send_message(message.chat.id, greets)
-    else:
-        process_response(message)
+    try:
+        greets = MessengerManager.greetings(message.text.strip())
+        if greets:
+            bot.send_message(message.chat.id, greets)
+        else:
+            process_response(message)
+    except Exception as err:
+        catch_bot_exception(message, "/text", err)
 
 
 @bot.message_handler(content_types=['voice'])
@@ -396,7 +410,7 @@ def process_response(message, input_format='text', file_content=None):
             message.chat.id,
             user_name,
             request_id,
-            bytes=file_content
+            bin_audio=file_content
         )
 
     # Если ответ найден
@@ -463,18 +477,35 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        bot.send_message(message.chat.id,
-                         'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-                         parse_mode='Markdown')
         if minfin_result.score < 20:
-            msg_str = (
-                'Score найденного Минфин документа *({})* равен *{}*, ' +
-                'что меньше порогового значений в *20*.'
-            )
-            bot.send_message(message.chat.id,
-                             msg_str.format(minfin_result.number, minfin_result.score),
-                             parse_mode='Markdown')
-            return
+            if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+                bot.send_message(
+                    message.chat.id,
+                    'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
+                    parse_mode='Markdown'
+                )
+
+                msg_str = (
+                    'Score найденного Минфин документа *({})* равен *{}*, ' +
+                    'что меньше порогового значений в *20*.'
+                )
+
+                bot.send_message(
+                    message.chat.id,
+                    msg_str.format(minfin_result.number, minfin_result.score),
+                    parse_mode='Markdown'
+                )
+
+                return
+            else:
+                bot.send_message(message.chat.id, "Ответ на Ваш вопрос не был найден :(")
+                return
+
+        bot.send_message(
+            message.chat.id,
+            'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
+            parse_mode='Markdown'
+        )
 
         if minfin_result.full_answer:
             bot.send_message(
@@ -541,8 +572,8 @@ def process_minfin_questions(message, minfin_result):
 
 
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
-    feedback_str = '{user_req}{expert_fb}{separator}{verbal_fb}\n' \
-                   '**Ответ: {answer}**\nQuery\_ID: {query_id}'
+    feedback_str = r'{user_req}{expert_fb}{separator}{verbal_fb}\n' \
+                   r'**Ответ: {answer}**\nQuery\_ID: {query_id}'
     separator = ''
     expert_str = ''
     verbal_str = verbal_feedback(cube_result)
@@ -659,11 +690,13 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
+
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
+
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
@@ -682,7 +715,7 @@ if __name__ == '__main__':
         try:
             bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
         except:
-            pass
+            logging.critical("Админ {} недоступен для отправки сообщения!")
 
     if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         app.run(
