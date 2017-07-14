@@ -94,7 +94,11 @@ def send_log(message, log_kind, command_name):
 def send_welcome(message):
     """Обработка команды /start"""
 
-    bot.send_message(message.chat.id, constants.TELEGRAM_START_MSG, parse_mode='HTML')
+    bot.send_message(
+        message.chat.id,
+        constants.TELEGRAM_START_MSG,
+        parse_mode='Markdown')
+
     if not check_user_existence(message.chat.id):
         try:
             full_name = ' '.join([message.chat.first_name, message.chat.last_name])
@@ -113,8 +117,7 @@ def send_help(message):
     bot.send_message(
         message.chat.id,
         constants.HELP_MSG,
-        parse_mode='HTML',
-        reply_markup=constants.HELP_KEYBOARD,
+        parse_mode='Markdown',
         disable_web_page_preview=True
     )
 
@@ -122,12 +125,12 @@ def send_help(message):
 @bot.message_handler(commands=['idea'])
 def get_query_examples(message):
     possible_queries = get_random_requests()
-    message_str = "<b>Идеи</b> возможных запросов:\n{}"
+    message_str = "*Идеи* возможных запросов:\n{}"
     possible_queries = ['- {}\n'.format(query) for query in possible_queries]
     message_str = message_str.format(''.join(possible_queries))
     bot.send_message(message.chat.id,
                      message_str,
-                     parse_mode='HTML')
+                     parse_mode='Markdown')
 
 
 @bot.message_handler(commands=['about'])
@@ -135,7 +138,7 @@ def send_about(message):
     bot.send_message(
         message.chat.id,
         constants.ABOUT_MSG,
-        parse_mode='HTML',
+        parse_mode='Markdown',
         reply_markup=constants.ABOUT_KEYBOARD,
         disable_web_page_preview=True
     )
@@ -301,7 +304,11 @@ def get_all_warning_logs(message):
 
 @bot.message_handler(commands=['search'])
 def repeat_all_messages(message):
-    bot.send_message(message.chat.id, constants.MSG_NO_BUTTON_SUPPORT, parse_mode='HTML')
+    bot.send_message(
+        message.chat.id,
+        constants.MSG_NO_BUTTON_SUPPORT,
+        parse_mode='Markdown'
+    )
 
 
 @bot.message_handler(commands=['fb'])
@@ -415,8 +422,8 @@ def process_response(message, input_format='text', file_content=None):
                          for idx, elem in enumerate(look_also)]
 
             bot.send_message(message.chat.id,
-                             "<b>Смотри также:</b>\n" + ''.join(look_also),
-                             parse_mode='HTML')
+                             "*Смотри также:*\n" + ''.join(look_also),
+                             parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
 
@@ -466,9 +473,12 @@ def process_minfin_questions(message, minfin_result):
             return
 
         if minfin_result.full_answer:
-            bot.send_message(message.chat.id,
-                             '*Ответ:* {}'.format(minfin_result.full_answer),
-                             parse_mode='Markdown', reply_to_message_id=message.message_id)
+            bot.send_message(
+                message.chat.id,
+                '*Ответ:* {}'.format(minfin_result.full_answer),
+                parse_mode='Markdown',
+                reply_to_message_id=message.message_id
+            )
         # может быть несколько
         if minfin_result.link_name:
             if isinstance(minfin_result.link_name, list):
@@ -479,7 +489,12 @@ def process_minfin_questions(message, minfin_result):
                     0,
                     '*Дополнительные результаты* можно посмотреть по ссылкам:'
                 )
-                bot.send_message(message.chat.id, '\n'.join(link_output_str), parse_mode='Markdown')
+                
+                bot.send_message(
+                    message.chat.id,
+                    '\n'.join(link_output_str),
+                    parse_mode='Markdown'
+                )
             else:
                 link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
                 bot.send_message(
@@ -601,7 +616,7 @@ def loof_also_for_cube(cube_result):
         first_letter_lower(item['full_value']) for item in verbal_fb['dims'])
 
     verbal_fb_list.append('({}: {})'.format(
-        "<b>База знаний</b>",
+        "*База знаний*",
         cube_result.sum_score
     ))
 
@@ -614,7 +629,7 @@ def answer_to_look_also_format(answer):
     else:
         return '{} ({}: {})'.format(
             answer.question,
-            "<b>Минфин</b>",
+            "*Минфин*",
             answer.score
         )
 
