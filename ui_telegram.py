@@ -410,7 +410,7 @@ def process_response(message, input_format='text', file_content=None):
             message.chat.id,
             user_name,
             request_id,
-            bytes=file_content
+            bin_audio=file_content
         )
 
     # Если ответ найден

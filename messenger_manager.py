@@ -72,14 +72,14 @@ class MessengerManager:
         return MessengerManager._querying(text, request_id)
 
     @staticmethod
-    def make_voice_request(source, user_id, user_name, request_id, bytes=None, filename=None):
+    def make_voice_request(source, user_id, user_name, request_id, bin_audio=None, filename=None):
         """Универсальный API метод для обработки голосовых запросов
 
         :param source: источник (web, cmd, telegram, unity)
         :param user_id: идетификатор пользователя
         :param user_name: имя пользователя
         :param request_id: идентификатор запроса
-        :param bytes: набор байтов аудиозаписи
+        :param bin_audio: набор байтов аудиозаписи
         :param filename: файл айдиозаписи
         :return: объект класса DrSolrResult()
         """
@@ -88,7 +88,7 @@ class MessengerManager:
             if filename:
                 text = speech_to_text(filename=filename)
             else:
-                text = speech_to_text(bytes=bytes)
+                text = speech_to_text(bin_audio=bin_audio)
             log_user_query(
                 request_id,
                 user_id,
