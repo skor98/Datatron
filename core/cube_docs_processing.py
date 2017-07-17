@@ -23,7 +23,7 @@ class CubeProcessor:
     pass
 
 
-class CubeResult:
+class CubeAnswer:
     """
     Возвращаемый объект этого модуля
     """

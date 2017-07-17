@@ -29,7 +29,7 @@ class MinfinProcessor:
         answers = []
 
         for document in minfin_documents:
-            answer = MinfinResult()
+            answer = MinfinAnswer()
 
             answer.score = document['score']
             answer.status = True
@@ -65,7 +65,7 @@ class MinfinProcessor:
         return answers
 
 
-class MinfinResult:
+class MinfinAnswer:
     """
     Возвращаемый объект этого модуля
     """
