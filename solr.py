@@ -29,7 +29,7 @@ from kb.kb_support_library import get_connected_value_to_given_value
 from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
-
+from model_manager import MODEL_CONFIG
 
 # TODO: доделать логгирование принятия решений
 
@@ -99,8 +99,14 @@ class Solr:
             self.core
         )
 
-        # Просим Solr выдать 50 документов в формате json, а также указать score каждого
-        params = {'q': user_request, 'rows': 50, 'wt': 'json', 'fl': '*,score'}
+        # Просим Solr выдать solr_documents_to_return (default: 50)
+        # документов в формате json, а также указать score каждого
+        params = {
+            'q': user_request,
+            'rows': MODEL_CONFIG["solr_documents_to_return"],
+            'wt': 'json',
+            'fl': '*,score'
+        }
         docs = requests.get(request, params=params).json()
         return docs
 
