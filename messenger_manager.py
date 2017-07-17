@@ -6,13 +6,11 @@ import random
 import re
 
 import constants
-
-from speechkit import speech_to_text
-from speechkit import SpeechException
 from data_retrieving import DataRetrieving
-from solr import DrSolrResult
-import logs_helper  # pylint: disable=unused-import
 from dbs.query_db import log_query_to_db
+from dr.solr_old import DrSolrResult
+from speechkit import SpeechException
+from speechkit import speech_to_text
 
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):

@@ -415,6 +415,32 @@ class Solr:
             return datetime.datetime.strptime(str(year), '%y').year
 
     @staticmethod
+    def _format_final_response(cube_answers, minfin_answers, solr_result):
+        """Формирование финального объекта"""
+
+        if not isinstance(cube_answers, list):
+            cube_answers = [cube_answers]
+
+        # Выбор только корректных запросов по кубам
+        cube_answers = [elem for elem in cube_answers if elem.status]
+
+        # Фильтрация выборки в порядке убывания по score
+        answers = cube_answers + minfin_answers
+        answers = sorted(answers,
+                         key=lambda ans: ans.get_key(),
+                         reverse=True)
+
+        if answers:
+            # Выбор наиболее подходящего ответа
+            solr_result.answer = answers[0]
+
+            # Добавление до 5 дополнительных ответов
+            if len(answers) > 1:
+                solr_result.more_answers = answers[1:6]
+
+        solr_result.doc_found = len(answers)
+
+    @staticmethod
     def _process_minfin_question(minfin_documents):
         """Работа с документами для вопросов Минфина
 
@@ -459,32 +485,6 @@ class Solr:
             answers.append(answer)
 
         return answers
-
-    @staticmethod
-    def _format_final_response(cube_answers, minfin_answers, solr_result):
-        """Формирование финального объекта"""
-
-        if not isinstance(cube_answers, list):
-            cube_answers = [cube_answers]
-
-        # Выбор только корректных запросов по кубам
-        cube_answers = [elem for elem in cube_answers if elem.status]
-
-        # Фильтрация выборки в порядке убывания по score
-        answers = cube_answers + minfin_answers
-        answers = sorted(answers,
-                         key=lambda ans: ans.get_key(),
-                         reverse=True)
-
-        if answers:
-            # Выбор наиболее подходящего ответа
-            solr_result.answer = answers[0]
-
-            # Добавление до 5 дополнительных ответов
-            if len(answers) > 1:
-                solr_result.more_answers = answers[1:6]
-
-        solr_result.doc_found = len(answers)
 
 
 class DrSolrCubeResult:
