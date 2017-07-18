@@ -1,5 +1,6 @@
 {
     "normalization_delete_digits_default":false,
     "normalization_delete_question_words_default":true,
-    "normalization_delete_repeatings_default":false
+    "normalization_delete_repeatings_default":false,
+    "solr_documents_to_return":50
 }
