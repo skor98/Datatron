@@ -1,18 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from os import path, remove
+
 import json
 import subprocess
 import datetime
-
 import pycurl
 import requests
 
+from os import path, remove
 from peewee import fn
+
 import kb.kb_db_creation as dbc
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
+from kb.kb_support_library import get_connected_value_to_given_value
+from kb.kb_support_library import get_measure_lem_key_words
 from config import SETTINGS
 
 
@@ -116,10 +119,12 @@ class CubeDocsGeneration:
                                 other_values.append({
                                     'type': 'dimension',
                                     'cube': cube.name,
-                                    'name': dimension.label,
+                                    'dimension': dimension.label,
                                     'verbal': verbal,
-                                    'fvalue': value.cube_value,
-                                    'hierarchy_level': value.hierarchy_level})
+                                    'cube_value': value.cube_value,
+                                    'hierarchy_level': value.hierarchy_level,
+                                    'connected_value': get_connected_value_to_given_value(value.cube_value)
+                                })
 
         return year_values + territory_values + other_values
 
@@ -144,8 +149,8 @@ class CubeDocsGeneration:
             year_values.append(
                 {
                     'type': 'year_dimension',
-                    'name': 'Years',
-                    'fvalue': year
+                    'dimension': 'Years',
+                    'cube_value': year
                 }
             )
 
@@ -175,7 +180,7 @@ class CubeDocsGeneration:
             # создание исходной структур
             d = {
                 'type': 'territory_dimension',
-                'name': 'Territories',
+                'dimension': 'Territories',
                 'verbal': verbal
             }
 
@@ -202,7 +207,7 @@ class CubeDocsGeneration:
 
         cubes = []
         for cube in dbc.Cube.select():
-            cube_description = cube.auto_key_words
+            cube_description = cube.auto_lem_key_words
 
             # добавление к описанию куба ключевых слов от методологов
             if cube.key_words:
@@ -244,7 +249,11 @@ class CubeDocsGeneration:
                 'type': 'measure',
                 'cube': item.cube.name,
                 'verbal': item.measure.lem_index_value,
-                'formal': item.measure.cube_value
+                'lem_key_words': get_measure_lem_key_words(
+                    item.measure.cube_value,
+                    item.cube.name
+                ),
+                'cube_value': item.measure.cube_value
             })
 
         return measures

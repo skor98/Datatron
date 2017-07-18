@@ -25,6 +25,21 @@ def get_full_value_for_measure(cube_value, cube_name):
     return measure.full_value
 
 
+def get_measure_lem_key_words(cube_value: str, cube_name: str):
+    """
+    Получение нормализованных ключевых слов для меры, если они есть
+    """
+
+    measure = (dbc.Measure
+               .select()
+               .join(dbc.CubeMeasure)
+               .join(dbc.Cube)
+               .where(dbc.Measure.cube_value == cube_value, dbc.Cube.name == cube_name)
+               )[0]
+
+    return measure.lem_key_words
+
+
 def get_cube_dimensions(cube_name):
     """Получение списка измерения куба"""
 
@@ -106,7 +121,7 @@ def get_default_value_for_dimension(cube_name, dimension_name):
         def_value = dbc.Value.get(dbc.Value.id == dimension.default_value_id)
 
         return {'dimension': dimension_name,
-                'fvalue': def_value.cube_value}
+                'cube_value': def_value.cube_value}
 
 
 def get_connected_value_to_given_value(cube_value):
@@ -123,7 +138,7 @@ def get_connected_value_to_given_value(cube_value):
                      .where(dbc.Value.id == connected_value.id))[0]
 
         return {'dimension': dimension.label,
-                'fvalue': connected_value.cube_value}
+                'cube_value': connected_value.cube_value}
 
 
 def get_cube_caption(cube_name):
@@ -219,4 +234,3 @@ def create_dimension_lem_key_words():
                      )
 
             query.execute()
-

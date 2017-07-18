@@ -397,23 +397,28 @@
   <fieldType name="tints" class="solr.TrieIntField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
   <fieldType name="tlong" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" precisionStep="8"/>
   <fieldType name="tlongs" class="solr.TrieLongField" positionIncrementGap="0" docValues="true" multiValued="true" precisionStep="8"/>
-  <field name="CLDO02" type="string" indexed="false" multiValued="false"/>
-  <field name="EXDO01" type="string" indexed="false" multiValued="false"/>
-  <field name="EXYR03" type="string" indexed="false" multiValued="false"/>
-  <field name="FSYR01" type="string" indexed="false" multiValued="false"/>
-  <field name="INDO01" type="string" indexed="false" multiValued="false"/>
-  <field name="INYR03" type="string" indexed="false" multiValued="false"/>
+  <field name="CLDO02" type="string" multiValued="false" indexed="false"/>
+  <field name="EXDO01" type="string" multiValued="false" indexed="false"/>
+  <field name="EXYR03" type="string" multiValued="false" indexed="false"/>
+  <field name="FSYR01" type="string" multiValued="false" indexed="false"/>
+  <field name="INDO01" type="string" multiValued="false" indexed="false"/>
+  <field name="INYR03" type="string" multiValued="false" indexed="false"/>
   <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
-  <field name="cube" type="string" indexed="false" multiValued="false"/>
+  <field name="caption" type="string" multiValued="false"/>
+  <field name="connected_value.cube_value" type="strings"/>
+  <field name="connected_value.dimension" type="strings"/>
+  <field name="cube" type="string" multiValued="false" indexed="false"/>
+  <field name="cube_value" type="string" multiValued="false" indexed="false"/>
+  <field name="default_measure" type="string" multiValued="false" indexed="false"/>
   <field name="description" type="string" multiValued="false"/>
+  <field name="dimension" type="string" multiValued="false" indexed="false"/>
+  <field name="dimensions" type="strings" indexed="false"/>
   <field name="document" type="strings" indexed="false"/>
   <field name="document_caption" type="strings" indexed="false"/>
-  <field name="formal" type="string" indexed="false" multiValued="false"/>
-  <field name="full_answer" type="string" indexed="false" multiValued="false"/>
-  <field name="fvalue" type="string" indexed="false" multiValued="false"/>
-  <field name="hierarchy_level" type="tlongs" indexed="false" multiValued="false"/>
+  <field name="full_answer" type="string" multiValued="false" indexed="false"/>
+  <field name="hierarchy_level" type="tlongs" multiValued="false" indexed="false"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
   <field name="lem_full_answer" type="string" multiValued="false"/>
   <field name="lem_key_words" type="string" multiValued="false"/>
@@ -422,13 +427,12 @@
   <field name="lem_synonym_questions" type="strings"/>
   <field name="link" type="strings" indexed="false"/>
   <field name="link_name" type="strings" indexed="false"/>
-  <field name="name" type="string" multiValued="false"/>
-  <field name="number" type="string" indexed="false" multiValued="false"/>
+  <field name="number" type="string" multiValued="false" indexed="false"/>
   <field name="picture" type="strings" indexed="false"/>
   <field name="picture_caption" type="strings" indexed="false"/>
-  <field name="question" type="string" indexed="false" multiValued="false"/>
-  <field name="short_answer" type="string" indexed="false" multiValued="false"/>
-  <field name="type" type="string" indexed="false" multiValued="false"/>
+  <field name="question" type="string" multiValued="false" indexed="false"/>
+  <field name="short_answer" type="string" multiValued="false" indexed="false"/>
+  <field name="type" type="string" multiValued="false" indexed="false"/>
   <field name="verbal" type="string" multiValued="false"/>
   <dynamicField name="*_txt_en_split_tight" type="text_en_splitting_tight" indexed="true" stored="true"/>
   <dynamicField name="*_descendent_path" type="descendent_path" indexed="true" stored="true"/>
