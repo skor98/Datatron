@@ -32,7 +32,7 @@ class TextPreprocessing:
         # Базовый набор стоп-слов
         self.stop_words = stopwords.words(self.language)
         self.stop_words.remove('не')
-        self.stop_words += "также иной год да нет -".split()
+        self.stop_words += "также иной да нет -".split()
 
     def normalization(
             self,
@@ -46,8 +46,9 @@ class TextPreprocessing:
         # TODO: обработка направильного спеллинга
         morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
-        # Замена нижнего подчеркивания встречающегося в caption в метаданных куба на пробел
-        text = text.replace('_', ' ')
+        # Применение фильтров
+        text = TextPreprocessing._filter_percent(text)
+        text = TextPreprocessing._filter_underscore(text)
 
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
         text = re.sub(r'[^\w\s-]+', '', text)
@@ -82,6 +83,24 @@ class TextPreprocessing:
         logging.info(logging_str.format(self.request_id, normalized_request))
 
         return normalized_request
+
+    @staticmethod
+    def _filter_underscore(text: str):
+        """Обработка нижнего подчеркивания"""
+
+        if '_' in text:
+            return text.replace('_', ' ')
+        else:
+            return text
+
+    @staticmethod
+    def _filter_percent(text: str):
+        """Обработка процента"""
+
+        if '%' in text:
+            return text.replace('%', 'процент')
+        else:
+            return text
 
     @staticmethod
     def frequency_destribution(word_list, quantity):

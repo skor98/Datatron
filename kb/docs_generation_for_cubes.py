@@ -11,6 +11,8 @@ import requests
 
 from peewee import fn
 import kb.kb_db_creation as dbc
+from kb.kb_support_library import get_cube_dimensions
+from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 
 
@@ -200,16 +202,20 @@ class CubeDocsGeneration:
 
         cubes = []
         for cube in dbc.Cube.select():
-            cube_description = cube.auto_lem_description
+            cube_description = cube.auto_key_words
 
             # добавление к описанию куба ключевых слов от методологов
-            if cube.manual_lem_description:
-                cube_description += ' {}'.format(cube.manual_lem_description)
+            if cube.key_words:
+                cube_description += ' {}'.format(cube.lem_key_words)
 
             cubes.append({
                 'type': 'cube',
                 'cube': cube.name,
-                'description': cube_description})
+                'caption': cube.caption,
+                'description': cube_description,
+                'dimensions': get_cube_dimensions(cube.name),
+                'default_measure': get_default_cube_measure(cube.name)
+            })
         return cubes
 
     @staticmethod

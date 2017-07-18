@@ -50,6 +50,12 @@ class Measure(BaseModel):
     # Нормализованное вербальное значение
     lem_index_value = CharField()
 
+    # Ключевые слова для меры от методологов
+    key_words = CharField(null=True)
+
+    # Ключевые слова для меры от методологов
+    lem_key_words = CharField(null=True)
+
     # Формальное значение для куба
     cube_value = CharField()
 
@@ -68,6 +74,12 @@ class Dimension(BaseModel):
 
     # Полное вербальное значение
     full_value = CharField()
+
+    # Ключевые слова для измерения от методологов
+    key_words = CharField(null=True)
+
+    # Нормализованные ключевые слова для измерения от методологов
+    lem_key_words = CharField(null=True)
 
     # Значение измерения по умолчанию
     default_value = ForeignKeyField(Value, null=True)
@@ -103,13 +115,13 @@ class Cube(BaseModel):
 
     # Наиболее часто встречающиеся слова в значениях
     # измерения куба в нормализованном виде с повторениями
-    auto_lem_description = CharField()
+    auto_lem_key_words = CharField()
 
     # Ключевые слова, составленные методологом
-    manual_description = CharField(null=True)
+    key_words = CharField(null=True)
 
     # Нормализованые ключевые слова от методолога
-    manual_lem_description = CharField(null=True)
+    lem_key_words = CharField(null=True)
 
     # Мера для куба по умолчанию
     default_measure = ForeignKeyField(Measure)

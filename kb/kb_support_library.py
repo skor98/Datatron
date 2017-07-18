@@ -151,26 +151,72 @@ def get_full_values_for_dimensions(cube_value):
             'full_value': value.full_value}
 
 
-def create_cube_manual_lem_description():
+def create_cube_lem_key_words():
     """
     Формирование нормализованного описания к кубам на основе
     ключевых слов, составленных методологами
     """
 
     text_processor = TextPreprocessing()
+
     for item in dbc.Cube.select():
-        lem_description = text_processor.normalization(
-            item.manual_description,
-            delete_digits=True,
-            delete_question_words=True,
-            delete_repeatings=True
-        )
+        if item.key_words:
+            lem_key_words = text_processor.normalization(
+                item.key_words,
+                delete_digits=True,
+                delete_question_words=True
+            )
 
-        lem_description = ' '.join(sorted(lem_description.split()))
+            query = (dbc.Cube
+                     .update(lem_key_words=lem_key_words)
+                     .where(dbc.Cube.id == item.id)
+                     )
 
-        query = (dbc.Cube
-                 .update(manual_lem_description=lem_description)
-                 .where(dbc.Cube.name == item.name)
-                 )
+            query.execute()
 
-        query.execute()
+
+def create_measure_lem_key_words():
+    """
+    Формирование нормализованных ключевых слов к мерам
+    """
+
+    text_processor = TextPreprocessing()
+
+    for item in dbc.Measure.select():
+        if item.key_words:
+            lem_key_words = text_processor.normalization(
+                item.key_words,
+                delete_digits=True,
+                delete_question_words=True
+            )
+
+            query = (dbc.Measure
+                     .update(lem_key_words=lem_key_words)
+                     .where(dbc.Measure.id == item.id)
+                     )
+
+            query.execute()
+
+
+def create_dimension_lem_key_words():
+    """
+    Формирование нормализованных ключевых слов к измерениям
+    """
+
+    text_processor = TextPreprocessing()
+
+    for item in dbc.Dimension.select():
+        if item.key_words:
+            lem_key_words = text_processor.normalization(
+                item.key_words,
+                delete_digits=True,
+                delete_question_words=True
+            )
+
+            query = (dbc.Dimension
+                     .update(lem_key_words=lem_key_words)
+                     .where(dbc.Dimension.id == item.id)
+                     )
+
+            query.execute()
+
