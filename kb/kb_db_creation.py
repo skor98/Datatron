@@ -99,7 +99,7 @@ class Cube(BaseModel):
     name = CharField()
 
     # Тема куба, например, "Госдолг РФ"
-    description = CharField()
+    caption = CharField()
 
     # Наиболее часто встречающиеся слова в значениях
     # измерения куба в нормализованном виде с повторениями

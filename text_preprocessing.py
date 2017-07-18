@@ -23,7 +23,7 @@ class TextPreprocessing:
     """
     Класс для предварительной обработки текста
     """
-    def __init__(self, request_id):
+    def __init__(self, request_id=None):
         self.request_id = request_id
         self.norming_style = 'lem'
         self.language = 'russian'

@@ -126,10 +126,10 @@ def get_connected_value_to_given_value(cube_value):
                 'fvalue': connected_value.cube_value}
 
 
-def get_cube_description(cube_name):
+def get_cube_caption(cube_name):
     """Возвращает описание куба"""
 
-    return dbc.Cube.get(dbc.Cube.name == cube_name).description
+    return dbc.Cube.get(dbc.Cube.name == cube_name).caption
 
 
 def get_full_values_for_dimensions(cube_value):
@@ -149,3 +149,28 @@ def get_full_values_for_dimensions(cube_value):
 
     return {'dimension': dim.full_value,
             'full_value': value.full_value}
+
+
+def create_cube_manual_lem_description():
+    """
+    Формирование нормализованного описания к кубам на основе
+    ключевых слов, составленных методологами
+    """
+
+    text_processor = TextPreprocessing()
+    for item in dbc.Cube.select():
+        lem_description = text_processor.normalization(
+            item.manual_description,
+            delete_digits=True,
+            delete_question_words=True,
+            delete_repeatings=True
+        )
+
+        lem_description = ' '.join(sorted(lem_description.split()))
+
+        query = (dbc.Cube
+                 .update(manual_lem_description=lem_description)
+                 .where(dbc.Cube.name == item.name)
+                 )
+
+        query.execute()

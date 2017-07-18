@@ -7,7 +7,7 @@
 
 import requests
 import logging
-from kb.kb_support_library import get_cube_description
+from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_full_value_for_measure
 from kb.kb_support_library import get_full_values_for_dimensions
 import logs_helper  # pylint: disable=unused-import

@@ -9,7 +9,7 @@ import requests
 import logging
 import json
 
-from kb.kb_support_library import get_cube_description
+from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_full_value_for_measure
 from kb.kb_support_library import get_full_values_for_dimensions
 from kb.kb_support_library import get_representation_format
@@ -63,7 +63,7 @@ def _form_feedback(mdx_query: str, cube: str, user_request: str):
             'dims': dims_vals
         },
         'verbal': {
-            'domain': get_cube_description(cube),
+            'domain': get_cube_caption(cube),
             'measure': full_verbal_measure_value,
             'dims': full_verbal_dimensions_value
         },
