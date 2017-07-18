@@ -128,6 +128,7 @@ def get_connected_value_to_given_value(cube_value):
     """Возвращает связанное значение измерения с данным"""
 
     given_value = dbc.Value.get(dbc.Value.cube_value == cube_value)
+
     if given_value.connected_value:
         connected_value = dbc.Value.get(dbc.Value.id == given_value.connected_value)
 

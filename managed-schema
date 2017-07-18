@@ -407,8 +407,8 @@
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
   <field name="caption" type="string" multiValued="false"/>
-  <field name="connected_value.cube_value" type="strings"/>
-  <field name="connected_value.dimension" type="strings"/>
+  <field name="connected_value.cube_value" type="string" multiValued="false" indexed="false"/>
+  <field name="connected_value.dimension" type="string" multiValued="false" indexed="false"/>
   <field name="cube" type="string" multiValued="false" indexed="false"/>
   <field name="cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="default_measure" type="string" multiValued="false" indexed="false"/>

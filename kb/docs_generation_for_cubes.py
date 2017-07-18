@@ -184,6 +184,8 @@ class CubeDocsGeneration:
                 'verbal': verbal
             }
 
+            used_cube_with_territory = None
+
             # добавление значений по кубам
             for v in dbc.Value.select().where(dbc.Value.lem_index_value == item.lem_index_value):
                 # находится куб, соответствующий этому значению
@@ -196,6 +198,13 @@ class CubeDocsGeneration:
 
                 # добавление в словарь новой пары
                 d[cube.name] = v.cube_value
+
+                if not used_cube_with_territory:
+                    used_cube_with_territory = cube.name
+
+            d['connected_value'] = get_connected_value_to_given_value(
+                d[used_cube_with_territory]
+            )
 
             territory_values.append(d)
 
