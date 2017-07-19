@@ -62,7 +62,7 @@ def select_forth_cube(cube_data: CubeData):
     """Выбор четвертого куба"""
 
     # Если найден только один куб
-    if len(cube_data.cube) < 3:
+    if len(cube_data.cube) < 4:
         raise FunctionExecutionError({
             "function": select_forth_cube().__name__,
             "message": "Найдено только 3 куба"

@@ -29,6 +29,8 @@ class CubeProcessor:
 
     @staticmethod
     def define_graph_structure():
+        """Определение структуры графа"""
+
         dir_graph = nx.DiGraph()
 
         def define_nodes():
