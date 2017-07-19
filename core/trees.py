@@ -47,10 +47,14 @@ class TreeEdge(object):
         target.edges_in.append(self)
 
     def __repr__(self):
-        return '$ Tree edge from ({}, {}) to ({}, {}) with weight {}{} $'.format(
+        return '{}isible tree edge #{}({}, {}) -> #{}({}, {}) with weight={} {}'.format(
+            '<< V' if self.visible else '^^ Inv',
+            self.origin.label,
             *self.origin.pos,
+            self.target.label,
             *self.target.pos,
-            self.weight
+            self.weight,
+            '>>' if self.visible else '^^',
         )
 
 
@@ -237,7 +241,7 @@ class TreeNodesHandler(object):
         self._tree = tree
         self.index = {}
 
-    def new(self, layer=-1, label='', content=None, terminal=False, parents=(), weights=()):
+    def new(self, layer=-1, label=None, content=None, terminal=False, parents=(), weights=()):
         """Создаёт новый узел.
 
         :param layer: Слой, в который будет добавлен узел (по умолчанию - последний).
@@ -256,12 +260,21 @@ class TreeNodesHandler(object):
         while len(self._tree) <= layer:
             self._tree.add_layer()
 
-        label = re.sub(r'\([0-9]+?\)$', '', str(label))
-        if label in self.index or label == '':
+        if label is None:
+            if callable(content):
+                label = type(content)
+            elif len(str(content)) > 20:
+                label = str(content)[:17] + ' __'
+            else:
+                label = str(content)
+        else:
+            label = re.sub(r'_[0-9]+?$', '', str(label))
+        if label in self.index:
+            label += '_'
             num = 1
-            while label + '({})'.format(num) in self.index:
+            while label + str(num) in self.index:
                 num += 1
-            label += '({})'.format(num)
+            label += str(num)
         self.index[label] = (layer, len(self._tree[layer]))
 
         newnode = TreeNode(
