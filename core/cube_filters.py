@@ -26,7 +26,7 @@ def select_first_cube(cube_data: CubeData):
     if not len(cube_data.cube):
         raise FunctionExecutionError({
             "function": select_first_cube.__name__,
-            "message": "Во входных данных нет кубов"
+            "message": "Кубов не было найдено"
         })
 
     cube_data.cube = cube_data.cube[0]
@@ -35,19 +35,40 @@ def select_first_cube(cube_data: CubeData):
 def select_second_cube(cube_data: CubeData):
     """Выбор второго куба"""
 
-    pass
+    # Если найден только один куб
+    if len(cube_data.cube) < 2:
+        raise FunctionExecutionError({
+            "function": select_second_cube().__name__,
+            "message": "Найден только 1 куб"
+        })
+
+    cube_data.cube = cube_data.cube[1]
 
 
 def select_third_cube(cube_data: CubeData):
     """Выбор третьего куба"""
 
-    pass
+    # Если найден только один куб
+    if len(cube_data.cube) < 3:
+        raise FunctionExecutionError({
+            "function": select_third_cube().__name__,
+            "message": "Найдено только 2 куба"
+        })
+
+    cube_data.cube = cube_data.cube[2]
 
 
 def select_forth_cube(cube_data: CubeData):
     """Выбор четвертого куба"""
 
-    pass
+    # Если найден только один куб
+    if len(cube_data.cube) < 3:
+        raise FunctionExecutionError({
+            "function": select_forth_cube().__name__,
+            "message": "Найдено только 3 куба"
+        })
+
+    cube_data.cube = cube_data.cube[3]
 
 
 def ignore_current_year(cube_data: CubeData):

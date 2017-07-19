@@ -8,7 +8,7 @@ import re
 import constants
 from data_retrieving import DataRetrieving
 from dbs.query_db import log_query_to_db
-from core.solr_old import DrSolrResult
+from core.answer_object import CoreAnswer
 from speechkit import SpeechException
 from speechkit import speech_to_text
 
@@ -96,9 +96,11 @@ class MessengerManager:
                 'voice'
             )
         except SpeechException:
-            dsr = DrSolrResult()
-            dsr.error = dsr.message = constants.ERROR_CANNOT_UNDERSTAND_VOICE
-            return dsr
+            core_answer = CoreAnswer(
+                message=constants.ERROR_CANNOT_UNDERSTAND_VOICE,
+                error=constants.ERROR_CANNOT_UNDERSTAND_VOICE
+            )
+            return core_answer
         else:
 
             return MessengerManager._querying(text, request_id)

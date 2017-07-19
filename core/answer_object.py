@@ -9,13 +9,13 @@ import json
 
 
 class CoreAnswer:
-    def __init__(self):
+    def __init__(self, message='', error=''):
         self.status = False
         self.doc_found = 0
         self.answer = None
         self.more_answers = None
-        self.message = ''
-        self.error = ''
+        self.message = message
+        self.error = error
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)

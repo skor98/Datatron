@@ -15,11 +15,11 @@ class MinfinProcessor:
     def get_data(minfin_docs: list):
         """Работа с документами для вопросов Минфина"""
 
+        answers = []
+
         # Обработка случая, когда документов по минфину не найдено
         if not minfin_docs:
-            return
-
-        answers = []
+            return answers
 
         for document in minfin_docs:
             answer = MinfinAnswer()

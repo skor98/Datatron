@@ -18,18 +18,13 @@
 
 import logging
 import datetime
-import json
 
-import requests
 import numpy as np
 
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_member_for_dimension
 from kb.kb_support_library import get_with_member_to_given_member
 from kb.kb_support_library import get_default_cube_measure
-from config import SETTINGS
-import logs_helper  # pylint: disable=unused-import
-from model_manager import MODEL_CONFIG
 
 
 # TODO: доделать логгирование принятия решений
@@ -40,120 +35,11 @@ class Solr:
     Класс для взимодействия с поисковой системой Apache Solr
     """
 
-    def __init__(self, core):
-        self.core = core
-
-    def get_data(self, user_request):
-        """API метод для класса Solr
-
-        :param user_request: нормализованный запрос пользователя
-        :return: объект класса DrSolrResult()"""
-
-        solr_result = DrSolrResult()
-
-        try:
-            docs = self._send_request_to_solr(user_request)
-
-            # Если был найден хотя бы один документ
-            if docs['response']['numFound']:
-
-                (minfin_docs, cube_cubes,
-                 cube_territory, cube_year,
-                 cube_dimensions, cube_measures) = Solr._parse_solr_response(docs)
-
-                # все найденные документы по кубам
-                cube_answers = Solr._process_cube_document(cube_year,
-                                                           cube_territory,
-                                                           cube_dimensions,
-                                                           cube_measures,
-                                                           cube_cubes
-                                                           )
-
-                # все найденные документы по Минфину
-                minfin_answers = Solr._process_minfin_question(minfin_docs)
-
-                # Формирование возвращаемого объекта
-                Solr._format_final_response(cube_answers, minfin_answers, solr_result)
-
-                # Если найдены документы
-                if solr_result.doc_found:
-                    solr_result.status = True
-
-                return solr_result
-            else:
-                raise Exception('Datatron не нашел ответа на Ваш вопрос')
-        except Exception as err:
-            logging.error("Solr error " + str(err))
-            logging.exception(err)
-            solr_result.error = str(err)
-            return solr_result
-
-    def _send_request_to_solr(self, user_request: str):
-        """Метод для отправки запроса к Solr
-
-        :param user_request: запрос пользователя
-        :return: ответ от Solr в формате JSON
-        """
-
-        request = 'http://{}:8983/solr/{}/select'.format(
-            SETTINGS.SOLR_HOST,
-            self.core
-        )
-
-        # Просим Solr выдать solr_documents_to_return (default: 50)
-        # документов в формате json, а также указать score каждого
-        params = {
-            'q': user_request,
-            'rows': MODEL_CONFIG["solr_documents_to_return"],
-            'wt': 'json',
-            'fl': '*,score'
-        }
-        docs = requests.get(request, params=params).json()
-        return docs
-
-    @staticmethod
-    def _parse_solr_response(solr_docs: list):
-        """
-        Разбивает найденные документы по переменным
-        для различных типов вопросов
-        """
-
-        # Найденные документы по Минфин вопросам
-        minfin_docs = []
-
-        # Найденные документы для запросов к кубам
-        cube_cubes = []
-        cube_territory = None
-        cube_year = None
-        cube_dimensions = []
-        cube_measures = []
-
-        # найденные Solr-ом документы
-        solr_docs = solr_docs['response']['docs']
-
-        for doc in solr_docs:
-            if doc['type'] == 'dimension':
-                cube_dimensions.append(doc)
-            elif doc['type'] == 'year_dimension':
-                # обработка значения года, если он из 1 или 2 цифр
-                doc['fvalue'] = Solr._manage_years(int(doc['fvalue']))
-                cube_year = doc
-            elif doc['type'] == 'territory_dimension':
-                cube_territory = doc
-            elif doc['type'] == 'cube':
-                cube_cubes.append(doc)
-            elif doc['type'] == 'measure':
-                cube_measures.append(doc)
-            elif doc['type'] == 'minfin':
-                minfin_docs.append(doc)
-
-        return minfin_docs, cube_cubes, cube_territory, cube_year, cube_dimensions, cube_measures
-
     @staticmethod
     def _process_cube_document(year, territory, dimensions, measures, cubes):
         """Сборка одного запроса по кубу"""
 
-        cube_result = DrSolrCubeResult()
+        cube_result = None
 
         # Фильтрация документов
         filtered_docs = Solr._filter_cube_documents(
