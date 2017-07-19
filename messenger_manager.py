@@ -8,7 +8,7 @@ import re
 import constants
 from data_retrieving import DataRetrieving
 from dbs.query_db import log_query_to_db
-from dr.solr_old import DrSolrResult
+from core.solr_old import DrSolrResult
 from speechkit import SpeechException
 from speechkit import speech_to_text
 

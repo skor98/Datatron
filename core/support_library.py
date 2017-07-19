@@ -8,6 +8,7 @@
 import requests
 import logging
 import json
+import datetime
 
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_caption_for_measure
@@ -15,6 +16,17 @@ from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 import logs_helper  # pylint: disable=unused-import
+
+
+class CubeData:
+    """Структура для данных передаваемых между узлами"""
+
+    def __init__(self):
+        self.cubes = []
+        self.members = []
+        self.year_member = None
+        self.terr_member = None
+        self.measures = []
 
 
 def _send_request_to_server(mdx_query: str, cube: str):
@@ -200,3 +212,45 @@ def _format_cube_answer(solr_cube_result, user_request, request_id):
         solr_cube_result.mdx_query,
         value
     ))
+
+
+def manage_years(year: int):
+    """Обработка лет из 1 и 2 цифр"""
+
+    if year > 2006:
+        return year
+    # работа с годами из одного и двух цифр
+    else:
+        if year < 10:
+            year = '0' + str(year)
+        return datetime.datetime.strptime(str(year), '%y').year
+
+
+def group_documents(solr_documents: list):
+    """
+    Разбитие найденных документы по переменным
+    для различных типов вопросов
+    """
+
+    # Найденные документы по Минфин вопросам
+    minfin_docs = []
+
+    cube_data = CubeData()
+
+    for doc in solr_documents:
+        if doc['type'] == 'dim_member':
+            cube_data.members.append(doc)
+        elif doc['type'] == 'year_dim_member':
+            # обработка значения года, если он из 1 или 2 цифр
+            doc['fvalue'] = manage_years(int(doc['fvalue']))
+            cube_data.year_member = doc
+        elif doc['type'] == 'terr_dim_member':
+            cube_data.terr_member = doc
+        elif doc['type'] == 'cube':
+            cube_data.cubes.append(doc)
+        elif doc['type'] == 'measure':
+            cube_data.measures.append(doc)
+        elif doc['type'] == 'minfin':
+            minfin_docs.append(doc)
+
+    return minfin_docs, cube_data

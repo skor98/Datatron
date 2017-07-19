@@ -5,9 +5,6 @@
 Работа с документами по Минфину
 """
 
-import logging
-import logs_helper  # pylint: disable=unused-import
-
 
 class MinfinProcessor:
     """
@@ -15,20 +12,16 @@ class MinfinProcessor:
     """
 
     @staticmethod
-    def _process_minfin_question(minfin_documents):
-        """Работа с документами для вопросов Минфина
-
-        :param minfin_documents: документы министерства финансов
-        :return: список объектов класса MinfinResult() или None
-        """
+    def get_data(minfin_docs: list):
+        """Работа с документами для вопросов Минфина"""
 
         # Обработка случая, когда документов по минфину не найдено
-        if not minfin_documents:
+        if not minfin_docs:
             return
 
         answers = []
 
-        for document in minfin_documents:
+        for document in minfin_docs:
             answer = MinfinAnswer()
 
             answer.score = document['score']

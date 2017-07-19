@@ -15,22 +15,13 @@ class Solr:
     Класс для взимодействия с поисковой системой Apache Solr
     """
 
-    def __init__(self, core: str):
-        self.core = core
-
-    def get_data(self, user_request: str):
-        return self._send_request_to_solr(user_request)
-
-    def _send_request_to_solr(self, user_request: str):
-        """Реализация запроса к Solr
-
-        :param user_request: запрос пользователя
-        :return: ответ от Apache Solr в формате JSON-строки
-        """
+    @staticmethod
+    def get_data(user_request: str, core: str):
+        """Реализация запроса к Solr"""
 
         request = 'http://{}:8983/solr/{}/select'.format(
             SETTINGS.SOLR_HOST,
-            self.core
+            core
         )
 
         # Просим Solr выдать solr_documents_to_return (default: 50)
@@ -41,5 +32,6 @@ class Solr:
             'wt': 'json',
             'fl': '*,score'
         }
+
         docs = requests.get(request, params=params).json()
         return docs

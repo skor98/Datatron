@@ -10,6 +10,7 @@ import logging
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
+from core.support_library import CubeData
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -20,7 +21,10 @@ class CubeProcessor:
     """
     Класс для обработки результатов по кубам
     """
-    pass
+
+    @staticmethod
+    def get_data(cube_data: CubeData):
+        return [CubeAnswer()]
 
 
 class CubeAnswer:

@@ -8,14 +8,14 @@
 import json
 
 
-class CoreResult:
+class CoreAnswer:
     def __init__(self):
         self.status = False
-        self.message = ''
-        self.error = ''
         self.doc_found = 0
         self.answer = None
         self.more_answers = None
+        self.message = ''
+        self.error = ''
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
