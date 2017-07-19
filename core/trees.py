@@ -5,7 +5,8 @@
 
 import itertools
 
-#pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
+
 
 class TreeNode(object):
     """Хранит информацию об узлах дерева."""
@@ -71,11 +72,13 @@ class TreeModel(object):
 
     def normpos(self, obj):
         """Нормализует входные данные, превращая их в координаты узла внутри дерева.
-        
+
         Кроме преобразований типов, обрабатывает отрицательные значения координат.
 
-        :param obj: координаты узла (2-tuple), объект узла (TreeNode) или имя узла (str) для конверсии.
-        :returns: координаты узла (2-tuple); если входные данные корректны, то все отрицательные значения координат становятся положительными.
+        :param obj: координаты узла (2-tuple), объект узла (TreeNode)
+        или имя узла (str) для конверсии.
+        :returns: координаты узла (2-tuple); если входные данные корректны,
+        то все отрицательные значения координат становятся положительными.
 
         """
         if isinstance(obj, tuple) and len(obj) == 2:
@@ -135,7 +138,8 @@ class TreeModel(object):
         """Присоединяет к дереву другое дерево в качестве дочернего.
 
         :param subtree: Дерево для присоединения.
-        :param root_pos: Координаты узла исходного дерева, который должен совместиться с корнем присоединяемого.
+        :param root_pos: Координаты узла исходного дерева, который должен
+            совместиться с корнем присоединяемого.
 
         """
         root_pos = self.normpos(root_pos)
@@ -191,10 +195,13 @@ class TreeNodesHandler(object):
 
         :param layer: Слой, в который будет добавлен узел (по умолчанию - последний).
         :param label: Имя нового узла (по умолчанию отсутствует).
-        :param content: Содержимое нового узла для постобработки путей, внутри дерева не используется (по умолчанию - None).
-        :param terminal: Является ли узел конечным, нужно при обработке путей (по умолчанию - False).
+        :param content: Содержимое нового узла для постобработки путей,
+            внутри дерева не используется (по умолчанию - None).
+        :param terminal: Является ли узел конечным, нужно при
+            обработке путей (по умолчанию - False).
         :param parents: Список родительских узлов (по умолчанию отсутствуют).
-        :param weights: Список весов рёбер к новому узлу от родительских путей (по умолчанию отсутствуют).
+        :param weights: Список весов рёбер к новому узлу
+            от родительских путей (по умолчанию отсутствуют).
         :returns: Созданный узел.
 
         """
@@ -227,7 +234,8 @@ class TreeNodesHandler(object):
         """Получает узел по координатам, имени или порядковому номеру.
 
         :param pos: Координаты узла, его имя или порядковый номер в дереве.
-        :param default: Значение по умолчанию, возвращаемое, если узел не найден (по умолчанию - None).
+        :param default: Значение по умолчанию, возвращаемое, если узел
+            не найден (по умолчанию - None).
         :returns: Запрашиваемый узел.
 
         """
@@ -249,7 +257,7 @@ class TreeNodesHandler(object):
         pos = self._tree.normpos(pos)
         self.index.pop(self.get(pos).label, None)
         self.get(pos).deleted = True
-        for edge in itertools.chain(self._tree.edges.to_node(pos), 
+        for edge in itertools.chain(self._tree.edges.to_node(pos),
                                     self._tree.edges.from_node(pos)):
             self._tree.edges.remove(edge)
         self._tree.check()
@@ -299,7 +307,8 @@ class TreeEdgesHandler(object):
 
         :param origin: Координаты исходной точки ребра.
         :param target: Координаты конечной точки ребра.
-        :param default: Значение по умолчанию, возвращаемое, если ребро не найдено (по умолчанию - None).
+        :param default: Значение по умолчанию, возвращаемое, если ребро
+            не найдено (по умолчанию - None).
 
         """
         or_pos, tar_pos = self._tree.normpos(origin), self._tree.normpos(target)
@@ -320,7 +329,6 @@ class TreeEdgesHandler(object):
             self._tree[or_pos].edges_out = [e for e in origin.edges_out if e.target.pos != tar_pos]
         if not getattr(self._tree[tar_pos], 'deleted', False):
             self._tree[tar_pos].edges_in = [e for e in target.edges_in if e.origin.pos != or_pos]
-        
 
     def to_node(self, pos):
         """Список рёбер, входящих в узел дерева.
@@ -329,7 +337,7 @@ class TreeEdgesHandler(object):
 
         """
         return self._tree[pos].edges_in
-    
+
     def from_node(self, pos):
         """Список рёбер, выходящих из узла дерева.
 
@@ -337,7 +345,6 @@ class TreeEdgesHandler(object):
 
         """
         return self._tree[pos].edges_out
-        
 
     def to_layer(self, layer):
         """Список рёбер, входящих в слой дерева.
@@ -346,7 +353,7 @@ class TreeEdgesHandler(object):
 
         """
         return sum((n.edges_in for n in self._tree[layer]), [])
-        
+
     def from_layer(self, layer):
         """Список рёбер, выходящих из слоя дерева.
 
