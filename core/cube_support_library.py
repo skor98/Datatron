@@ -10,8 +10,8 @@ import logging
 import json
 
 from kb.kb_support_library import get_cube_caption
-from kb.kb_support_library import get_full_value_for_measure
-from kb.kb_support_library import get_full_values_for_dimensions
+from kb.kb_support_library import get_caption_for_measure
+from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 import logs_helper  # pylint: disable=unused-import
@@ -52,8 +52,8 @@ def _form_feedback(mdx_query: str, cube: str, user_request: str):
         dims_vals.append({'dim': item[0][1:-1], 'val': item[1][1:-1]})
 
     # Полные вербальные отражения значений измерений и меры
-    full_verbal_dimensions_value = [get_full_values_for_dimensions(i['val']) for i in dims_vals]
-    full_verbal_measure_value = get_full_value_for_measure(measure_value, cube)
+    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val']) for i in dims_vals]
+    full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
     feedback = {

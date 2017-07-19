@@ -24,8 +24,8 @@ import requests
 import numpy as np
 
 from kb.kb_support_library import get_cube_dimensions
-from kb.kb_support_library import get_default_value_for_dimension
-from kb.kb_support_library import get_connected_value_to_given_value
+from kb.kb_support_library import get_default_member_for_dimension
+from kb.kb_support_library import get_with_member_to_given_member
 from kb.kb_support_library import get_default_cube_measure
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import
@@ -376,7 +376,7 @@ class Solr:
             all_cube_dimensions.remove(doc['name'])
 
             # обработка связанных значений
-            connected_value = get_connected_value_to_given_value(doc['fvalue'])
+            connected_value = get_with_member_to_given_member(doc['fvalue'])
 
             # Если у значения есть связанное значение
             if connected_value and connected_value['dimension'] not in found_cube_dimensions:
@@ -389,7 +389,7 @@ class Solr:
 
         # обработка дефолтных значений для измерейни
         for ref_dim in all_cube_dimensions:
-            default_value = get_default_value_for_dimension(cube, ref_dim)
+            default_value = get_default_member_for_dimension(cube, ref_dim)
             if default_value:
                 dim_str_value.append(dim_tmp.format(
                     default_value['dimension'],

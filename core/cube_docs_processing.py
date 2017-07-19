@@ -8,8 +8,8 @@
 import requests
 import logging
 from kb.kb_support_library import get_cube_caption
-from kb.kb_support_library import get_full_value_for_measure
-from kb.kb_support_library import get_full_values_for_dimensions
+from kb.kb_support_library import get_caption_for_measure
+from kb.kb_support_library import get_captions_for_dimensions
 import logs_helper  # pylint: disable=unused-import
 
 

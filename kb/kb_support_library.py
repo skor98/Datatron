@@ -10,19 +10,20 @@ import kb.kb_db_creation as dbc
 from text_preprocessing import TextPreprocessing
 
 
-def get_full_value_for_measure(cube_value, cube_name):
+def get_caption_for_measure(cube_value, cube_name):
     """
     Получение полного вербального значения меры
     по формальному значению и кубу
     """
 
     measure = (dbc.Measure
-               .select(dbc.Measure.full_value)
+               .select(dbc.Measure.caption)
                .join(dbc.CubeMeasure)
                .join(dbc.Cube)
-               .where(dbc.Measure.cube_value == cube_value, dbc.Cube.name == cube_name))[0]
+               .where(dbc.Measure.cube_value == cube_value, dbc.Cube.name == cube_name)
+               )[0]
 
-    return measure.full_value
+    return measure.caption
 
 
 def get_measure_lem_key_words(cube_value: str, cube_name: str):
@@ -49,7 +50,7 @@ def get_cube_dimensions(cube_name):
              .join(dbc.Cube)
              .where(dbc.Cube.name == cube_name))
 
-    dimensions = [dimension.label for dimension in query]
+    dimensions = [dimension.cube_value for dimension in query]
 
     return dimensions
 
@@ -63,21 +64,21 @@ def create_automative_cube_description(cube_name):
     TOP_WORDS_QUANTITY = 5
     WORDS_REPETITION = 3
 
-    query = (dbc.Value
+    query = (dbc.Member
              .select()
-             .join(dbc.DimensionValue)
+             .join(dbc.DimensionMember)
              .join(dbc.Dimension)
              .join(dbc.CubeDimension)
              .join(dbc.Cube)
              .where(dbc.Cube.name == cube_name))
 
-    values = [value.lem_index_value for value in query]
+    members = [member.lem_caption for member in query]
 
     # токенизация по словам
-    values = ' '.join(values).split()
+    members = ' '.join(members).split()
 
     popular_words = TextPreprocessing.frequency_destribution(
-        values,
+        members,
         TOP_WORDS_QUANTITY
     )
 
@@ -106,40 +107,42 @@ def get_default_cube_measure(cube_name):
     return default_measure.cube_value
 
 
-def get_default_value_for_dimension(cube_name, dimension_name):
+def get_default_member_for_dimension(cube_name, dimension_cube_value):
     """Получение значения измерения по умолчанию"""
 
     dimension = (dbc.Dimension
                  .select()
                  .join(dbc.CubeDimension)
                  .join(dbc.Cube)
-                 .where(dbc.Cube.name == cube_name, dbc.Dimension.label == dimension_name))[0]
+                 .where(dbc.Cube.name == cube_name, dbc.Dimension.cube_value == dimension_cube_value)
+                 )[0]
 
     # Если для измерения указано дефольное значение
     # И если оно не уровня All (в БД уровень All обозначается 0)
     if dimension.default_value_id:
-        def_value = dbc.Value.get(dbc.Value.id == dimension.default_value_id)
+        def_value = dbc.Member.get(dbc.Member.id == dimension.default_value_id)
 
-        return {'dimension': dimension_name,
-                'cube_value': def_value.cube_value}
+        return {'dimension_cube_value': dimension_cube_value,
+                'member_cube_value': def_value.cube_value}
 
 
-def get_connected_value_to_given_value(cube_value):
+def get_with_member_to_given_member(cube_value):
     """Возвращает связанное значение измерения с данным"""
 
-    given_value = dbc.Value.get(dbc.Value.cube_value == cube_value)
+    given_member = dbc.Member.get(dbc.Member.cube_value == cube_value)
 
-    if given_value.connected_value:
-        connected_value = dbc.Value.get(dbc.Value.id == given_value.connected_value)
+    if given_member.with_member:
+        with_member = dbc.Member.get(dbc.Member.id == given_member.with_member)
 
         dimension = (dbc.Dimension
-                     .select(dbc.Dimension.label)
-                     .join(dbc.DimensionValue)
-                     .join(dbc.Value)
-                     .where(dbc.Value.id == connected_value.id))[0]
+                     .select(dbc.Dimension.cube_value)
+                     .join(dbc.DimensionMember)
+                     .join(dbc.Member)
+                     .where(dbc.Member.id == with_member.id)
+                     )[0]
 
-        return {'dimension': dimension.label,
-                'cube_value': connected_value.cube_value}
+        return {'dimension_cube_value': dimension.cube_value,
+                'member_cube_value': with_member.cube_value}
 
 
 def get_cube_caption(cube_name):
@@ -148,23 +151,23 @@ def get_cube_caption(cube_name):
     return dbc.Cube.get(dbc.Cube.name == cube_name).caption
 
 
-def get_full_values_for_dimensions(cube_value):
+def get_captions_for_dimensions(cube_value):
     """
-    Возвращает вербальное описание значения измерения:
+    Возвращает вербальное описание элемента измерения:
     - понятное пользователю название измерения
-    - понятное пользователю значение измерения
+    - понятное пользователю элемента измерения
     """
 
-    value = dbc.Value.get(dbc.Value.cube_value == cube_value)
+    value = dbc.Member.get(dbc.Member.cube_value == cube_value)
 
     dim = (dbc.Dimension
            .select()
-           .join(dbc.DimensionValue)
-           .join(dbc.Value)
-           .where(dbc.Value.cube_value == cube_value))[0]
+           .join(dbc.DimensionMember)
+           .join(dbc.Member)
+           .where(dbc.Member.cube_value == cube_value))[0]
 
-    return {'dimension': dim.full_value,
-            'full_value': value.full_value}
+    return {'dimension_caption': dim.caption,
+            'member_caption': value.caption}
 
 
 def create_cube_lem_key_words():

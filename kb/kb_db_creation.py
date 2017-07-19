@@ -18,14 +18,14 @@ class BaseModel(Model):
         database = SqliteDatabase(SETTINGS.PATH_TO_KNOWLEDGEBASE)
 
 
-class Value(BaseModel):
+class Member(BaseModel):
     """Значение измерения куба"""
 
     # Полное вербальное значение
-    full_value = CharField()
+    caption = CharField()
 
     # Нормализованное вербальное значение
-    lem_index_value = CharField()
+    lem_caption = CharField()
 
     # Нормализованные синонимы
     lem_synonyms = CharField(null=True)
@@ -38,17 +38,17 @@ class Value(BaseModel):
 
     # Значение измерения, которое также должно быть
     # в запросе, если указано данное
-    connected_value = CharField(null=True)
+    with_member = CharField(null=True)
 
 
 class Measure(BaseModel):
     """Мера куба"""
 
     # Полное вербальное значение
-    full_value = CharField()
+    caption = CharField()
 
     # Нормализованное вербальное значение
-    lem_index_value = CharField()
+    lem_caption = CharField()
 
     # Ключевые слова для меры от методологов
     key_words = CharField(null=True)
@@ -70,10 +70,10 @@ class Dimension(BaseModel):
     """Измерение куба"""
 
     # Название измерения
-    label = CharField()
+    cube_value = CharField()
 
     # Полное вербальное значение
-    full_value = CharField()
+    caption = CharField()
 
     # Ключевые слова для измерения от методологов
     key_words = CharField(null=True)
@@ -82,10 +82,10 @@ class Dimension(BaseModel):
     lem_key_words = CharField(null=True)
 
     # Значение измерения по умолчанию
-    default_value = ForeignKeyField(Value, null=True)
+    default_value = ForeignKeyField(Member, null=True)
 
 
-class DimensionValue(BaseModel):
+class DimensionMember(BaseModel):
     """
     Перекрестная сущность между измерением и значением для
     реализации соотношения many-to-many. Зачем нужно M:M?
@@ -97,11 +97,11 @@ class DimensionValue(BaseModel):
     по API Кристы.
     """
 
-    value = ForeignKeyField(Value)
+    member = ForeignKeyField(Member)
     dimension = ForeignKeyField(Dimension)
 
     class Meta:
-        primary_key = CompositeKey('value', 'dimension')
+        primary_key = CompositeKey('member', 'dimension')
 
 
 class Cube(BaseModel):
@@ -163,8 +163,8 @@ def create_tables():
         Measure,
         CubeMeasure,
         CubeDimension,
-        DimensionValue,
-        Value
+        DimensionMember,
+        Member
     ])
 
 
@@ -177,8 +177,8 @@ def drop_tables():
         Measure,
         CubeMeasure,
         CubeDimension,
-        DimensionValue,
-        Value
+        DimensionMember,
+        Member
     ])
 
 if __name__ == "__main__":

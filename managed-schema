@@ -406,9 +406,11 @@
   <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
-  <field name="caption" type="string" multiValued="false"/>
-  <field name="connected_value.cube_value" type="string" multiValued="false" indexed="false"/>
-  <field name="connected_value.dimension" type="string" multiValued="false" indexed="false"/>
+  <field name="cube_caption" type="string" multiValued="false"/> <!-- Индексирование название куба-->
+  <field name="member_caption" type="string" multiValued="false"/> <!-- Индексирование название измерений-->
+  <field name="lem_member_caption" type="string" multiValued="false"/> <!-- Индексирование нормализованных названий измерений-->
+  <field name="connected_value.member_cube_value" type="string" multiValued="false" indexed="false"/>
+  <field name="connected_value.dimension_cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="cube" type="string" multiValued="false" indexed="false"/>
   <field name="cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="default_measure" type="string" multiValued="false" indexed="false"/>
@@ -433,7 +435,6 @@
   <field name="question" type="string" multiValued="false" indexed="false"/>
   <field name="short_answer" type="string" multiValued="false" indexed="false"/>
   <field name="type" type="string" multiValued="false" indexed="false"/>
-  <field name="verbal" type="string" multiValued="false"/>
   <dynamicField name="*_txt_en_split_tight" type="text_en_splitting_tight" indexed="true" stored="true"/>
   <dynamicField name="*_descendent_path" type="descendent_path" indexed="true" stored="true"/>
   <dynamicField name="*_ancestor_path" type="ancestor_path" indexed="true" stored="true"/>
