@@ -4,6 +4,7 @@
 """Работа с деревьями."""
 
 import itertools
+import re
 from copy import copy
 
 # pylint: disable=too-few-public-methods
@@ -21,43 +22,36 @@ class TreeNode(object):
         self.edges_out = []
 
     def __repr__(self):
-        if self.label is None:
-            repr_label = ''
-        else:
-            repr_label = ' #{}'.format(self.label)
-        res = '<TreeNode{} at ({}, {}): {}terminal, '.format(
-            repr_label,
+        return '< TreeNode #{} at ({}, {}) | {}erminal | Edges (i/o): {}/{} | contains {} >'.format(
+            self.label,
             *self.pos,
-            '' if self.terminal else 'not ',
+            'T' if self.terminal else 'Not t',
+            len(self.edges_in),
+            len(self.edges_out),
+            self.content
         )
-        if not self.terminal:
-            res += 'has {} child node{}, '.format(
-                len(self.edges_out),
-                '' if len(self.edges_out) == 1 else 's'
-            )
-        return res + 'content is {}>'.format(self.content)
 
 
 class TreeEdge(object):
     """Хранит информацию о рёбрах дерева."""
 
-    def __init__(self, origin, target, weight):
+    def __init__(self, origin, target, weight=0):
         self.origin = origin
         self.target = target
-        self.weight = weight
+        if isinstance(weight, int) or isinstance(weight, float):
+            self.weight = weight
+        else:
+            self.weight = 0
         self.visible = True
         origin.edges_out.append(self)
         target.edges_in.append(self)
 
     def __repr__(self):
-        res = '/Tree edge from node ({}, {}) to node ({}, {}) with weight {}'.format(
+        return = '$ Tree edge from ({}, {}) to ({}, {}) with weight {}{} $'.format(
             *self.origin.pos,
             *self.target.pos,
-            self.weight,
+            self.weight
         )
-        if not self.visible:
-            return res + ' HIDDEN/'
-        return res + '/'
 
 
 class TreeModel(object):
@@ -87,7 +81,7 @@ class TreeModel(object):
         elif isinstance(obj, TreeNode):
             layer, point = obj.pos
         elif isinstance(obj, str):
-            layer, point = self.nodes.index[obj.strip('#')]
+            layer, point = self.nodes.index[obj.lstrip('#')]
         else:
             raise (TypeError, 'Input must be 2-tuple, TreeNode or str, not {}'.format(type(obj)))
 
@@ -134,6 +128,20 @@ class TreeModel(object):
     def add_layer(self):
         """Добавляет новый слой к дереву."""
         self.structure.append([])
+        
+    def add_fully_connected_layer(self, labels=(), contents=()):
+        """Добавляет полносвязный с предыдущим слой, веса всех связей равны 0"""
+        self.add_layer()
+        for label, content in itertools.zip_longest(labels, contents, fillvalue=None):
+            self.nodes.new(-1, label, content, False, self[-2], ())
+        
+    def add_children_nodes(self, parent, labels=(), contents=(), weights=()):
+        """Добавляет зависимые узлы к узлу дерева"""
+        newtree = TreeModel()
+        newtree.add_layer()
+        for label, content, weight in itertools.zip_longest(labels, contents, weights, fillvalue=None):
+            newtree.nodes.new(-1, label, content, False, ['root'], [weight])
+        self.append(newtree, parent)
 
     def append(self, subtree, root_pos):
         """Присоединяет к дереву другое дерево в качестве дочернего.
@@ -156,22 +164,28 @@ class TreeModel(object):
             if pos == (0, 0):
                 return root_pos
             new_layer = pos[0] + root_pos[0]
-            new_point = layerlens[new_layer] + pos[1]
+            if new_layer < len(layerlens):
+                new_point = layerlens[new_layer] + pos[1]
+            else:
+                new_point = pos[1]
             return (new_layer, new_point)
 
         for node in subtree.nodes:
             newpos = conv_pos(node.pos)
             if newpos not in self:
                 self.nodes.new(
-                    newpos[0], content=node.content, terminal=node.terminal)
+                    newpos[0], label=node.label, content=node.content, terminal=node.terminal)
             else:
                 if node.content is not None:
                     self[newpos].content = node.content
+                if node.label is not 'root':
+                    self[newpos].label = node.label
                 self[newpos].terminal = self[newpos].terminal and node.terminal
 
         for edge in subtree.edges:
             self.edges.new(conv_pos(edge.origin.pos),
                            conv_pos(edge.target.pos), edge.weight)
+        self.check()
             
     def pathfinder(self, start='root', eval_func=lambda e: e.weight, break_in_terminal=False, output_terminal=False, only_content=False):
         """Поиск пути в дереве по заданным критериям.
@@ -239,15 +253,15 @@ class TreeNodesHandler(object):
 
         """
         layer = self._tree.normpos((layer, 0))[0]
-        if len(self._tree) <= layer:
+        while len(self._tree) <= layer:
             self._tree.add_layer()
-            layer = len(self._tree)
 
+        label = re.sub(r'\([0-9]+?\)$', '', str(label))
         if label in self.index or label == '':
             num = 1
-            while label + '[{}]'.format(num) in self.index:
+            while label + '({})'.format(num) in self.index:
                 num += 1
-            label += '[{}]'.format(num)
+            label += '({})'.format(num)
         self.index[label] = (layer, len(self._tree[layer]))
 
         newnode = TreeNode(
