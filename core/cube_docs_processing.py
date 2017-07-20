@@ -49,7 +49,7 @@ class CubeProcessor:
             csl.process_default_measures(item)
 
             # создание MDX-запросов
-            csl.create_mdx_query(cube_data)
+            csl.create_mdx_query(item)
 
         answers = CubeProcessor._format_final_cube_answer(
             best_cube_data_list, user_request
@@ -66,7 +66,7 @@ class CubeProcessor:
         cube_data_list = []
         graph = Graph()
 
-        for path in graph.k_shortest_paths(0, 7, BEST_PATHS_TRESHOLD):
+        for path in graph.k_shortest_paths(0, 16, BEST_PATHS_TRESHOLD):
 
             # копия для каждого прогона
             cube_data_copy = copy.deepcopy(cube_data)
@@ -131,11 +131,12 @@ class CubeAnswer:
     """
 
     def __init__(self, score, mdx_query, cube, feedback):
-        self.status = False
+        self.status = True
         self.type = 'cube'
         self.score = score
         self.mdx_query = mdx_query
         self.cube = cube
+        self.message = ''
         self.response = None
         self.formatted_response = None
         self.feedback = feedback

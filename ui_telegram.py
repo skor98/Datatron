@@ -628,8 +628,8 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
     if verbal_fb['measure'] != 'Значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
-    verbal_fb_list.extend('{}: {}'.format(item['dimension'],
-                                          first_letter_lower(item['full_value']))
+    verbal_fb_list.extend('{}: {}'.format(item['dimension_caption'],
+                                          first_letter_lower(item['member_caption']))
                           for item in verbal_fb['dims'])
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
@@ -647,7 +647,7 @@ def loof_also_for_cube(cube_result):
         verbal_fb_list.append(verbal_fb['measure'].lower())
 
     verbal_fb_list.extend(
-        first_letter_lower(item['full_value']) for item in verbal_fb['dims'])
+        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
 
     verbal_fb_list.append('({}: {})'.format(
         "*База знаний*",
