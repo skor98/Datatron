@@ -111,3 +111,13 @@ class CubeAnswer:
         как ключа для сортировки
         """
         return self.sum_score
+    
+    def todict_API(self):
+        keys_to_return = (
+            'type',
+            'response',
+            'formatted_response',
+            'message',
+            'feedback'
+        )
+        return {key: getattr(self, key, None) for key in keys_to_return}
