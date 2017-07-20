@@ -36,7 +36,7 @@ class CubeProcessor:
             csl.filter_measures_by_selected_cube(item)
             csl.score_cube_question(cube_data)
 
-        best_cube_data_list = CubeProcessor._take_best_cube_datas(cube_data_list)
+        best_cube_data_list = CubeProcessor._take_best_cube_data(cube_data_list)
 
         for item in best_cube_data_list:
             # обработка связанных значений
@@ -85,7 +85,7 @@ class CubeProcessor:
         return cube_data_list
 
     @staticmethod
-    def _take_best_cube_datas(cube_data_list: list):
+    def _take_best_cube_data(cube_data_list: list):
         """Выбор нескольких лучших ответов по кубам"""
 
         SCORING_MODEL = 'sum'

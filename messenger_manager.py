@@ -131,9 +131,11 @@ class MessengerManager:
                 request_id,
                 err
             ))
-            dsr = DrSolrResult()
-            dsr.message = dsr.error = str(err)
-            return dsr
+            core_answer = CoreAnswer(
+                message=str(err),
+                error=str(err)
+            )
+            return core_answer
 
     @staticmethod
     def _simple_split(string_to_tokenize):
