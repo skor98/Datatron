@@ -97,7 +97,7 @@ def define_year_privilege_over_cube(cube_data: CubeData):
         cube_data.members = [
             elem for elem in cube_data.members
             if elem['cube'] == cube_data.selected_cube['cube']
-            ]
+        ]
 
 
 def define_cube_privilege_over_year(cube_data: CubeData):
@@ -127,7 +127,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
         cube_data.members = [
             elem for elem in cube_data.members
             if elem['cube'] == cube_data.selected_cube['cube']
-            ]
+        ]
 
         cube_data.terr_member = {
             'dimension': cube_data.terr_member['dimension'],
@@ -176,7 +176,7 @@ def form_members_in_hierachy_by_score(cube_data: CubeData):
     cube_data.members = [
         list(filter(lambda elem: not isinstance(elem, str), level))
         for level in tmp_dimensions
-        ]
+    ]
 
 
 def all_members_from_first_hierarchy_level(cube_data: CubeData):

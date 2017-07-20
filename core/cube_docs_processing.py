@@ -111,7 +111,7 @@ class CubeAnswer:
         как ключа для сортировки
         """
         return self.sum_score
-    
+
     def todict_API(self):
         keys_to_return = (
             'type',

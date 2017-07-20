@@ -41,6 +41,7 @@ def drop_tables():
     """Удаляет таблицы с пользователями"""
     database.drop_tables([User, Feedback])
 
+
 if __name__ == "__main__":
     # pylint: disable=invalid-name
     parser = argparse.ArgumentParser(

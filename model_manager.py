@@ -14,6 +14,7 @@ class ModelManager:
     """
     Отвечает за хранение настроек модели и их исползьование
     """
+
     def __init__(self, path=""):
         self.params = {}
         if path:
@@ -55,5 +56,6 @@ def restore_default_model():
     global MODEL_CONFIG
     MODEL_CONFIG = ModelManager(MODEL_CONFIG_PATH)
     return MODEL_CONFIG
+
 
 MODEL_CONFIG = restore_default_model()

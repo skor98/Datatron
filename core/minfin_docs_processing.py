@@ -85,7 +85,7 @@ class MinfinAnswer:
         как ключа для сортировки
         """
         return self.score
-    
+
     def todict_API(self):
         keys_to_return = (
             'type',

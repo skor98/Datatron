@@ -104,6 +104,7 @@ def time_with_message(message, level="INFO", critical_seconds=None):
     """
 
     level_to_pass = level
+
     def proc(func):
         def func_to_return(*args, **kwargs):
             dt_now = datetime.datetime.now()
