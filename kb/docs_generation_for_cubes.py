@@ -110,7 +110,7 @@ class CubeDocsGeneration:
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
                     if dimension.cube_value not in ('Years', 'Territories'):
                         for dimension_value in dbc.DimensionMember.select().where(
-                                        dbc.DimensionMember.dimension_id == dimension.id
+                            dbc.DimensionMember.dimension_id == dimension.id
                         ):
                             for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
                                 verbal = member.lem_caption
@@ -166,10 +166,10 @@ class CubeDocsGeneration:
 
         # Все уникальные территории
         members = (dbc.Member
-                  .select(fn.Distinct(dbc.Member.lem_caption))
-                  .join(dbc.DimensionMember)
-                  .join(dbc.Dimension)
-                  .where(dbc.Dimension.cube_value == 'Territories'))
+                   .select(fn.Distinct(dbc.Member.lem_caption))
+                   .join(dbc.DimensionMember)
+                   .join(dbc.Dimension)
+                   .where(dbc.Dimension.cube_value == 'Territories'))
 
         # Создание документа определенной структуры
         for item in members:

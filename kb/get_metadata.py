@@ -8,9 +8,9 @@ import requests
 
 import logs_helper  # pylint: disable=unused-import
 
-#ToDo дописать документацию
-#ToDo заменить списки [] на tuple()
-#ToDo переписать в стиле Python: while i < N -> for i in range(N)
+# ToDo дописать документацию
+# ToDo заменить списки [] на tuple()
+# ToDo переписать в стиле Python: while i < N -> for i in range(N)
 
 
 class Level:
@@ -52,8 +52,10 @@ class CubeData:
     ):
         self.name = name  # Для наших кубов DB по дефолту
         self.caption = caption  # Доходы блаблабла
-        self.last_update = last_update  # Дата последнего изменения - пока не проставляется в кубах
-        self.dimensions = dimensions  # измерения - Territories, KD, BGLevels...
+        # Дата последнего изменения - пока не проставляется в кубах
+        self.last_update = last_update
+        # измерения - Territories, KD, BGLevels...
+        self.dimensions = dimensions
         self.measures = measures  # measures - хранилище value
         self.formal_name = formal_name  # INDO03
         self.cube_elements = cube_elements
@@ -175,7 +177,6 @@ def get_data(cube_list):
         # массив для хранения тех элементов, у которых есть дочерние.
         ChildArray = []
 
-
         # Заносим в "детный" массив измерения
         for i in range(cube.dimensions):
             dimen = cube.dimensions[i]
@@ -258,6 +259,7 @@ def read_data_from_file(file_name='cubes_metadata.txt'):
     with open(file_name, 'r', encoding='utf-8') as file:
         data = file.read()
     return json.loads(data)
+
 
 cubes = ['INYR03', 'CLDO01', 'INDO01', 'EXYR03', 'EXDO01', 'FSYR01', 'CLDO02']
 cube_metadata = get_data(cubes)
