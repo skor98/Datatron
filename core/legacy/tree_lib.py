@@ -44,7 +44,7 @@ class TreeEdge(object):
         else:
             self.weight = 0
         self.visible = True
-        origin.edges_out.append(self)()
+        origin.edges_out.append(self)
         target.edges_in.append(self)
 
     def __repr__(self):
@@ -252,13 +252,13 @@ class TreeModel(object):
             path.append(maxpath)
             current = maxpath.target
 
-        path = TreePath(path)
+        path = TreePath(path, self)
         return path
 
     def dot_format(self, default_color='black', colors=None):
         """Предстваление графа в формате DOT"""
         if colors is None:
-            colors = {}
+            colors = {'root': 'blue'}
 
         def _node_dot(node):
             return '{0} [color={1} fontcolor={1}];'.format(
@@ -532,13 +532,15 @@ class TreeEdgesHandler(object):
         return len([i for i in self])
 
 
-def piper(path):
+def piper(path, content_decoder=None):
     """Собирает функцию из значений узлов пути.
 
     :param path: Путь, который необходимо обработать
 
     """
     pipe = path.contents
+    if content_decoder is not None:
+        pipe = [content_decoder(i) for i in pipe]
 
     def _pipe_func(val):
         res = copy(val)
