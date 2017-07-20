@@ -330,11 +330,11 @@ def process_default_members(cube_data: CubeData):
 
     # не использованные измерения
     unused_dimensions = (
-        set(cube_data.selected_cube.dimensions) - set(used_cube_dimensions)
+        set(cube_data.selected_cube['dimensions']) - set(used_cube_dimensions)
     )
 
     for dim in unused_dimensions:
-        default_value = get_default_member_for_dimension(cube_data.selected_cube, dim)
+        default_value = get_default_member_for_dimension(cube_data.selected_cube['cube'], dim)
         if default_value:
             cube_data.members.append(
                 {
@@ -372,8 +372,8 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
             ))
 
         cube_data.mdx_query = mdx_template.format(
-            cube_data.selected_cube,
-            cube_data.selected_cube,
+            cube_data.selected_measure,
+            cube_data.selected_cube['cube'],
             ','.join(dim_str_value)
         )
 

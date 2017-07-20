@@ -34,7 +34,7 @@ class CubeProcessor:
         # доработка вариантов
         for item in cube_data_list:
             csl.filter_measures_by_selected_cube(item)
-            csl.score_cube_question(cube_data)
+            csl.score_cube_question(item)
 
         best_cube_data_list = CubeProcessor._take_best_cube_data(cube_data_list)
 
