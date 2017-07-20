@@ -9,6 +9,7 @@ import requests
 import logging
 import json
 import datetime
+import numpy
 
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_caption_for_measure
@@ -22,14 +23,21 @@ class CubeData:
     """Структура для данных передаваемых между узлами"""
 
     def __init__(self):
+        self.selected_cube = None
         self.cubes = []
         self.members = []
         self.year_member = None
         self.terr_member = None
         self.measures = []
+        self.score = {}
 
 
-def _send_request_to_server(mdx_query: str, cube: str):
+class FunctionExecutionError(Exception):
+    """Ошибка при невозможности выполнении функции в узле"""
+    pass
+
+
+def send_request_to_server(mdx_query: str, cube: str):
     """
     Отправка запроса к серверу Кристы для получения
     ответа по MDX-запросу
@@ -45,7 +53,7 @@ def _send_request_to_server(mdx_query: str, cube: str):
     return api_response
 
 
-def _form_feedback(mdx_query: str, cube: str, user_request: str):
+def form_feedback(mdx_query: str, cube: str, user_request: str):
     """
     Формирование обратной связи по запросу
     для экспертной и обычной обратной связи
@@ -86,7 +94,7 @@ def _form_feedback(mdx_query: str, cube: str, user_request: str):
     return feedback
 
 
-def _format_numerical(number: float):
+def format_numerical(number: float):
     """
     Перевод числа в млн, млрд и трл вид.
     Например, 123 111 298 -> 123,1 млн.
@@ -117,24 +125,23 @@ def _format_numerical(number: float):
     return res
 
 
-@staticmethod
-def _format_cube_answer(solr_cube_result, user_request, request_id):
+def format_cube_answer(solr_cube_result, user_request, request_id):
     """
     Работа над ответом по кубу: получение данных, форматирование
     ответа, добавление обратной связи
     """
 
-    # TODO: рефакторинг
+    # TODO: переписать
 
     # Запрос отправка на серверы Кристы MDX-запроса по HTTP
-    api_response = _send_request_to_server(
+    api_response = send_request_to_server(
         solr_cube_result.mdx_query,
         solr_cube_result.cube
     )
     api_response = api_response.text
 
     # Формирование читабельной обратной связи по результату
-    solr_cube_result.feedback = _form_feedback(
+    solr_cube_result.feedback = form_feedback(
         solr_cube_result.mdx_query,
         solr_cube_result.cube,
         user_request
@@ -178,7 +185,7 @@ def _format_cube_answer(solr_cube_result, user_request, request_id):
         # Добавление форматированного результата
         # Если формат для меры - 0, что означает число
         if not value_format:
-            formatted_value = _format_numerical(value)
+            formatted_value = format_numerical(value)
             solr_cube_result.formatted_response = formatted_value
         # Если формат для меры - 1, что означает процент
         elif value_format == 1:
@@ -214,16 +221,35 @@ def _format_cube_answer(solr_cube_result, user_request, request_id):
     ))
 
 
-def manage_years(year: int):
+def manage_years(cube_data: CubeData):
     """Обработка лет из 1 и 2 цифр"""
 
-    if year > 2006:
-        return year
-    # работа с годами из одного и двух цифр
-    else:
-        if year < 10:
-            year = '0' + str(year)
-        return datetime.datetime.strptime(str(year), '%y').year
+    # проверка на наличие измерения года
+    if cube_data.year_member:
+        year = cube_data.year_member['cube_value']
+
+        # обработка лет из 1 и 2 цифр
+        if int(year) < 2006:
+            if int(year) < 10:
+                year = '0' + year
+            cube_data.year_member = str(datetime.datetime.strptime(year, '%y').year)
+
+
+def check_if_year_is_current(cube_data: CubeData):
+    """Проверка на то, что год в данных является текущим годом"""
+
+    given_year = int(cube_data.year_member['cube_value'])
+    return bool(given_year == datetime.datetime.now().year)
+
+
+def filter_measures_by_selected_cube(cube_data: CubeData):
+    """Фильтрация мер по принадлежности к выбранному кубу"""
+
+    if cube_data.measures:
+        cube_data.measures = [
+            item for item in cube_data.measures
+            if item['cube'] == cube_data.selected_cube
+            ]
 
 
 def group_documents(solr_documents: list):
@@ -241,8 +267,6 @@ def group_documents(solr_documents: list):
         if doc['type'] == 'dim_member':
             cube_data.members.append(doc)
         elif doc['type'] == 'year_dim_member':
-            # обработка значения года, если он из 1 или 2 цифр
-            doc['fvalue'] = manage_years(int(doc['fvalue']))
             cube_data.year_member = doc
         elif doc['type'] == 'terr_dim_member':
             cube_data.terr_member = doc
@@ -254,3 +278,23 @@ def group_documents(solr_documents: list):
             minfin_docs.append(doc)
 
     return minfin_docs, cube_data
+
+
+def score_cube_question(cube_data: CubeData):
+    """Подсчет различных видов score для запроса по кубу"""
+
+    def sum_scoring():
+        """
+        Базовый вариант подсчета score ответа:
+        Сумма скора куба, среднего скора элементов измерений и меры
+        """
+
+        cube_score = cube_data.selected_cube['score']
+        avg_member_score = numpy.mean([member['score'] for member in cube_data.members])
+        measure_score = 0
+        if cube_data.measures:
+            measure_score = cube_data.measures['score']
+
+        cube_data.score['sum'] = cube_score + avg_member_score + measure_score
+
+    sum_scoring()

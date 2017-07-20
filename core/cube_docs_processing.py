@@ -7,11 +7,14 @@
 
 import requests
 import logging
-from kb.kb_support_library import get_cube_caption
-from kb.kb_support_library import get_caption_for_measure
-from kb.kb_support_library import get_captions_for_dimensions
+import copy
+
+from core.graph import define_graph_structure
+import core.support_library as csl
 from core.support_library import CubeData
+from core.support_library import FunctionExecutionError
 import networkx as nx
+
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -25,21 +28,61 @@ class CubeProcessor:
 
     @staticmethod
     def get_data(cube_data: CubeData):
+        csl.manage_years(cube_data)
+
+        # форрмирование дерева
+        graph = define_graph_structure()
+
+        # получение нескольких возможных вариантов
+        cube_data_list = CubeProcessor.get_several_cube_answers(cube_data, graph)
+
+        # доработка вариантов
+        for item in cube_data_list:
+            csl.filter_measures_by_selected_cube(item)
+            csl.score_cube_question(cube_data)
+
+        best_cube_data_list = CubeProcessor.take_best_cube_datas(cube_data_list)
+
+        for item in best_cube_data_list:
+            # TODO: обработка связанных значений
+            # TODO: обаботка дефолтных значений
+            pass
+
         return [CubeAnswer()]
 
     @staticmethod
-    def define_graph_structure():
-        """Определение структуры графа"""
+    def get_several_cube_answers(cube_data: CubeData, graph: nx.DiGraph()):
+        """Формирование нескольких ответов по кубам"""
 
-        dir_graph = nx.DiGraph()
+        cube_data_list = []
+        for path in nx.all_shortest_paths(graph, source=0, target=16, weight='weight'):
 
-        def define_nodes():
-            """Определение вершин"""
-            pass
+            cube_data_copy = copy.deepcopy(cube_data)
 
-        def define_edges():
-            """Определение связей между ними"""
-            pass
+            try:
+                for node_id in path:
+                    graph.node[node_id]['function'](cube_data_copy)
+
+                cube_data_list.append(cube_data_copy)
+            except FunctionExecutionError as e:
+                msg = e.argsp[0]
+                logging.error('{}: {}'.format(msg['function'], msg['message']))
+
+        return cube_data_list
+
+    @staticmethod
+    def take_best_cube_datas(cube_data_list: list):
+        """Выбор нескольких лучших ответов по кубам"""
+
+        SCORING_MODEL = 'sum'
+        TRESHOLD = 5
+
+        cube_data_list = sorted(
+            cube_data_list,
+            key=lambda cube_data: cube_data.score[SCORING_MODEL],
+            reverse=True)
+
+        return cube_data_list[:TRESHOLD + 1]
 
 
 class CubeAnswer:
