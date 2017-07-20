@@ -34,7 +34,7 @@ def select_second_cube(cube_data: CubeData):
     # Если найден только один куб
     if len(cube_data.cubes) < 2:
         raise FunctionExecutionError({
-            "function": select_second_cube().__name__,
+            "function": select_second_cube.__name__,
             "message": "Найден только 1 куб"
         })
 
@@ -47,7 +47,7 @@ def select_third_cube(cube_data: CubeData):
     # Если найден только один куб
     if len(cube_data.cubes) < 3:
         raise FunctionExecutionError({
-            "function": select_third_cube().__name__,
+            "function": select_third_cube.__name__,
             "message": "Найдено только 2 куба"
         })
 
@@ -60,7 +60,7 @@ def select_forth_cube(cube_data: CubeData):
     # Если найден только один куб
     if len(cube_data.cubes) < 4:
         raise FunctionExecutionError({
-            "function": select_forth_cube().__name__,
+            "function": select_forth_cube.__name__,
             "message": "Найдено только 3 куба"
         })
 
@@ -89,7 +89,7 @@ def define_year_privilege_over_cube(cube_data: CubeData):
     if cube_data.year_member:
         if 'Years' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
-                "function": define_year_privilege_over_cube().__name__,
+                "function": define_year_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ГОД"
             })
 
@@ -119,7 +119,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
     if cube_data.terr_member:
         if 'Territories' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
-                "function": define_territory_privilege_over_cube().__name__,
+                "function": define_territory_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ТЕРРИТОРИЯ"
             })
 
@@ -132,7 +132,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
         cube_data.terr_member = {
             'dimension': cube_data.terr_member['dimension'],
             'cube': cube_data.selected_cube,
-            'cube_value': cube_data.terr_member[cube_data.selected_cube],
+            'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
             'score': cube_data.terr_member['score']
         }
 
@@ -150,17 +150,17 @@ def define_cube_privilege_over_territory(cube_data: CubeData):
 def form_members_in_hierachy_by_score(cube_data: CubeData):
     """Формирование иерархии измерений"""
 
-    if not cube_data.members:
-        raise FunctionExecutionError({
-            "function": form_members_in_hierachy_by_score().__name__,
-            "message": "Все ЭЛЕМЕНТЫ измерений были удалены"
-        })
-
     # фильтр измерений по принадлежности к выбранному кубу
     cube_data.members = [
         elem for elem in cube_data.members
         if elem['cube'] == cube_data.selected_cube['cube']
         ]
+
+    if not cube_data.members:
+        raise FunctionExecutionError({
+            "function": form_members_in_hierachy_by_score.__name__,
+            "message": "Все ЭЛЕМЕНТЫ измерений были удалены"
+        })
 
     tmp_dimensions, idx = [], 0
     while cube_data.members:
@@ -195,7 +195,7 @@ def all_members_from_second_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 2го уровня"""
     if len(cube_data.members) < 2:
         raise FunctionExecutionError({
-            "function": all_members_from_second_hierarchy_level().__name__,
+            "function": all_members_from_second_hierarchy_level.__name__,
             "message": "2 уровня ИЕРАРХИИ не существует"
         })
 
@@ -207,7 +207,7 @@ def all_members_from_third_hierarchy_level(cube_data: CubeData):
 
     if len(cube_data.members) < 3:
         raise FunctionExecutionError({
-            "function": all_members_from_third_hierarchy_level().__name__,
+            "function": all_members_from_third_hierarchy_level.__name__,
             "message": "3 уровня ИЕРАРХИИ не существует"
         })
 
@@ -219,7 +219,7 @@ def all_members_from_forth_hierarchy_level(cube_data: CubeData):
 
     if len(cube_data.members) < 4:
         raise FunctionExecutionError({
-            "function": all_members_from_forth_hierarchy_level().__name__,
+            "function": all_members_from_forth_hierarchy_level.__name__,
             "message": "4 уровня ИЕРАРХИИ не существует"
         })
 

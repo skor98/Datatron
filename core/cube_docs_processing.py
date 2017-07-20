@@ -79,8 +79,8 @@ class CubeProcessor:
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
             except FunctionExecutionError as e:
-                msg = e.argsp[0]
-                logging.error('{}: {}'.format(msg['function'], msg['message']))
+                msg = e.args[0]
+                logging.info('{}: {}'.format(msg['function'], msg['message']))
 
         return cube_data_list
 
