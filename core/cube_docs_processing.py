@@ -141,7 +141,7 @@ class CubeAnswer:
         self.formatted_response = None
         self.feedback = feedback
 
-    def get_key(self):
+    def get_score(self):
         """
         Функция для получения score, используемого
         как ключа для сортировки

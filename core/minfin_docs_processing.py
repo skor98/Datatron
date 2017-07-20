@@ -79,7 +79,7 @@ class MinfinAnswer:
         self.document = None
         self.message = None
 
-    def get_key(self):
+    def get_score(self):
         """
         Функция для получения score, используемого
         как ключа для сортировки

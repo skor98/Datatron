@@ -456,19 +456,13 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             stats_pattern = (
-                'Сред. score: {}\n' +
-                'Мин. score: {}\n' +
-                'Макс. score: {}\n' +
-                'Score куба: {}\n' +
                 'Суммарный score: {}'
             )
+
             stats = stats_pattern.format(
-                cube_result.avg_score,
-                cube_result.min_score,
-                cube_result.max_score,
-                cube_result.cube_score,
-                cube_result.sum_score
+                cube_result.score['sum']
             )
+
             bot.send_message(message.chat.id, stats)
     else:
         if cube_result.message:
@@ -651,7 +645,7 @@ def loof_also_for_cube(cube_result):
 
     verbal_fb_list.append('({}: {})'.format(
         "*База знаний*",
-        cube_result.sum_score
+        cube_result.get_score()
     ))
 
     return ' '.join(verbal_fb_list)

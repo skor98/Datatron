@@ -128,7 +128,7 @@ def format_numerical(number: float):
     return res
 
 
-def format_cube_answer(solr_cube_result, user_request, request_id):
+def format_cube_answer(cube_answer, request_id: str, response: requests):
     """
     Работа над ответом по кубу: получение данных, форматирование
     ответа, добавление обратной связи
@@ -136,90 +136,77 @@ def format_cube_answer(solr_cube_result, user_request, request_id):
 
     # TODO: переписать
 
-    # Запрос отправка на серверы Кристы MDX-запроса по HTTP
-    api_response = send_request_to_server(
-        solr_cube_result.mdx_query,
-        solr_cube_result.cube
-    )
-    api_response = api_response.text
-
-    # Формирование читабельной обратной связи по результату
-    solr_cube_result.feedback = form_feedback(
-        solr_cube_result.mdx_query,
-        solr_cube_result.cube,
-        user_request
-    )
-
+    response = response.text
     value = None
 
     # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
-    if 'Доступ закрыт!' in api_response:
-        solr_cube_result.status = False
-        solr_cube_result.message = ERROR_GENERAL
-        solr_cube_result.response = api_response
-        value = api_response
+    if 'Доступ закрыт!' in response:
+        cube_answer.status = False
+        cube_answer.message = ERROR_GENERAL
+        cube_answer.response = response
+        value = response
         logging.warning("Запрос {} не прошел. Запрещены POST-запросы".format(
             request_id
         ))
     # Обработка случая, когда что-то пошло не так, например,
     # в запросе указан неизвестный параметр
-    elif '"success":false' in api_response:
-        solr_cube_result.status = False
-        solr_cube_result.message = ERROR_GENERAL
-        solr_cube_result.response = api_response
-        value = api_response
+    elif '"success":false' in response:
+        cube_answer.status = False
+        cube_answer.message = ERROR_GENERAL
+        cube_answer.response = response
+        value = response
         logging.warning("Для запроса {} создался MDX-запрос с некорректными параметрами".format(
             request_id
         ))
     # Обработка случая, когда данных нет
-    elif json.loads(api_response)["cells"][0][0]["value"] is None:
-        solr_cube_result.status = False
-        solr_cube_result.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
-        solr_cube_result.response = None
+    elif json.loads(response)["cells"][0][0]["value"] is None:
+        cube_answer.status = False
+        cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
+        cube_answer.response = None
     # В остальных случаях
     else:
         # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
-        value = float(json.loads(api_response)["cells"][0][0]["value"])
-        solr_cube_result.response = value
+        value = float(json.loads(response)["cells"][0][0]["value"])
+        cube_answer.response = value
 
         # Получение из базы знаний (knowledge_base.dbs) формата для меры
-        value_format = get_representation_format(solr_cube_result.mdx_query)
+        value_format = get_representation_format(cube_answer.mdx_query)
 
         # Добавление форматированного результата
         # Если формат для меры - 0, что означает число
         if not value_format:
             formatted_value = format_numerical(value)
-            solr_cube_result.formatted_response = formatted_value
+            cube_answer.formatted_response = formatted_value
         # Если формат для меры - 1, что означает процент
         elif value_format == 1:
             # Перевод округление
             formatted_value = '{}%'.format(round(value, 5))
-            solr_cube_result.formatted_response = formatted_value
+            cube_answer.formatted_response = formatted_value
 
         # Добавление к неформатированного результата
         # Если формат меры - 0, то просто целое число без знаков после запятой
         if not value_format:
-            solr_cube_result.response = int(str(value).split('.')[0])
+            cube_answer.response = int(str(value).split('.')[0])
         # Если формат для меры - 1, то возращается полученный неокругленный результат
         elif value_format == 1:
-            solr_cube_result.response = str(value)
+            cube_answer.response = str(value)
 
         # добавление обратной связи в поле экземпляра класа
-        solr_cube_result.message = ''
+        cube_answer.message = ''
 
     # Создание фидбека в другом формате для удобного логирования
-    feedback_verbal = solr_cube_result.feedback['verbal']
+    feedback_verbal = cube_answer.feedback['verbal']
     verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
 
     # pylint: disable=invalid-sequence-index
-    verbal += ' '.join([str(idx + 1) + '. ' + val['full_value']
+    verbal += ' '.join([str(idx + 1) + '. ' + val['member_caption']
                         for idx, val in enumerate(feedback_verbal['dims'])])
 
     logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
     logging.info(logging_str.format(
         request_id,
         verbal,
-        solr_cube_result.mdx_query,
+        cube_answer.mdx_query,
         value
     ))
 

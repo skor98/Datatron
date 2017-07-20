@@ -8,7 +8,10 @@
 import logging
 
 from core.solr import Solr
+from core.cube_docs_processing import CubeAnswer
 from core.support_library import group_documents
+from core.support_library import send_request_to_server
+from core.support_library import format_cube_answer
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
@@ -58,7 +61,7 @@ class DataRetrieving:
 
             answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving.format_core_answer(answers)
+            core_answer = DataRetrieving.format_core_answer(answers, request_id)
         else:
             pass
             # Обработка случая, когда документы не найдены
@@ -85,13 +88,13 @@ class DataRetrieving:
         # Фильтрация выборки в порядке убывания по score
         # TODO: подумать над улучшением параметра для сравнения
         all_answers = sorted(cube_answers + minfin_answers,
-                             key=lambda ans: ans.get_key(),
+                             key=lambda ans: ans.get_score(),
                              reverse=True)
 
         return all_answers
 
     @staticmethod
-    def format_core_answer(answers: list):
+    def format_core_answer(answers: list, request_id: str):
         """Формирование структуры финального ответа"""
 
         core_answer = CoreAnswer()
@@ -105,6 +108,14 @@ class DataRetrieving:
 
             # Выбор главного ответа
             core_answer.answer = answers[0]
+
+            if isinstance(core_answer.answer, CubeAnswer):
+                response = send_request_to_server(
+                    core_answer.answer.mdx_query,
+                    core_answer.answer.cube
+                )
+
+                format_cube_answer(core_answer.answer, request_id, response)
 
             # Добавление до 5 дополнительных ответов
             core_answer.more_answers = answers[1:THRESHOLD + 1]
