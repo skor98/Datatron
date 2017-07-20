@@ -159,7 +159,6 @@ def _refactor_data(data):
                         elem.strip() for elem in row.document_caption.split(';')
                         ]
                     doc.document = [elem.strip() for elem in row.document.split(';')]
-                    ]
                 else:
                     doc.document_caption = row.document_caption.strip()
                     doc.document = row.document.strip()
