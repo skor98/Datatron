@@ -9,7 +9,7 @@ import requests
 import logging
 import copy
 
-from core.graph import define_graph_structure
+from core.graph import Graph
 import core.support_library as csl
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
@@ -30,11 +30,8 @@ class CubeProcessor:
     def get_data(cube_data: CubeData):
         csl.manage_years(cube_data)
 
-        # форрмирование дерева
-        graph = define_graph_structure()
-
         # получение нескольких возможных вариантов
-        cube_data_list = CubeProcessor.get_several_cube_answers(cube_data, graph)
+        cube_data_list = CubeProcessor.get_several_cube_answers(cube_data)
 
         # доработка вариантов
         for item in cube_data_list:
@@ -51,18 +48,25 @@ class CubeProcessor:
         return [CubeAnswer()]
 
     @staticmethod
-    def get_several_cube_answers(cube_data: CubeData, graph: nx.DiGraph()):
+    def get_several_cube_answers(cube_data: CubeData):
         """Формирование нескольких ответов по кубам"""
 
-        cube_data_list = []
-        for path in nx.all_shortest_paths(graph, source=0, target=16, weight='weight'):
+        BEST_PATHS_TRESHOLD = 10
 
+        cube_data_list = []
+        graph = Graph()
+
+        for path in graph.k_shortest_paths(0, 7, BEST_PATHS_TRESHOLD):
+
+            # копия для каждого прогона
             cube_data_copy = copy.deepcopy(cube_data)
 
             try:
+                # последовательное исполнение функций узлов
                 for node_id in path:
                     graph.node[node_id]['function'](cube_data_copy)
 
+                # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
             except FunctionExecutionError as e:
                 msg = e.argsp[0]

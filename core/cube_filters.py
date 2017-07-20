@@ -137,7 +137,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
         }
 
 
-def not_filter_dimensions_by_territory(cube_data: CubeData):
+def define_cube_privilege_over_territory(cube_data: CubeData):
     """
     Отсутствие фильтрации значений измерений по наличию
     в их кубах года
