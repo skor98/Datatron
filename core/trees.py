@@ -3,7 +3,7 @@
 
 """Работа с деревьями."""
 
-import itertools
+from itertools import chain, zip_longest
 import re
 from copy import copy
 
@@ -28,7 +28,8 @@ class TreeNode(object):
             'T' if self.terminal else 'Not t',
             len(self.edges_in),
             len(self.edges_out),
-            self.content
+            self.content if not isinstance(self.content, str)
+            else '"{}"'.format(self.content),
         )
 
 
@@ -38,12 +39,12 @@ class TreeEdge(object):
     def __init__(self, origin, target, weight=0):
         self.origin = origin
         self.target = target
-        if isinstance(weight, int) or isinstance(weight, float):
+        if isinstance(weight, (float, int)):
             self.weight = weight
         else:
             self.weight = 0
         self.visible = True
-        origin.edges_out.append(self)
+        origin.edges_out.append(self)()
         target.edges_in.append(self)
 
     def __repr__(self):
@@ -56,6 +57,39 @@ class TreeEdge(object):
             self.weight,
             '>>' if self.visible else '^^',
         )
+
+
+class TreePath(object):  # pylint: disable=too-many-instance-attributes
+    """Хранит информацию до путях для удобства взаимодействия."""
+
+    def __init__(self, edge_path, tree=None):
+        self.edge_path = edge_path
+        self.node_path = [e.target for e in self.edge_path]
+
+        self.start = self.edge_path[0].origin
+        self.end = self.node_path[-1]
+
+        self.weights = [e.weight for e in self.edge_path]
+
+        self.len = len(self.edge_path)
+        self.wsum = sum(self.weights)
+        self.terminal = self.end.terminal
+
+        self.pos_path = [n.pos for n in self.node_path]
+        self.labels = [n.label for n in self.node_path]
+        self.contents = [n.content for n in self.node_path]
+
+        if tree is not None:
+            self._make_dot(tree)
+        else:
+            self.dot = None
+
+    def _make_dot(self, tree):
+        colors = {n.label: 'red' for n in self.node_path}
+        colors.update({(e.origin.label, e.target.label): 'red'
+                       for e in self.edge_path})
+        colors['root'] = 'blue'
+        self.dot = tree.dot_format(default_color='gray', colors=colors)
 
 
 class TreeModel(object):
@@ -85,9 +119,11 @@ class TreeModel(object):
         elif isinstance(obj, TreeNode):
             layer, point = obj.pos
         elif isinstance(obj, str):
-            layer, point = self.nodes.index[obj.lstrip('#')]
+            layer, point = self.nodes.index[re.sub(
+                r'\s', '_', obj.lstrip('#'))]
         else:
-            raise (TypeError, 'Input must be 2-tuple, TreeNode or str, not {}'.format(type(obj)))
+            raise TypeError(
+                'Input must be 2-tuple, TreeNode or str, not {}'.format(type(obj)))
 
         if layer < 0:
             layer += len(self)
@@ -132,18 +168,18 @@ class TreeModel(object):
     def add_layer(self):
         """Добавляет новый слой к дереву."""
         self.structure.append([])
-        
+
     def add_fully_connected_layer(self, labels=(), contents=()):
         """Добавляет полносвязный с предыдущим слой, веса всех связей равны 0"""
         self.add_layer()
-        for label, content in itertools.zip_longest(labels, contents, fillvalue=None):
+        for label, content in zip_longest(labels, contents, fillvalue=None):
             self.nodes.new(-1, label, content, False, self[-2], ())
-        
+
     def add_children_nodes(self, parent, labels=(), contents=(), weights=()):
         """Добавляет зависимые узлы к узлу дерева"""
         newtree = TreeModel()
         newtree.add_layer()
-        for label, content, weight in itertools.zip_longest(labels, contents, weights, fillvalue=None):
+        for label, content, weight in zip_longest(labels, contents, weights, fillvalue=None):
             newtree.nodes.new(-1, label, content, False, ['root'], [weight])
         self.append(newtree, parent)
 
@@ -164,7 +200,7 @@ class TreeModel(object):
 
         layerlens = [len(l) for l in self]
 
-        def conv_pos(pos):
+        def _conv_pos(pos):
             if pos == (0, 0):
                 return root_pos
             new_layer = pos[0] + root_pos[0]
@@ -175,53 +211,81 @@ class TreeModel(object):
             return (new_layer, new_point)
 
         for node in subtree.nodes:
-            newpos = conv_pos(node.pos)
+            newpos = _conv_pos(node.pos)
             if newpos not in self:
                 self.nodes.new(
                     newpos[0], label=node.label, content=node.content, terminal=node.terminal)
             else:
                 if node.content is not None:
                     self[newpos].content = node.content
-                if node.label is not 'root':
+                if node.label != 'root':
                     self[newpos].label = node.label
                 self[newpos].terminal = self[newpos].terminal and node.terminal
 
         for edge in subtree.edges:
-            self.edges.new(conv_pos(edge.origin.pos),
-                           conv_pos(edge.target.pos), edge.weight)
+            self.edges.new(_conv_pos(edge.origin.pos),
+                           _conv_pos(edge.target.pos), edge.weight)
         self.check()
-            
-    def pathfinder(self, start='root', eval_func=lambda e: e.weight, break_in_terminal=False, output_terminal=False, only_content=False):
+
+    def pathfinder(self, start='root', eval_func=lambda e: e.weight, break_in_terminal=False):
         """Поиск пути в дереве по заданным критериям.
 
         :param start: Узел, из которого начинается поиск
             (по умолчанию - корневой узел дерева).
-        :param lookup_func: Функция для расчёта приоритета рёбер. 
+        :param lookup_func: Функция для расчёта приоритета рёбер.
             Должна принимать на вход объект TreeEdge и возвращать число,
             прямо пропорциональное приоритету ребра. По умолчанию возвращает вес ребра.
         :param break_in_terminal: Если True, то алгоритм остановится, как только придёт
             в любой терминальный узел. По умолчанию - False.
-        :param output_terminal: Если True, то к выводу добавляется значение параметра
-            terminal финального узла пути. По умолчанию - False.
-        :param only_content: Если True, то в качестве пути возвращается список данных
-            из узлов; иначе возвращается список объектов рёбер. По умолчанию - False.
         """
         path = []
         current = self[start]
-        
-        while len(self.edges.from_node(current)) > 0:
+        visited = []
+
+        while self.edges.from_node(current):
+            if current in visited:
+                raise RuntimeError('Loop in tree', TreePath(path), current)
+            visited.append(current)
             if break_in_terminal and current.terminal:
                 break
             maxpath = max(self.edges.from_node(current, False), key=eval_func)
             path.append(maxpath)
             current = maxpath.target
-            
-        if only_content:
-            path = [e.target.content for e in path]
-        
-        if output_terminal:
-            return (current.terminal, path)
+
+        path = TreePath(path)
         return path
+
+    def dot_format(self, default_color='black', colors=None):
+        """Предстваление графа в формате DOT"""
+        if colors is None:
+            colors = {}
+
+        def _node_dot(node):
+            return '{0} [color={1} fontcolor={1}];'.format(
+                node.label,
+                colors.get(node.label, default_color),
+            )
+
+        def _edge_dot(edge):
+            return '{0} -> {1} [style="{2}" label="{3}" color={4} fontcolor={4}];'.format(
+                edge.origin.label,
+                edge.target.label,
+                'solid' if edge.visible else 'dotted',
+                edge.weight,
+                colors.get((edge.origin.label, edge.target.label),
+                           default_color),
+            )
+        res = ['digraph {']
+        for num, layer in enumerate(self.structure):
+            if not layer:
+                continue
+
+            res.extend(['subgraph "Layer {}"'.format(num), '{ rank = same;'] +
+                       [_node_dot(n) for n in layer])
+            res.append('}')
+        res.extend([_edge_dot(e) for e in self.edges])
+        res.append('}')
+        return ' '.join(res)
 
     def __repr__(self):
         point = len(self.nodes)
@@ -241,7 +305,7 @@ class TreeNodesHandler(object):
         self._tree = tree
         self.index = {}
 
-    def new(self, layer=-1, label=None, content=None, terminal=False, parents=(), weights=()):
+    def new(self, layer=-1, label=None, content=None, terminal=False, parents=(), weights=()):  # pylint: disable=too-many-arguments
         """Создаёт новый узел.
 
         :param layer: Слой, в который будет добавлен узел (по умолчанию - последний).
@@ -268,7 +332,8 @@ class TreeNodesHandler(object):
             else:
                 label = str(content)
         else:
-            label = re.sub(r'_[0-9]+?$', '', str(label))
+            label = re.sub(r'\s', '_', str(label))
+            label = re.sub(r'_[0-9]+?$', '', label)
         if label in self.index:
             label += '_'
             num = 1
@@ -285,7 +350,7 @@ class TreeNodesHandler(object):
         )
         self._tree.structure[layer].append(newnode)
 
-        for parent, weight in itertools.zip_longest(parents, weights, fillvalue=0):
+        for parent, weight in zip_longest(parents, weights, fillvalue=0):
             self._tree.edges.new(parent, newnode, weight)
 
         return newnode
@@ -317,8 +382,8 @@ class TreeNodesHandler(object):
         pos = self._tree.normpos(pos)
         self.index.pop(self.get(pos).label, None)
         self.get(pos).deleted = True
-        for edge in itertools.chain(self._tree.edges.to_node(pos),
-                                    self._tree.edges.from_node(pos)):
+        for edge in chain(self._tree.edges.to_node(pos),
+                          self._tree.edges.from_node(pos)):
             self._tree.edges.remove(edge)
         self._tree.check()
 
@@ -326,7 +391,7 @@ class TreeNodesHandler(object):
         return self.get(key)
 
     def __iter__(self):
-        return itertools.chain.from_iterable(self._tree.structure)
+        return chain.from_iterable(self._tree.structure)
 
     def __contains__(self, obj):
         if isinstance(obj, TreeNode):
@@ -356,7 +421,8 @@ class TreeEdgesHandler(object):
         :param weight: Вес перехода.
 
         """
-        or_pos, tar_pos = self._tree.normpos(origin), self._tree.normpos(target)
+        or_pos, tar_pos = self._tree.normpos(
+            origin), self._tree.normpos(target)
         if (or_pos, tar_pos) in self:
             self.get(or_pos, tar_pos).weight += weight
         else:
@@ -371,7 +437,8 @@ class TreeEdgesHandler(object):
             не найдено (по умолчанию - None).
 
         """
-        or_pos, tar_pos = self._tree.normpos(origin), self._tree.normpos(target)
+        or_pos, tar_pos = self._tree.normpos(
+            origin), self._tree.normpos(target)
         for edge in self._tree[or_pos].edges_out:
             if edge.target.pos == tar_pos and (show_hidden or edge.visible):
                 return edge
@@ -384,35 +451,37 @@ class TreeEdgesHandler(object):
         :param target: Координаты конечной точки ребра.
 
         """
-        or_pos, tar_pos = self._tree.normpos(origin), self._tree.normpos(target)
+        or_pos, tar_pos = self._tree.normpos(
+            origin), self._tree.normpos(target)
         if not getattr(self._tree[or_pos], 'deleted', False):
-            self._tree[or_pos].edges_out = [e for e in origin.edges_out if e.target.pos != tar_pos]
+            self._tree[or_pos].edges_out = [
+                e for e in origin.edges_out if e.target.pos != tar_pos]
         if not getattr(self._tree[tar_pos], 'deleted', False):
-            self._tree[tar_pos].edges_in = [e for e in target.edges_in if e.origin.pos != or_pos]
-            
-    
+            self._tree[tar_pos].edges_in = [
+                e for e in target.edges_in if e.origin.pos != or_pos]
+
     def hide(self, origin, target):
         """Скрывает ребро (может учитываться при поиске пути).
-        
+
         :param origin: Координаты исходной точки ребра.
         :param target: Координаты конечной точки ребра.
 
         """
         self.get(origin, target).visible = False
-        
+
     def unhide(self, origin, target):
         """Делает скрытое ребро видимым.
-        
+
         :param origin: Координаты исходной точки ребра.
         :param target: Координаты конечной точки ребра.
 
         """
         self.get(origin, target).visible = True
-        
+
     def unhide_all(self):
         """Делает все рёбра дерева видимыми."""
-        for e in self:
-            e.visible = True
+        for edge in self:
+            edge.visible = True
 
     def to_node(self, pos, show_hidden=True):
         """Список рёбер, входящих в узел дерева.
@@ -420,16 +489,15 @@ class TreeEdgesHandler(object):
         :param pos: Координаты узла.
 
         """
-        return [e for e in self._tree[pos].edges_in if (show_hidden or e.visible)]
-    
+        return [e for e in self._tree[pos].edges_in if show_hidden or e.visible]
+
     def from_node(self, pos, show_hidden=True):
         """Список рёбер, выходящих из узла дерева.
 
         :param pos: Координаты узла.
 
         """
-        return [e for e in self._tree[pos].edges_out if (show_hidden or e.visible)]
-        
+        return [e for e in self._tree[pos].edges_out if show_hidden or e.visible]
 
     def to_layer(self, layer, show_hidden=True):
         """Список рёбер, входящих в слой дерева.
@@ -438,7 +506,7 @@ class TreeEdgesHandler(object):
 
         """
         return sum((self.to_node(n, show_hidden) for n in self._tree[layer]), [])
-        
+
     def from_layer(self, layer, show_hidden=True):
         """Список рёбер, выходящих из слоя дерева.
 
@@ -451,7 +519,7 @@ class TreeEdgesHandler(object):
         return self.get(*key)
 
     def __iter__(self):
-        return itertools.chain.from_iterable(self.from_layer(l) for l in range(len(self._tree)))
+        return chain.from_iterable(self.from_layer(l) for l in range(len(self._tree)))
 
     def __contains__(self, obj):
         if isinstance(obj, TreeEdge):
@@ -462,30 +530,30 @@ class TreeEdgesHandler(object):
 
     def __len__(self):
         return len([i for i in self])
-    
-def piper(tree, return_path=False, **kwargs):
-    """Находит оптимальный путь в дереве, после чего собирает функцию из значений узлов пути.
-    
-    :param tree: Дерево, в котором ведётся поиск пути и определение функций.
-    :param return_path: Если True, возвращает не только получившуюся функцию, но и
-        получившийся путь.
-    :param **kwargs: Аргументы для функции tree.pathfinder()
-        
+
+
+def piper(path):
+    """Собирает функцию из значений узлов пути.
+
+    :param path: Путь, который необходимо обработать
+
     """
-    path = tree.pathfinder(**kwargs)
-    if kwargs.get('output_terminal', False):
-        pipe = path[1]
-    else:
-        pipe = path
-    if not kwargs.get('only_content', False):
-        pipe = [e.target.content for e in pipe]
-    
-    def pipe_func(val):
+    pipe = path.contents
+
+    def _pipe_func(val):
         res = copy(val)
         for func in pipe:
-            res = func(res)
+            if not callable(func):
+                res = func
+            else:
+                res = func(res)
         return res
-    
-    if return_path:
-        return (pipe_func, path)
-    return pipe_func
+
+    return _pipe_func
+
+
+def process_val(val, tree, **kwargs):
+    """Находит оптимальный путь в дереве, собирает функцию из значений узлов пути,
+        применяет её ко входному значенмю
+    """
+    return piper(tree.pathfinder(**kwargs))(val)
