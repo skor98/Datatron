@@ -15,6 +15,7 @@ from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
+from kb.kb_support_library import get_default_member_for_dimension
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 import logs_helper  # pylint: disable=unused-import
 
@@ -28,7 +29,9 @@ class CubeData:
         self.members = []
         self.year_member = None
         self.terr_member = None
+        self.selected_measure = None
         self.measures = []
+        self.mdx_query = ''
         self.score = {}
 
 
@@ -298,3 +301,82 @@ def score_cube_question(cube_data: CubeData):
         cube_data.score['sum'] = cube_score + avg_member_score + measure_score
 
     sum_scoring()
+
+
+def process_with_members(cube_data: CubeData):
+    """Обработка связанных значений"""
+
+    # используемые измерения на основе выдачи Solr
+    found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+    for member in cube_data.members:
+        with_member_dim = member.get('connected_value.dimension_cube_value', None)
+
+        if with_member_dim and with_member_dim not in found_cube_dimensions:
+            cube_data.members.append(
+                {
+                    'dimension': with_member_dim,
+                    'cube_value': member['connected_value.member_cube_value']
+                }
+            )
+
+
+def process_default_members(cube_data: CubeData):
+    """Обработка дефолтных значений"""
+
+    # используемые измерения на основе выдачи Solr,
+    # а также измерения связанных элементов
+    used_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+    # не использованные измерения
+    unused_dimensions = (
+        set(cube_data.selected_cube.dimensions) - set(used_cube_dimensions)
+    )
+
+    for dim in unused_dimensions:
+        default_value = get_default_member_for_dimension(cube_data.selected_cube, dim)
+        if default_value:
+            cube_data.members.append(
+                {
+                    'dimension': default_value['dimension_cube_value'],
+                    'cube_value': default_value['member_cube_value']
+                }
+            )
+
+
+def process_default_measures(cube_data: CubeData):
+    """Обработка значения меры по умолчанию"""
+    if cube_data.measures:
+        cube_data.selected_measure = cube_data.measures[0]['cube_value']
+    else:
+        cube_data.selected_measure = cube_data.selected_cube['default_measure']
+
+
+def create_mdx_query(cube_data: CubeData, type='basic'):
+    """
+    Формирование MDX-запроса различных видов, на основе найденных документов
+    """
+
+    def create_basic_mdx_query():
+        """Базовый MDX-запрос"""
+
+        # шаблон MDX-запроса
+        mdx_template = 'SELECT {{[MEASURES].[{}]}} ON COLUMNS FROM [{}.DB] WHERE ({})'
+
+        dim_tmp, dim_str_value = "[{}].[{}]", []
+
+        for member in cube_data.members:
+            dim_str_value.append(dim_tmp.format(
+                member['dimension'],
+                member['cube_value']
+            ))
+
+        cube_data.mdx_query = mdx_template.format(
+            cube_data.selected_cube,
+            cube_data.selected_cube,
+            ','.join(dim_str_value)
+        )
+
+    # закладка под расширение типов MDX-запросов
+    if type == 'basic':
+        create_basic_mdx_query()

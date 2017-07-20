@@ -54,7 +54,7 @@ class DataRetrieving:
             minfin_docs, cube_data = group_documents(solr_response['docs'])
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
-            cube_answers = CubeProcessor.get_data(cube_data)
+            cube_answers = CubeProcessor.get_data(cube_data, user_request)
 
             answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
 
