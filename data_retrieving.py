@@ -43,6 +43,14 @@ class DataRetrieving:
             delete_question_words=False
         )
 
+        # Год необходимо учитовать в нормированных данных по кубам
+        # Но необходимо исключать из запросов, иначе вверх
+        # поисковой выдачи выходят документы по Минфину
+        if 'год' in norm_user_request:
+            norm_user_request = norm_user_request.replace(
+                'год', ''
+            )
+
         # получение результатов поиска от Apache Solr в JSON-строке
         solr_response = Solr.get_data(
             norm_user_request, request_id, SETTINGS.SOLR_MAIN_CORE

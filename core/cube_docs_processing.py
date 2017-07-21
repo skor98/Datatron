@@ -48,6 +48,9 @@ class CubeProcessor:
                     # обработка связанных значений
                     csl.process_with_members(item)
 
+                    # обработка связанного значения для территории
+                    csl.process_with_member_for_territory(item)
+
                     # обработка дефолтных значений элементов измерений
                     csl.process_default_members(item)
 

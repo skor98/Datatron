@@ -163,8 +163,9 @@ def format_cube_answer(cube_answer, response: requests):
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
         logging.warning(
-            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами".format(
-                cube_answer.request_id
+            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
+                cube_answer.request_id,
+                response.get('message', '')
             ))
     # Обработка случая, когда данных нет
     elif response["cells"][0][0]["value"] is None:
@@ -273,6 +274,17 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
         elif doc['type'] == 'minfin':
             minfin_docs.append(doc)
 
+    logging.info(
+        "Query_ID: {}\tMessage: Найдено {} cubes, "
+        "{} dim_members, {} year_dim_member, {} terr_dim_member, {} measures".format(
+            request_id,
+            len(cube_data.cubes),
+            len(cube_data.members),
+            1 if cube_data.year_member else 0,
+            1 if cube_data.terr_member else 0,
+            len(cube_data.measures)
+        ))
+
     return minfin_docs, cube_data
 
 
@@ -314,12 +326,39 @@ def process_with_members(cube_data: CubeData):
             )
 
 
+def process_with_member_for_territory(cube_data: CubeData):
+    """Обработка связанных значений для ТЕРРИТОРИЙ"""
+
+    if cube_data.terr_member:
+        connected_dim = cube_data.terr_member['connected_value.dimension_cube_value']
+
+        # удаление других найденных значений для BGLevels
+        cube_data.members = [
+            member for member in cube_data.members
+            if member['dimension'] != connected_dim
+            ]
+
+        # добавление связанного значения
+        cube_data.members.append(
+            {
+                'dimension': connected_dim,
+                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+            }
+        )
+
+
 def process_default_members(cube_data: CubeData):
     """Обработка дефолтных значений"""
 
     # используемые измерения на основе выдачи Solr,
     # а также измерения связанных элементов
     used_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+    if cube_data.terr_member:
+        used_cube_dimensions.append(cube_data.terr_member['dimension'])
+
+    if cube_data.year_member:
+        used_cube_dimensions.append(cube_data.year_member['dimension'])
 
     # не использованные измерения
     unused_dimensions = (
@@ -362,6 +401,20 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
             dim_str_value.append(dim_tmp.format(
                 member['dimension'],
                 member['cube_value']
+            ))
+
+        # Отдельная обработка лет
+        if cube_data.year_member:
+            dim_str_value.append(dim_tmp.format(
+                cube_data.year_member['dimension'],
+                cube_data.year_member['cube_value']
+            ))
+
+        # Отдельная обработка территория
+        if cube_data.terr_member:
+            dim_str_value.append(dim_tmp.format(
+                cube_data.terr_member['dimension'],
+                cube_data.terr_member['cube_value']
             ))
 
         cube_data.mdx_query = mdx_template.format(

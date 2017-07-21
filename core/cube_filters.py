@@ -19,7 +19,7 @@ def select_first_cube(cube_data: CubeData):
     """Выбор первого куба"""
 
     # Если кубов не найдено
-    if cube_data.cubes:
+    if not cube_data.cubes:
         raise FunctionExecutionError({
             "function": select_first_cube.__name__,
             "message": "Кубов не было найдено"
@@ -131,9 +131,13 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
 
         cube_data.terr_member = {
             'dimension': cube_data.terr_member['dimension'],
-            'cube': cube_data.selected_cube,
+            'cube': cube_data.selected_cube['cube'],
             'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
-            'score': cube_data.terr_member['score']
+            'score': cube_data.terr_member['score'],
+            'connected_value.dimension_cube_value':
+                cube_data.terr_member['connected_value.dimension_cube_value'],
+            'connected_value.member_cube_value':
+                cube_data.terr_member['connected_value.member_cube_value']
         }
 
 
