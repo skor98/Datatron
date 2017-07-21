@@ -19,7 +19,7 @@ def select_first_cube(cube_data: CubeData):
     """Выбор первого куба"""
 
     # Если кубов не найдено
-    if not len(cube_data.cubes):
+    if cube_data.cubes:
         raise FunctionExecutionError({
             "function": select_first_cube.__name__,
             "message": "Кубов не было найдено"
