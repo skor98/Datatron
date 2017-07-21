@@ -6,8 +6,12 @@
 """
 
 import requests
+import logging
+
 from config import SETTINGS
 from model_manager import MODEL_CONFIG
+
+import logs_helper  # pylint: disable=unused-import
 
 
 class Solr:
@@ -16,7 +20,7 @@ class Solr:
     """
 
     @staticmethod
-    def get_data(user_request: str, core: str):
+    def get_data(user_request: str, request_id: str, core: str):
         """Реализация запроса к Solr"""
 
         request = 'http://{}:8983/solr/{}/select'.format(
@@ -34,4 +38,14 @@ class Solr:
         }
 
         docs = requests.get(request, params=params).json()
+
+        # TODO: подумать на структурой строки для логирования
+        logging.info(
+            'Query_ID: {}\tMessage: From-Solr, maxScore-{}, docsFound-{}'.format(
+                request_id,
+                docs['response'].get('maxScore', 0),
+                docs['response']['numFound']
+            )
+        )
+
         return docs

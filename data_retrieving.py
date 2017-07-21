@@ -20,6 +20,7 @@ from text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
+import logs_helper  # pylint: disable=unused-import
 
 
 class DataRetrieving:
@@ -43,33 +44,30 @@ class DataRetrieving:
         )
 
         # получение результатов поиска от Apache Solr в JSON-строке
-        solr_response = Solr.get_data(norm_user_request, SETTINGS.SOLR_MAIN_CORE)['response']
+        solr_response = Solr.get_data(
+            norm_user_request, request_id, SETTINGS.SOLR_MAIN_CORE
+        )['response']
 
         # Если хотя бы 1 документ найден:
         if solr_response['numFound']:
-            # TODO: следующие 2 параметра могут быть полезны для аналитики
-            # максимальный score по выдаче
-            max_score = solr_response['maxScore']
-
-            # количество найденных документов
-            docs_num_found = solr_response['numFound']
-
-            minfin_docs, cube_data = group_documents(solr_response['docs'])
+            minfin_docs, cube_data = group_documents(
+                solr_response['docs'],
+                user_request,
+                request_id
+            )
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
-            cube_answers = CubeProcessor.get_data(cube_data, user_request)
+            cube_answers = CubeProcessor.get_data(cube_data)
 
             answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving.format_core_answer(answers, request_id)
+            core_answer = DataRetrieving.format_core_answer(answers)
         else:
-            pass
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
-
-            # TODO: повысить содержательность логирования
-            logging_str = 'Документы не найдены Query_ID: {}'.format(request_id)
-            logging.info(logging_str)
+            logging.info(
+                'Query_ID: {}\tMessage: Документа не найдены'.format(request_id)
+            )
 
         return core_answer
 
@@ -94,7 +92,7 @@ class DataRetrieving:
         return all_answers
 
     @staticmethod
-    def format_core_answer(answers: list, request_id: str):
+    def format_core_answer(answers: list):
         """Формирование структуры финального ответа"""
 
         core_answer = CoreAnswer()
@@ -115,7 +113,7 @@ class DataRetrieving:
                     core_answer.answer.cube
                 )
 
-                format_cube_answer(core_answer.answer, request_id, response)
+                format_cube_answer(core_answer.answer, response)
 
             # Добавление до 5 дополнительных ответов
             core_answer.more_answers = answers[1:THRESHOLD + 1]

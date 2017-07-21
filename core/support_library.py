@@ -23,7 +23,9 @@ import logs_helper  # pylint: disable=unused-import
 class CubeData:
     """Структура для данных передаваемых между узлами"""
 
-    def __init__(self):
+    def __init__(self, user_request, request_id):
+        self.user_request = user_request
+        self.request_id = request_id,
         self.selected_cube = None
         self.cubes = []
         self.members = []
@@ -128,7 +130,7 @@ def format_numerical(number: float):
     return res
 
 
-def format_cube_answer(cube_answer, request_id: str, response: requests):
+def format_cube_answer(cube_answer, response: requests):
     """
     Работа над ответом по кубу: получение данных, форматирование
     ответа, добавление обратной связи
@@ -145,9 +147,10 @@ def format_cube_answer(cube_answer, request_id: str, response: requests):
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
         value = response
-        logging.warning("Запрос {} не прошел. Запрещены POST-запросы".format(
-            request_id
-        ))
+        logging.warning(
+            "Query_ID: {}\tError: Запрос не прошел. Запрещены POST-запросы".format(
+                cube_answer.request_id
+            ))
     # Обработка случая, когда что-то пошло не так, например,
     # в запросе указан неизвестный параметр
     elif '"success":false' in response:
@@ -155,9 +158,10 @@ def format_cube_answer(cube_answer, request_id: str, response: requests):
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
         value = response
-        logging.warning("Для запроса {} создался MDX-запрос с некорректными параметрами".format(
-            request_id
-        ))
+        logging.warning(
+            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами".format(
+                cube_answer.request_id
+            ))
     # Обработка случая, когда данных нет
     elif json.loads(response)["cells"][0][0]["value"] is None:
         cube_answer.status = False
@@ -202,13 +206,12 @@ def format_cube_answer(cube_answer, request_id: str, response: requests):
     verbal += ' '.join([str(idx + 1) + '. ' + val['member_caption']
                         for idx, val in enumerate(feedback_verbal['dims'])])
 
-    logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
-    logging.info(logging_str.format(
-        request_id,
-        verbal,
-        cube_answer.mdx_query,
-        value
-    ))
+    logging.info(
+        'Query_ID: {}\tMDX-запрос: {}\tСмысл: {}'.format(
+            cube_answer.request_id,
+            cube_answer.mdx_query,
+            verbal
+        ))
 
 
 def manage_years(cube_data: CubeData):
@@ -242,7 +245,7 @@ def filter_measures_by_selected_cube(cube_data: CubeData):
             ]
 
 
-def group_documents(solr_documents: list):
+def group_documents(solr_documents: list, user_request: str, request_id: str):
     """
     Разбитие найденных документы по переменным
     для различных типов вопросов
@@ -251,7 +254,7 @@ def group_documents(solr_documents: list):
     # Найденные документы по Минфин вопросам
     minfin_docs = []
 
-    cube_data = CubeData()
+    cube_data = CubeData(user_request, request_id)
 
     for doc in solr_documents:
         if doc['type'] == 'dim_member':
@@ -367,3 +370,29 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
     # закладка под расширение типов MDX-запросов
     if type == 'basic':
         create_basic_mdx_query()
+
+
+def delete_repetitions(cube_data_list: list):
+    """
+    Удаление из результата после прогона дерева
+    повторяющихся комбинация
+    """
+
+    cube_data_repr = []
+
+    for cube_data in list(cube_data_list):
+
+        elements = [cube_data.selected_cube['cube']]
+
+        for member in cube_data.members:
+            elements.append(member['member_caption'])
+
+        for measure in cube_data.measures:
+            elements.append(measure['member_caption'])
+
+        str_cube_data_elems = ''.join(elements)
+
+        if str_cube_data_elems in cube_data_repr:
+            cube_data_list.remove(cube_data)
+        else:
+            cube_data_repr.append(str_cube_data_elems)
