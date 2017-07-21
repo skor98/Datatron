@@ -95,7 +95,7 @@ class CubeProcessor:
         """Выбор нескольких лучших ответов по кубам"""
 
         SCORING_MODEL = 'sum'
-        TRESHOLD = 5
+        THRESHOLD = 5
 
         csl.delete_repetitions(cube_data_list)
 
@@ -104,8 +104,8 @@ class CubeProcessor:
             key=lambda cube_data: cube_data.score[SCORING_MODEL],
             reverse=True)
 
-        return cube_data_list[:TRESHOLD + 1]
-
+        return cube_data_list[:THRESHOLD+1]
+    
     @staticmethod
     def _format_final_cube_answer(cube_data_list: list):
         """Формирование финальной структуры ответа"""

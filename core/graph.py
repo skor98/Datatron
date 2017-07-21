@@ -5,12 +5,19 @@
 Определение структуры деревы решений
 """
 
-import networkx as nx
-import core.cube_filters as cfilter
+
 from itertools import islice
+
+import networkx as nx
+
+import core.cube_filters as cfilter
 
 
 class Graph(nx.DiGraph):
+    """
+    Граф, который используются для реализации нашей модели процессинга запроса
+    """
+    def __init__(self):
     def __init__(self, num_of_variants=10):
         super().__init__()
         self._define_nodes()
@@ -40,23 +47,28 @@ class Graph(nx.DiGraph):
             'Конец'
         )
 
-        self.add_node(0, function=cfilter.tree_start)
-        self.add_node(1, function=cfilter.select_first_cube)
-        self.add_node(2, function=cfilter.select_second_cube)
-        self.add_node(3, function=cfilter.select_third_cube)
-        self.add_node(4, function=cfilter.select_forth_cube)
-        self.add_node(5, function=cfilter.ignore_current_year)
-        self.add_node(6, function=cfilter.not_ignore_current_year)
-        self.add_node(7, function=cfilter.define_year_privilege_over_cube)
-        self.add_node(8, function=cfilter.define_cube_privilege_over_year)
-        self.add_node(9, function=cfilter.define_territory_privilege_over_cube)
-        self.add_node(10, function=cfilter.define_cube_privilege_over_territory)
-        self.add_node(11, function=cfilter.form_members_in_hierachy_by_score)
-        self.add_node(12, function=cfilter.all_members_from_first_hierarchy_level)
-        self.add_node(13, function=cfilter.all_members_from_second_hierarchy_level)
-        self.add_node(14, function=cfilter.all_members_from_third_hierarchy_level)
-        self.add_node(15, function=cfilter.all_members_from_forth_hierarchy_level)
-        self.add_node(16, function=cfilter.tree_end)
+        functions = (
+            cfilter.tree_start,
+            cfilter.select_first_cube,
+            cfilter.select_second_cube,
+            cfilter.select_third_cube,
+            cfilter.select_forth_cube,
+            cfilter.ignore_current_year,
+            cfilter.not_ignore_current_year,
+            cfilter.define_year_privilege_over_cube,
+            cfilter.define_cube_privilege_over_year,
+            cfilter.define_territory_privilege_over_cube,
+            cfilter.define_cube_privilege_over_territory,
+            cfilter.form_members_in_hierachy_by_score,
+            cfilter.all_members_from_first_hierarchy_level,
+            cfilter.all_members_from_second_hierarchy_level,
+            cfilter.all_members_from_third_hierarchy_level,
+            cfilter.all_members_from_forth_hierarchy_level,
+            cfilter.tree_end
+        )
+
+        for ind, cur_func, cur_name in enumerate(functions):
+            self.add_node(ind, function=cur_func)
 
     def _define_edges(self):
         """Определение связей между узлами"""
