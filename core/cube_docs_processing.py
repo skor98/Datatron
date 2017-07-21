@@ -89,15 +89,15 @@ class CubeProcessor:
         """Выбор нескольких лучших ответов по кубам"""
 
         SCORING_MODEL = 'sum'
-        TRESHOLD = 5
+        THRESHOLD = 5
 
         cube_data_list = sorted(
             cube_data_list,
             key=lambda cube_data: cube_data.score[SCORING_MODEL],
             reverse=True)
 
-        return cube_data_list[:TRESHOLD + 1]
-
+        return cube_data_list[:THRESHOLD+1]
+    
     @staticmethod
     def _format_final_cube_answer(cube_data_list: list, user_request: str):
         """Формирование финальной структуры ответа"""
@@ -157,6 +157,3 @@ class CubeAnswer:
             'feedback'
         )
         return {key: getattr(self, key, None) for key in keys_to_return}
-    
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
