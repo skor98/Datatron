@@ -157,8 +157,8 @@ def format_cube_answer(cube_answer, response: requests):
         )
         return
 
-    # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
-    if '"success":false' in response:
+    # Обработка случая, когда MDX-запрос некорректный
+    if not response.get('success', 1):
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response

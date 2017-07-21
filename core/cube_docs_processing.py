@@ -28,31 +28,34 @@ class CubeProcessor:
 
     @staticmethod
     def get_data(cube_data: CubeData):
+        cube_data_list = []
+
         if cube_data:
             csl.manage_years(cube_data)
 
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
-            # доработка вариантов
-            for item in cube_data_list:
-                csl.filter_measures_by_selected_cube(item)
-                csl.score_cube_question(item)
+            if cube_data_list:
+                # доработка вариантов
+                for item in cube_data_list:
+                    csl.filter_measures_by_selected_cube(item)
+                    csl.score_cube_question(item)
 
-            cube_data_list = CubeProcessor._take_best_cube_data(cube_data_list)
+                cube_data_list = CubeProcessor._take_best_cube_data(cube_data_list)
 
-            for item in cube_data_list:
-                # обработка связанных значений
-                csl.process_with_members(item)
+                for item in cube_data_list:
+                    # обработка связанных значений
+                    csl.process_with_members(item)
 
-                # обработка дефолтных значений элементов измерений
-                csl.process_default_members(item)
+                    # обработка дефолтных значений элементов измерений
+                    csl.process_default_members(item)
 
-                # обработка дефолтных значений для меры
-                csl.process_default_measures(item)
+                    # обработка дефолтных значений для меры
+                    csl.process_default_measures(item)
 
-                # создание MDX-запросов
-                csl.create_mdx_query(item)
+                    # создание MDX-запросов
+                    csl.create_mdx_query(item)
 
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list
