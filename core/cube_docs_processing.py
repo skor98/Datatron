@@ -104,8 +104,8 @@ class CubeProcessor:
             key=lambda cube_data: cube_data.score[SCORING_MODEL],
             reverse=True)
 
-        return cube_data_list[:THRESHOLD+1]
-    
+        return cube_data_list[:THRESHOLD + 1]
+
     @staticmethod
     def _format_final_cube_answer(cube_data_list: list):
         """Формирование финальной структуры ответа"""
