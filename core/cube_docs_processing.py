@@ -66,7 +66,8 @@ class CubeProcessor:
         cube_data_list = []
         graph = Graph()
 
-        for path in graph.k_shortest_paths(0, 16, BEST_PATHS_TRESHOLD):
+        # TODO: сделать сборку графа единажды при запуске программы
+        for path in graph._k_shortest_paths(0, 16, BEST_PATHS_TRESHOLD):
 
             # копия для каждого прогона
             cube_data_copy = copy.deepcopy(cube_data)

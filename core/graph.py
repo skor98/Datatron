@@ -11,12 +11,13 @@ from itertools import islice
 
 
 class Graph(nx.DiGraph):
-    def __init__(self):
+    def __init__(self, num_of_variants=10):
         super().__init__()
-        self.define_edges()
-        self.define_nodes()
+        self._define_nodes()
+        self._define_edges()
+        self.gr_answer_combinations = self._k_shortest_paths(0, 16, num_of_variants)
 
-    def define_nodes(self):
+    def _define_nodes(self):
         """Определение вершин"""
 
         self.add_node(0, function=cfilter.tree_start)
@@ -37,7 +38,7 @@ class Graph(nx.DiGraph):
         self.add_node(15, function=cfilter.all_members_from_forth_hierarchy_level)
         self.add_node(16, function=cfilter.tree_end)
 
-    def define_edges(self):
+    def _define_edges(self):
         """Определение связей между узлами"""
 
         WEIGHTS = {
@@ -78,7 +79,11 @@ class Graph(nx.DiGraph):
             (15, 16, WEIGHTS['w15.16']),
         ])
 
-    def k_shortest_paths(self, source: int, target: int, k: int):
+    def _k_shortest_paths(self, source: int, target: int, k: int):
         """k наиболее коротких путей от source-node до target-node"""
 
         return islice(nx.shortest_simple_paths(self, source, target, weight='weight'), k)
+
+
+g = Graph()
+print(list(g.gr_answer_combinations))
