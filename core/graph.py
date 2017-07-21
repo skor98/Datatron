@@ -5,12 +5,18 @@
 Определение структуры деревы решений
 """
 
-import networkx as nx
-import core.cube_filters as cfilter
+
 from itertools import islice
+
+import networkx as nx
+
+import core.cube_filters as cfilter
 
 
 class Graph(nx.DiGraph):
+    """
+    Граф, который используются для реализации нашей модели процессинга запроса
+    """
     def __init__(self):
         super().__init__()
         self.define_edges()
