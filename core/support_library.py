@@ -23,9 +23,9 @@ import logs_helper  # pylint: disable=unused-import
 class CubeData:
     """Структура для данных передаваемых между узлами"""
 
-    def __init__(self, user_request, request_id):
+    def __init__(self, user_request='', request_id=''):
         self.user_request = user_request
-        self.request_id = request_id,
+        self.request_id = request_id
         self.selected_cube = None
         self.cubes = []
         self.members = []
@@ -136,14 +136,26 @@ def format_cube_answer(cube_answer, response: requests):
     ответа, добавление обратной связи
     """
 
-    try:
-        response = response.json()
-    except json.JSONDecodeError:
+    if response.status_code == 200:
+        try:
+            response = response.json()
+        except json.JSONDecodeError:
+            cube_answer.status = False
+            cube_answer.message = ERROR_GENERAL
+            logging.exception(
+                'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(cube_answer.request_id)
+            )
+            return
+    else:
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         logging.exception(
-            'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(cube_answer.request_id)
+            'Query_ID: {}\tMessage: Запрос к серверу вызвал ошибку {}'.format(
+                cube_answer.request_id,
+                response.status_code
+            )
         )
+        return
 
     # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
     if '"success":false' in response:

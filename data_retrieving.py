@@ -59,9 +59,17 @@ class DataRetrieving:
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
             cube_answers = CubeProcessor.get_data(cube_data)
 
+            logging.info(
+                "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
+                    request_id,
+                    len(cube_answers),
+                    len(minfin_answers)
+                )
+            )
+
             answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving.format_core_answer(answers)
+            core_answer = DataRetrieving.format_core_answer(answers, request_id)
         else:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
@@ -85,14 +93,16 @@ class DataRetrieving:
 
         # Фильтрация выборки в порядке убывания по score
         # TODO: подумать над улучшением параметра для сравнения
-        all_answers = sorted(cube_answers + minfin_answers,
-                             key=lambda ans: ans.get_score(),
-                             reverse=True)
+        all_answers = sorted(
+            cube_answers + minfin_answers,
+            key=lambda ans: ans.get_score(),
+            reverse=True
+        )
 
         return all_answers
 
     @staticmethod
-    def format_core_answer(answers: list):
+    def format_core_answer(answers: list, request_id: str):
         """Формирование структуры финального ответа"""
 
         core_answer = CoreAnswer()
@@ -108,12 +118,24 @@ class DataRetrieving:
             core_answer.answer = answers[0]
 
             if isinstance(core_answer.answer, CubeAnswer):
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный ответ - ответу по кубу - {}".format(
+                        request_id,
+                        core_answer.answer.mdx_query
+                    ))
+
                 response = send_request_to_server(
                     core_answer.answer.mdx_query,
                     core_answer.answer.cube
                 )
 
                 format_cube_answer(core_answer.answer, response)
+            else:
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный ответ - ответу по Минфину - {}".format(
+                        request_id,
+                        core_answer.answer.number
+                    ))
 
             # Добавление до 5 дополнительных ответов
             core_answer.more_answers = answers[1:THRESHOLD + 1]

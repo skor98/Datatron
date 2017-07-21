@@ -41,10 +41,10 @@ class Solr:
 
         # TODO: подумать на структурой строки для логирования
         logging.info(
-            'Query_ID: {}\tMessage: From-Solr, maxScore-{}, docsFound-{}'.format(
+            'Query_ID: {}\tMessage: Solr нашел {} документ(ов), макс. score = {}'.format(
                 request_id,
-                docs['response'].get('maxScore', 0),
-                docs['response']['numFound']
+                docs['response']['numFound'],
+                docs['response'].get('maxScore', 0)
             )
         )
 
