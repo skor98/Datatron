@@ -102,3 +102,6 @@ class MinfinAnswer:
             'message'
         )
         return {key: getattr(self, key, None) for key in keys_to_return}
+    
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
