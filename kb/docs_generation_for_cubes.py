@@ -1,16 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from os import path, remove
+
 import json
 import subprocess
 import datetime
-
 import pycurl
 import requests
 
+from os import path, remove
 from peewee import fn
+
 import kb.kb_db_creation as dbc
+from kb.kb_support_library import get_cube_dimensions
+from kb.kb_support_library import get_default_cube_measure
+from kb.kb_support_library import get_with_member_to_given_member
+from kb.kb_support_library import get_measure_lem_key_words
 from config import SETTINGS
 
 
@@ -33,7 +38,7 @@ class CubeDocsGeneration:
         """
 
         data = (
-            CubeDocsGeneration._create_values() +
+            CubeDocsGeneration._create_dimension_members() +
             CubeDocsGeneration._create_cubes() +
             CubeDocsGeneration._create_measures()
         )
@@ -83,7 +88,7 @@ class CubeDocsGeneration:
                 print('Что-то пошло не так: ошибка {}'.format(solr_response.status_code))
 
     @staticmethod
-    def _create_values():
+    def _create_dimension_members():
         """
         Создание на основе БД (knowledge_base.db) документов со значениями
         измерений.
@@ -91,11 +96,11 @@ class CubeDocsGeneration:
 
         # Отдельное создание ГОДОВ, так как структура
         # документов для этих измерений отличается
-        year_values = CubeDocsGeneration._create_year_values()
+        year_values = CubeDocsGeneration._create_year_caption()
 
         # Отдельное создание ТЕРРИТОРИЙ, так как структура
         # них также отличает от других измерений
-        territory_values = CubeDocsGeneration._create_territory_values()
+        territory_values = CubeDocsGeneration._create_territory_caption()
 
         # TODO: рефакторинг
         # Выбор всех остальных значений измерений и формирование документа
@@ -103,26 +108,29 @@ class CubeDocsGeneration:
         for cube in dbc.Cube.select():
             for dim_cub in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
-                    if dimension.label not in ('Years', 'Territories'):
-                        for dimension_value in dbc.DimensionValue.select().where(
-                                        dbc.DimensionValue.dimension_id == dimension.id
+                    if dimension.cube_value not in ('Years', 'Territories'):
+                        for dimension_value in dbc.DimensionMember.select().where(
+                            dbc.DimensionMember.dimension_id == dimension.id
                         ):
-                            for value in dbc.Value.select().where(dbc.Value.id == dimension_value.value_id):
-                                verbal = value.lem_index_value
-                                if value.lem_synonyms:
-                                    verbal += ' {}'.format(value.lem_synonyms)
+                            for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
+                                verbal = member.lem_caption
+                                if member.lem_synonyms:
+                                    verbal += ' {}'.format(member.lem_synonyms)
                                 other_values.append({
-                                    'type': 'dimension',
+                                    'type': 'dim_member',
                                     'cube': cube.name,
-                                    'name': dimension.label,
-                                    'verbal': verbal,
-                                    'fvalue': value.cube_value,
-                                    'hierarchy_level': value.hierarchy_level})
+                                    'dimension': dimension.cube_value,
+                                    'lem_member_caption': verbal,
+                                    'member_caption': member.caption,
+                                    'cube_value': member.cube_value,
+                                    'hierarchy_level': member.hierarchy_level,
+                                    'connected_value': get_with_member_to_given_member(member.cube_value)
+                                })
 
         return year_values + territory_values + other_values
 
     @staticmethod
-    def _create_year_values():
+    def _create_year_caption():
         """
         Создание документов типа ГОД.
         У Кристы есть данные только с 2007 года
@@ -141,30 +149,31 @@ class CubeDocsGeneration:
         for year in years:
             year_values.append(
                 {
-                    'type': 'year_dimension',
-                    'name': 'Years',
-                    'fvalue': year
+                    'type': 'year_dim_member',
+                    'dimension': 'Years',
+                    'cube_value': year,
+                    'member_caption': year
                 }
             )
 
         return year_values
 
     @staticmethod
-    def _create_territory_values():
+    def _create_territory_caption():
         """Создание на основе БД документов типа ТЕРРИТОРИЯ"""
 
-        territory_values = []
+        territory_caption = []
 
         # Все уникальные территории
-        values = (dbc.Value
-                  .select(fn.Distinct(dbc.Value.lem_index_value))
-                  .join(dbc.DimensionValue)
-                  .join(dbc.Dimension)
-                  .where(dbc.Dimension.label == 'Territories'))
+        members = (dbc.Member
+                   .select(fn.Distinct(dbc.Member.lem_caption))
+                   .join(dbc.DimensionMember)
+                   .join(dbc.Dimension)
+                   .where(dbc.Dimension.cube_value == 'Territories'))
 
         # Создание документа определенной структуры
-        for item in values:
-            verbal = item.lem_index_value
+        for item in members:
+            verbal = item.lem_caption
 
             # добавление синонимов, если есть
             if item.lem_synonyms:
@@ -172,27 +181,38 @@ class CubeDocsGeneration:
 
             # создание исходной структур
             d = {
-                'type': 'territory_dimension',
-                'name': 'Territories',
-                'verbal': verbal
+                'type': 'terr_dim_member',
+                'dimension': 'Territories',
+                'lem_member_caption': verbal,
+                'member_caption': item.caption
             }
 
+            used_cube_with_territory = None
+
             # добавление значений по кубам
-            for v in dbc.Value.select().where(dbc.Value.lem_index_value == item.lem_index_value):
+            for v in dbc.Member.select().where(dbc.Member.lem_caption == item.lem_caption):
                 # находится куб, соответствующий этому значению
                 cube = (dbc.Cube
                         .select()
                         .join(dbc.CubeDimension)
                         .join(dbc.Dimension)
-                        .join(dbc.DimensionValue)
-                        .where(dbc.DimensionValue.value_id == v.id))[0]
+                        .join(dbc.DimensionMember)
+                        .where(dbc.DimensionMember.member_id == v.id)
+                        )[0]
 
                 # добавление в словарь новой пары
                 d[cube.name] = v.cube_value
 
-            territory_values.append(d)
+                if not used_cube_with_territory:
+                    used_cube_with_territory = cube.name
 
-        return territory_values
+            d['connected_value'] = get_with_member_to_given_member(
+                d[used_cube_with_territory]
+            )
+
+            territory_caption.append(d)
+
+        return territory_caption
 
     @staticmethod
     def _create_cubes():
@@ -200,16 +220,20 @@ class CubeDocsGeneration:
 
         cubes = []
         for cube in dbc.Cube.select():
-            cube_description = cube.auto_lem_description
+            cube_description = cube.auto_lem_key_words
 
             # добавление к описанию куба ключевых слов от методологов
-            if cube.manual_lem_description:
-                cube_description += ' {}'.format(cube.manual_lem_description)
+            if cube.key_words:
+                cube_description += ' {}'.format(cube.lem_key_words)
 
             cubes.append({
                 'type': 'cube',
                 'cube': cube.name,
-                'description': cube_description})
+                'cube_caption': cube.caption,
+                'description': cube_description,
+                'dimensions': get_cube_dimensions(cube.name),
+                'default_measure': get_default_cube_measure(cube.name)
+            })
         return cubes
 
     @staticmethod
@@ -237,8 +261,13 @@ class CubeDocsGeneration:
             measures.append({
                 'type': 'measure',
                 'cube': item.cube.name,
-                'verbal': item.measure.lem_index_value,
-                'formal': item.measure.cube_value
+                'lem_member_caption': item.measure.lem_caption,
+                'member_caption': item.measure.caption,
+                'lem_key_words': get_measure_lem_key_words(
+                    item.measure.cube_value,
+                    item.cube.name
+                ),
+                'cube_value': item.measure.cube_value
             })
 
         return measures

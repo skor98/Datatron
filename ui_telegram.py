@@ -456,19 +456,13 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             stats_pattern = (
-                'Сред. score: {}\n' +
-                'Мин. score: {}\n' +
-                'Макс. score: {}\n' +
-                'Score куба: {}\n' +
                 'Суммарный score: {}'
             )
+
             stats = stats_pattern.format(
-                cube_result.avg_score,
-                cube_result.min_score,
-                cube_result.max_score,
-                cube_result.cube_score,
-                cube_result.sum_score
+                cube_result.score['sum']
             )
+
             bot.send_message(message.chat.id, stats)
     else:
         if cube_result.message:
@@ -628,8 +622,8 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
     if verbal_fb['measure'] != 'Значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
-    verbal_fb_list.extend('{}: {}'.format(item['dimension'],
-                                          first_letter_lower(item['full_value']))
+    verbal_fb_list.extend('{}: {}'.format(item['dimension_caption'],
+                                          first_letter_lower(item['member_caption']))
                           for item in verbal_fb['dims'])
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
@@ -647,11 +641,11 @@ def loof_also_for_cube(cube_result):
         verbal_fb_list.append(verbal_fb['measure'].lower())
 
     verbal_fb_list.extend(
-        first_letter_lower(item['full_value']) for item in verbal_fb['dims'])
+        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
 
     verbal_fb_list.append('({}: {})'.format(
         "*База знаний*",
-        cube_result.sum_score
+        cube_result.get_score()
     ))
 
     return ' '.join(verbal_fb_list)
@@ -689,13 +683,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
-
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
-
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():

@@ -6,13 +6,11 @@ import random
 import re
 
 import constants
-
-from speechkit import speech_to_text
-from speechkit import SpeechException
 from data_retrieving import DataRetrieving
-from solr import DrSolrResult
-import logs_helper  # pylint: disable=unused-import
 from dbs.query_db import log_query_to_db
+from core.answer_object import CoreAnswer
+from speechkit import SpeechException
+from speechkit import speech_to_text
 
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):
@@ -98,9 +96,11 @@ class MessengerManager:
                 'voice'
             )
         except SpeechException:
-            dsr = DrSolrResult()
-            dsr.error = dsr.message = constants.ERROR_CANNOT_UNDERSTAND_VOICE
-            return dsr
+            core_answer = CoreAnswer(
+                message=constants.ERROR_CANNOT_UNDERSTAND_VOICE,
+                error=constants.ERROR_CANNOT_UNDERSTAND_VOICE
+            )
+            return core_answer
         else:
 
             return MessengerManager._querying(text, request_id)
@@ -131,9 +131,11 @@ class MessengerManager:
                 request_id,
                 err
             ))
-            dsr = DrSolrResult()
-            dsr.message = dsr.error = str(err)
-            return dsr
+            core_answer = CoreAnswer(
+                message=str(err),
+                error=str(err)
+            )
+            return core_answer
 
     @staticmethod
     def _simple_split(string_to_tokenize):

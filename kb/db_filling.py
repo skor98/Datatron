@@ -129,7 +129,7 @@ class KnowledgeBaseSupport:
                 d = dbc.Dimension.create(label=dimension_name)
                 dbc.CubeDimension.create(cube=cube, dimension=d)
                 for dimension_value in dimension_values:
-                    v = dbc.Value.create(**dimension_value)
+                    v = dbc.Member.create(**dimension_value)
                     dbc.DimensionValue.create(value=v, dimension=d)
 
     @staticmethod

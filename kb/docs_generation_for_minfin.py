@@ -113,7 +113,7 @@ def _refactor_data(data):
                                      delete_digits=True,
                                      delete_question_words=False)
                     for q in synonym_questions
-                    ]
+                ]
                 doc.lem_synonym_questions = lem_synonym_questions
 
             doc.short_answer = row.short_answer
@@ -159,6 +159,7 @@ def _refactor_data(data):
                         elem.strip() for elem in row.document_caption.split(';')
                         ]
                     doc.document = [elem.strip() for elem in row.document.split(';')]
+                    ]
                 else:
                     doc.document_caption = row.document_caption.strip()
                     doc.document = row.document.strip()
@@ -191,7 +192,8 @@ def _get_manual_synonym_questions(question_number):
     port_num = question_number.split('.')[0]
 
     # Выбор файла, который соответствует партии вопроса
-    is_portion_func = lambda f: f.endswith('.txt') and port_num in f and 'manual' in f
+    def is_portion_func(f): return f.endswith(
+        '.txt') and port_num in f and 'manual' in f
     file_with_portion = [f for f in listdir(TEST_PATH) if is_portion_func(f)]
 
     # Если такого файла еще нет, так как его не успели написать
