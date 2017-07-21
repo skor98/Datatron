@@ -136,44 +136,35 @@ def format_cube_answer(cube_answer, response: requests):
     ответа, добавление обратной связи
     """
 
-    # TODO: переписать
-
-    response = response.text
-    value = None
+    try:
+        response = response.json()
+    except json.JSONDecodeError:
+        cube_answer.status = False
+        cube_answer.message = ERROR_GENERAL
+        logging.exception(
+            'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(cube_answer.request_id)
+        )
 
     # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
-    if 'Доступ закрыт!' in response:
+    if '"success":false' in response:
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
-        value = response
-        logging.warning(
-            "Query_ID: {}\tError: Запрос не прошел. Запрещены POST-запросы".format(
-                cube_answer.request_id
-            ))
-    # Обработка случая, когда что-то пошло не так, например,
-    # в запросе указан неизвестный параметр
-    elif '"success":false' in response:
-        cube_answer.status = False
-        cube_answer.message = ERROR_GENERAL
-        cube_answer.response = response
-        value = response
         logging.warning(
             "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами".format(
                 cube_answer.request_id
             ))
     # Обработка случая, когда данных нет
-    elif json.loads(response)["cells"][0][0]["value"] is None:
+    elif response["cells"][0][0]["value"] is None:
         cube_answer.status = False
         cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
         cube_answer.response = None
     # В остальных случаях
     else:
         # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
-        value = float(json.loads(response)["cells"][0][0]["value"])
-        cube_answer.response = value
+        value = float(response["cells"][0][0]["value"])
 
-        # Получение из базы знаний (knowledge_base.dbs) формата для меры
+        # Получение из базы знаний (knowledge_base.db) формата для меры
         value_format = get_representation_format(cube_answer.mdx_query)
 
         # Добавление форматированного результата

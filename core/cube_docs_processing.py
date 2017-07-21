@@ -17,6 +17,7 @@ import logs_helper  # pylint: disable=unused-import
 
 # TODO: переработать структуру документов
 # TODO: обращение к БД только во время препроцессинга
+# TODO: создание графа единоразово
 
 BEST_PATHS_TRESHOLD = 10
 logic_tree = Graph(BEST_PATHS_TRESHOLD)
@@ -67,7 +68,6 @@ class CubeProcessor:
 
         cube_data_list = []
 
-        # TODO: сделать сборку графа единажды при запуске программы
         for path in logic_tree.gr_answer_combinations:
 
             # копия для каждого прогона

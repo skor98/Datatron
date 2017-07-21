@@ -5,7 +5,6 @@
 Определение структуры деревы решений
 """
 
-
 from itertools import islice
 
 import networkx as nx
@@ -17,7 +16,7 @@ class Graph(nx.DiGraph):
     """
     Граф, который используются для реализации нашей модели процессинга запроса
     """
-    def __init__(self):
+
     def __init__(self, num_of_variants=10):
         super().__init__()
         self._define_nodes()
@@ -27,48 +26,28 @@ class Graph(nx.DiGraph):
     def _define_nodes(self):
         """Определение вершин"""
 
-        names = (
-            'Корень',
-            'Выбор 1го куба',
-            'Выбор 2го куба',
-            'Выбор 3го куба',
-            'Выбор 4го куба',
-            'Игнор тек. года',
-            'НЕ игнор тек. года',
-            'ГОД важнее КУБА',
-            'ГОД НЕ важнее КУБА',
-            'ТЕРРИТОРИЯ важнее КУБА',
-            'ТЕРРИТОРИЯ НЕ важнее КУБА',
-            'Иерархия элем. измерений',
-            'Выбор элементов из lv.1',
-            'Выбор элементов из lv.2',
-            'Выбор элементов из lv.3',
-            'Выбор элементов из lv.4',
-            'Конец'
+        graph_annotation = (
+            {'name': 'Корень', 'function': cfilter.tree_start},
+            {'name': 'Выбор 1го куба', 'function': cfilter.select_first_cube},
+            {'name': 'Выбор 2го куба', 'function': cfilter.select_second_cube},
+            {'name': 'Выбор 3го куба', 'function': cfilter.select_third_cube},
+            {'name': 'Выбор 4го куба', 'function': cfilter.select_forth_cube},
+            {'name': 'Игнор тек. года', 'function': cfilter.ignore_current_year},
+            {'name': 'НЕ игнор тек. года', 'function': cfilter.not_ignore_current_year},
+            {'name': 'ГОД важнее КУБА', 'function': cfilter.define_year_privilege_over_cube},
+            {'name': 'ГОД НЕ важнее КУБА', 'function': cfilter.define_cube_privilege_over_year},
+            {'name': 'ТЕРРИТОРИЯ важнее КУБА', 'function': cfilter.define_territory_privilege_over_cube},
+            {'name': 'ТЕРРИТОРИЯ НЕ важнее КУБА', 'function': cfilter.define_cube_privilege_over_territory},
+            {'name': 'Иерархия элем. измерений', 'function': cfilter.form_members_in_hierachy_by_score},
+            {'name': 'Выбор элементов из lv.1', 'function': cfilter.all_members_from_first_hierarchy_level},
+            {'name': 'Выбор элементов из lv.2', 'function': cfilter.all_members_from_second_hierarchy_level},
+            {'name': 'Выбор элементов из lv.3', 'function': cfilter.all_members_from_third_hierarchy_level},
+            {'name': 'Выбор элементов из lv.4', 'function': cfilter.all_members_from_forth_hierarchy_level},
+            {'name': 'Конец', 'function': cfilter.tree_end}
         )
 
-        functions = (
-            cfilter.tree_start,
-            cfilter.select_first_cube,
-            cfilter.select_second_cube,
-            cfilter.select_third_cube,
-            cfilter.select_forth_cube,
-            cfilter.ignore_current_year,
-            cfilter.not_ignore_current_year,
-            cfilter.define_year_privilege_over_cube,
-            cfilter.define_cube_privilege_over_year,
-            cfilter.define_territory_privilege_over_cube,
-            cfilter.define_cube_privilege_over_territory,
-            cfilter.form_members_in_hierachy_by_score,
-            cfilter.all_members_from_first_hierarchy_level,
-            cfilter.all_members_from_second_hierarchy_level,
-            cfilter.all_members_from_third_hierarchy_level,
-            cfilter.all_members_from_forth_hierarchy_level,
-            cfilter.tree_end
-        )
-
-        for ind, cur_func, cur_name in enumerate(functions):
-            self.add_node(ind, function=cur_func)
+        for ind, annotation, in enumerate(graph_annotation):
+            self.add_node(ind, **annotation)
 
     def _define_edges(self):
         """Определение связей между узлами"""
