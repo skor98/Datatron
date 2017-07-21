@@ -54,10 +54,14 @@ class SettingsStorer:
             return getattr(self, newkey)
 
 
-SETTINGS_PATH = "settings.json"
-QUERY_DB_PATH = path.join("dbs", "query.db")
-LOGS_PATH = 'logs.log'
-MODEL_CONFIG_PATH = "model.json"
+def fixed_path(file):
+    return path.join(path.dirname(__file__), file)
+
+
+SETTINGS_PATH = fixed_path("settings.json")
+QUERY_DB_PATH = fixed_path(path.join("dbs", "query.db"))
+LOGS_PATH = fixed_path('logs.log')
+MODEL_CONFIG_PATH = fixed_path("model.json")
 
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
@@ -71,12 +75,7 @@ _cur_settings_dict = _settings_json["settings"][
 ]
 _default_settings_dict = _settings_json['settings']['_default']
 
-try:
-    LOG_LEVEL = _settings_json["log_level"]
-except:
-    print('Пожалуйста, добавьте значение "log_level" в файл настроек')
-    LOG_LEVEL = "INFO"
-    print("Установлен уровень {}".format(LOG_LEVEL))
+LOG_LEVEL = _settings_json.get("log_level", 'INFO')
 
 SETTINGS = SettingsStorer(_cur_settings_dict, _default_settings_dict)
 
