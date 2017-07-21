@@ -48,7 +48,9 @@ def select_third_cube(cube_data: CubeData):
     if len(cube_data.cubes) < 3:
         raise FunctionExecutionError({
             "function": select_third_cube.__name__,
-            "message": "Найдено только 2 куба"
+            "message": "Найдено только {} куба".format(
+                len(cube_data.cubes)
+            )
         })
 
     cube_data.selected_cube = cube_data.cubes[2]
@@ -61,7 +63,9 @@ def select_forth_cube(cube_data: CubeData):
     if len(cube_data.cubes) < 4:
         raise FunctionExecutionError({
             "function": select_forth_cube.__name__,
-            "message": "Найдено только 3 куба"
+            "message": "Найдено только {} куба".format(
+                len(cube_data.cubes)
+            )
         })
 
     cube_data.selected_cube = cube_data.cubes[3]
@@ -129,16 +133,24 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
             if elem['cube'] == cube_data.selected_cube['cube']
             ]
 
-        cube_data.terr_member = {
-            'dimension': cube_data.terr_member['dimension'],
-            'cube': cube_data.selected_cube['cube'],
-            'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
-            'score': cube_data.terr_member['score'],
-            'connected_value.dimension_cube_value':
-                cube_data.terr_member['connected_value.dimension_cube_value'],
-            'connected_value.member_cube_value':
-                cube_data.terr_member['connected_value.member_cube_value']
-        }
+        if cube_data.terr_member.get('connected_value.dimension_cube_value', None):
+            cube_data.terr_member = {
+                'dimension': cube_data.terr_member['dimension'],
+                'cube': cube_data.selected_cube['cube'],
+                'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
+                'score': cube_data.terr_member['score'],
+                'connected_value.dimension_cube_value':
+                    cube_data.terr_member['connected_value.dimension_cube_value'],
+                'connected_value.member_cube_value':
+                    cube_data.terr_member['connected_value.member_cube_value']
+            }
+        else:
+            cube_data.terr_member = {
+                'dimension': cube_data.terr_member['dimension'],
+                'cube': cube_data.selected_cube['cube'],
+                'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
+                'score': cube_data.terr_member['score'],
+            }
 
 
 def define_cube_privilege_over_territory(cube_data: CubeData):

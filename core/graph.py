@@ -9,7 +9,7 @@ from itertools import islice
 
 import networkx as nx
 
-import core.cube_filters as cfilter
+import core.cube_filters as cf
 
 
 class Graph(nx.DiGraph):
@@ -27,23 +27,23 @@ class Graph(nx.DiGraph):
         """Определение вершин"""
 
         graph_annotation = (
-            {'name': 'Корень', 'function': cfilter.tree_start},
-            {'name': 'Выбор 1го куба', 'function': cfilter.select_first_cube},
-            {'name': 'Выбор 2го куба', 'function': cfilter.select_second_cube},
-            {'name': 'Выбор 3го куба', 'function': cfilter.select_third_cube},
-            {'name': 'Выбор 4го куба', 'function': cfilter.select_forth_cube},
-            {'name': 'Игнор тек. года', 'function': cfilter.ignore_current_year},
-            {'name': 'НЕ игнор тек. года', 'function': cfilter.not_ignore_current_year},
-            {'name': 'ГОД важнее КУБА', 'function': cfilter.define_year_privilege_over_cube},
-            {'name': 'ГОД НЕ важнее КУБА', 'function': cfilter.define_cube_privilege_over_year},
-            {'name': 'ТЕРРИТОРИЯ важнее КУБА', 'function': cfilter.define_territory_privilege_over_cube},
-            {'name': 'ТЕРРИТОРИЯ НЕ важнее КУБА', 'function': cfilter.define_cube_privilege_over_territory},
-            {'name': 'Иерархия элем. измерений', 'function': cfilter.form_members_in_hierachy_by_score},
-            {'name': 'Выбор элементов из lv.1', 'function': cfilter.all_members_from_first_hierarchy_level},
-            {'name': 'Выбор элементов из lv.2', 'function': cfilter.all_members_from_second_hierarchy_level},
-            {'name': 'Выбор элементов из lv.3', 'function': cfilter.all_members_from_third_hierarchy_level},
-            {'name': 'Выбор элементов из lv.4', 'function': cfilter.all_members_from_forth_hierarchy_level},
-            {'name': 'Конец', 'function': cfilter.tree_end}
+            {'name': 'Корень', 'function': cf.tree_start},
+            {'name': 'Выбор 1го куба', 'function': cf.select_first_cube},
+            {'name': 'Выбор 2го куба', 'function': cf.select_second_cube},
+            {'name': 'Выбор 3го куба', 'function': cf.select_third_cube},
+            {'name': 'Выбор 4го куба', 'function': cf.select_forth_cube},
+            {'name': 'Игнор тек. года', 'function': cf.ignore_current_year},
+            {'name': 'НЕ игнор тек. года', 'function': cf.not_ignore_current_year},
+            {'name': 'ГОД важнее КУБА', 'function': cf.define_year_privilege_over_cube},
+            {'name': 'ГОД НЕ важнее КУБА', 'function': cf.define_cube_privilege_over_year},
+            {'name': 'ТЕРРИТОРИЯ важнее КУБА', 'function': cf.define_territory_privilege_over_cube},
+            {'name': 'ТЕРРИТОРИЯ НЕ важнее КУБА', 'function': cf.define_cube_privilege_over_territory},
+            {'name': 'Иерархия элем. измерений', 'function': cf.form_members_in_hierachy_by_score},
+            {'name': 'Выбор элементов из lv.1', 'function': cf.all_members_from_first_hierarchy_level},
+            {'name': 'Выбор элементов из lv.2', 'function': cf.all_members_from_second_hierarchy_level},
+            {'name': 'Выбор элементов из lv.3', 'function': cf.all_members_from_third_hierarchy_level},
+            {'name': 'Выбор элементов из lv.4', 'function': cf.all_members_from_forth_hierarchy_level},
+            {'name': 'Конец', 'function': cf.tree_end}
         )
 
         for ind, annotation, in enumerate(graph_annotation):

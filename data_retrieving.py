@@ -127,8 +127,10 @@ class DataRetrieving:
 
             if isinstance(core_answer.answer, CubeAnswer):
                 logging.info(
-                    "Query_ID: {}\tMessage: Главный ответ - ответу по кубу - {}".format(
+                    "Query_ID: {}\tMessage: Главный ответ - "
+                    "ответ по кубу - {} - {}".format(
                         request_id,
+                        core_answer.answer.get_score(),
                         core_answer.answer.mdx_query
                     ))
 
@@ -140,12 +142,50 @@ class DataRetrieving:
                 format_cube_answer(core_answer.answer, response)
             else:
                 logging.info(
-                    "Query_ID: {}\tMessage: Главный ответ - ответу по Минфину - {}".format(
+                    "Query_ID: {}\tMessage: Главный ответ - "
+                    "ответ по Минфину - {} - {}".format(
                         request_id,
+                        core_answer.answer.get_score(),
                         core_answer.answer.number
                     ))
 
             # Добавление до 5 дополнительных ответов
             core_answer.more_answers = answers[1:THRESHOLD + 1]
 
+            DataRetrieving._analyze_more_answers(
+                core_answer.more_answers,
+                request_id
+            )
+
         return core_answer
+
+    @staticmethod
+    def _analyze_more_answers(more_answers: list, request_id: str):
+        max_score = 0
+        min_score = 0
+        cube_answers_num = 0
+        minfin_answers_num = 0
+
+        for answer in more_answers:
+            if isinstance(answer, CubeAnswer):
+                cube_answers_num += 1
+            else:
+                minfin_answers_num += 1
+
+        if more_answers:
+            max_score = more_answers[0].get_score()
+            min_score = more_answers[-1].get_score()
+
+        logging.info(
+            "Query_ID: {}\tMessage: В смотри также {} "
+            "ответ(а, ов) по кубам и {} по Минфину, "
+            "диапазон Score - [{}, {}]".format(
+                request_id,
+                cube_answers_num,
+                minfin_answers_num,
+                max_score,
+                min_score
+            ))
+
+
+

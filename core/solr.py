@@ -5,8 +5,8 @@
 Взаимодействие с Apache Solr
 """
 
-import requests
 import logging
+import requests
 
 from config import SETTINGS
 from model_manager import MODEL_CONFIG
@@ -39,7 +39,6 @@ class Solr:
 
         docs = requests.get(request, params=params).json()
 
-        # TODO: подумать на структурой строки для логирования
         logging.info(
             'Query_ID: {}\tMessage: Solr нашел {} документ(ов), макс. score = {}'.format(
                 request_id,

@@ -12,13 +12,9 @@ from core.graph import Graph
 import core.support_library as csl
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
+from model_manager import MODEL_CONFIG
 
 import logs_helper  # pylint: disable=unused-import
-
-
-# TODO: переработать структуру документов
-# TODO: обращение к БД только во время препроцессинга
-# TODO: создание графа единоразово
 
 
 class CubeProcessor:
@@ -28,6 +24,8 @@ class CubeProcessor:
 
     @staticmethod
     def get_data(cube_data: CubeData):
+        """API метод к работе с документами по кубам в ядре"""
+
         cube_data_list = []
 
         if cube_data:
@@ -72,8 +70,8 @@ class CubeProcessor:
 
         cube_data_list = []
 
-        BEST_PATHS_TRESHOLD = 10
-        logic_tree = Graph(BEST_PATHS_TRESHOLD)
+        # TODO: создание графа единоразово
+        logic_tree = Graph(MODEL_CONFIG['tree_k_path_threshold'])
 
         for path in logic_tree.gr_answer_combinations:
 
@@ -87,8 +85,8 @@ class CubeProcessor:
 
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
-            except FunctionExecutionError as e:
-                msg = e.args[0]
+            except FunctionExecutionError as error:
+                msg = error.args[0]
                 logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(
                     cube_data_copy.request_id,
                     path,
@@ -101,26 +99,17 @@ class CubeProcessor:
     def _take_best_cube_data(cube_data_list: list):
         """Выбор нескольких лучших ответов по кубам"""
 
+        threshold = MODEL_CONFIG['best_cube_data_threshold']
         SCORING_MODEL = 'sum'
-        THRESHOLD = 5
 
-        before_deleting = len(cube_data_list)
         csl.delete_repetitions(cube_data_list)
-        after_deleting = len(cube_data_list)
-
-        logging.info(
-            "Query_ID: {}\tMessage: {} отфильтрованных запросов".format(
-                cube_data_list[0].request_id,
-                before_deleting - after_deleting
-            )
-        )
 
         cube_data_list = sorted(
             cube_data_list,
             key=lambda cube_data: cube_data.score[SCORING_MODEL],
             reverse=True)
 
-        return cube_data_list[:THRESHOLD + 1]
+        return cube_data_list[:threshold + 1]
 
     @staticmethod
     def _format_final_cube_answer(cube_data_list: list):
@@ -169,14 +158,17 @@ class CubeAnswer:
         self.formatted_response = None
         self.feedback = feedback
 
-    def get_score(self):
+    def get_score(self, scoring_model='sum'):
         """
         Функция для получения score, используемого
         как ключа для сортировки
         """
-        return self.score['sum']
 
-    def todict_API(self):
+        return self.score[scoring_model]
+
+    def to_reduced_object(self):
+        """Преобразование в сокращенный объект для API"""
+
         keys_to_return = (
             'type',
             'response',

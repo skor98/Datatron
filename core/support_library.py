@@ -5,10 +5,10 @@
 Вспомогательные методы для работы с кубами
 """
 
-import requests
 import logging
 import json
 import datetime
+import requests
 import numpy
 
 from kb.kb_support_library import get_cube_caption
@@ -169,7 +169,7 @@ def format_cube_answer(cube_answer, response: requests):
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
-        logging.warning(
+        logging.exception(
             "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
                 cube_answer.request_id,
                 response.get('message', '')
@@ -200,6 +200,7 @@ def format_cube_answer(cube_answer, response: requests):
 
         # Добавление к неформатированного результата
         # Если формат меры - 0, то просто целое число без знаков после запятой
+        # TODO: проверить типы возвращаемых значений
         if not value_format:
             cube_answer.response = int(str(value).split('.')[0])
         # Если формат для меры - 1, то возращается полученный неокругленный результат
@@ -211,17 +212,16 @@ def format_cube_answer(cube_answer, response: requests):
 
     # Создание фидбека в другом формате для удобного логирования
     feedback_verbal = cube_answer.feedback['verbal']
-    verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
+    verbal = '1. {}'.format(feedback_verbal['measure']) + ' '
 
     # pylint: disable=invalid-sequence-index
-    verbal += ' '.join([str(idx + 1) + '. ' + val['member_caption']
+    verbal += ' '.join([str(idx + 2) + '. ' + val['member_caption']
                         for idx, val in enumerate(feedback_verbal['dims'])])
 
     logging.info(
-        'Query_ID: {}\tMDX-запрос: {}\tСмысл: {}'.format(
+        'Query_ID: {}\tMessage: {}'.format(
             cube_answer.request_id,
-            cube_answer.mdx_query,
-            verbal
+            "Ыыделенные параметры - " + verbal
         ))
 
 
@@ -236,7 +236,9 @@ def manage_years(cube_data: CubeData):
         if int(year) < 2006:
             if int(year) < 10:
                 year = '0' + year
-            cube_data.year_member = str(datetime.datetime.strptime(year, '%y').year)
+            year = str(datetime.datetime.strptime(year, '%y').year)
+
+            cube_data.year_member['cube_value'] = year
 
 
 def check_if_year_is_current(cube_data: CubeData):
@@ -337,21 +339,25 @@ def process_with_member_for_territory(cube_data: CubeData):
     """Обработка связанных значений для ТЕРРИТОРИЙ"""
 
     if cube_data.terr_member:
-        connected_dim = cube_data.terr_member['connected_value.dimension_cube_value']
-
-        # удаление других найденных значений для BGLevels
-        cube_data.members = [
-            member for member in cube_data.members
-            if member['dimension'] != connected_dim
-            ]
-
-        # добавление связанного значения
-        cube_data.members.append(
-            {
-                'dimension': connected_dim,
-                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-            }
+        connected_dim = cube_data.terr_member.get(
+            'connected_value.dimension_cube_value',
+            None
         )
+
+        if connected_dim:
+            # удаление других найденных значений для BGLevels
+            cube_data.members = [
+                member for member in cube_data.members
+                if member['dimension'] != connected_dim
+                ]
+
+            # добавление связанного значения
+            cube_data.members.append(
+                {
+                    'dimension': connected_dim,
+                    'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                }
+            )
 
 
 def process_default_members(cube_data: CubeData):
@@ -391,7 +397,7 @@ def process_default_measures(cube_data: CubeData):
         cube_data.selected_measure = cube_data.selected_cube['default_measure']
 
 
-def create_mdx_query(cube_data: CubeData, type='basic'):
+def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
     """
     Формирование MDX-запроса различных видов, на основе найденных документов
     """
@@ -431,7 +437,7 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
         )
 
     # закладка под расширение типов MDX-запросов
-    if type == 'basic':
+    if mdx_type == 'basic':
         create_basic_mdx_query()
 
 
@@ -442,6 +448,7 @@ def delete_repetitions(cube_data_list: list):
     """
 
     cube_data_repr = []
+    before_deleting = len(cube_data_list)
 
     for cube_data in list(cube_data_list):
 
@@ -459,3 +466,12 @@ def delete_repetitions(cube_data_list: list):
             cube_data_list.remove(cube_data)
         else:
             cube_data_repr.append(str_cube_data_elems)
+
+    after_deleting = len(cube_data_list)
+
+    logging.info(
+        "Query_ID: {}\tMessage: Удаление {} повторяющихся запросов".format(
+            cube_data_list[0].request_id,
+            before_deleting - after_deleting
+        )
+    )
