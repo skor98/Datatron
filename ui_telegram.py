@@ -392,7 +392,7 @@ def callback_inline(call):
 
 
 def process_response(message, input_format='text', file_content=None):
-    request_id = uuid.uuid4()
+    request_id = str(uuid.uuid4())
     user_name = user_name_str.format(message.chat.first_name, message.chat.last_name)
 
     bot.send_chat_action(message.chat.id, 'typing')

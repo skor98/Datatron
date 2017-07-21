@@ -15,12 +15,10 @@ from core.support_library import FunctionExecutionError
 
 import logs_helper  # pylint: disable=unused-import
 
+
 # TODO: переработать структуру документов
 # TODO: обращение к БД только во время препроцессинга
 # TODO: создание графа единоразово
-
-BEST_PATHS_TRESHOLD = 10
-logic_tree = Graph(BEST_PATHS_TRESHOLD)
 
 
 class CubeProcessor:
@@ -30,12 +28,12 @@ class CubeProcessor:
 
     @staticmethod
     def get_data(cube_data: CubeData):
-        csl.manage_years(cube_data)
+        if cube_data:
+            csl.manage_years(cube_data)
 
-        # получение нескольких возможных вариантов
-        cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
+            # получение нескольких возможных вариантов
+            cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
-        if cube_data_list:
             # доработка вариантов
             for item in cube_data_list:
                 csl.filter_measures_by_selected_cube(item)
@@ -68,6 +66,9 @@ class CubeProcessor:
 
         cube_data_list = []
 
+        BEST_PATHS_TRESHOLD = 10
+        logic_tree = Graph(BEST_PATHS_TRESHOLD)
+
         for path in logic_tree.gr_answer_combinations:
 
             # копия для каждого прогона
@@ -97,7 +98,16 @@ class CubeProcessor:
         SCORING_MODEL = 'sum'
         THRESHOLD = 5
 
+        before_deleting = len(cube_data_list)
         csl.delete_repetitions(cube_data_list)
+        after_deleting = len(cube_data_list)
+
+        logging.info(
+            "Query_ID: {}\tMessage: {} отфильтрованных запросов".format(
+                cube_data_list[0].request_id,
+                before_deleting - after_deleting
+            )
+        )
 
         cube_data_list = sorted(
             cube_data_list,
