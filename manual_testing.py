@@ -229,8 +229,8 @@ def assert_minfin_requests(
             msg='Не определена'
         )
 
-    testing_results.append(ars)
-    error_answers.append(1)
+        testing_results.append(ars)
+        error_answers.append(1)
 
 
 def get_test_files(test_path, prefix):
