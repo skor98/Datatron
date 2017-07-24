@@ -32,7 +32,7 @@ class CoreAnswer:
 
         return json.dumps(
             result_dict,
-            default=lambda obj: getattr(obj, 'todict_API', lambda: None)(),
+            default=lambda obj: getattr(obj, 'to_reduced_object', lambda: None)(),
             indent=4,
             ensure_ascii=False,
         )
