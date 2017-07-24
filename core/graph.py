@@ -17,11 +17,19 @@ class Graph(nx.DiGraph):
     Граф, который используются для реализации нашей модели процессинга запроса
     """
 
+    __instance = None
+
+    @staticmethod
+    def inst(num_of_variants):
+        if Graph.__instance is None:
+            Graph.__instance = Graph(num_of_variants)
+        return Graph.__instance
+
     def __init__(self, num_of_variants=10):
         super().__init__()
         self._define_nodes()
         self._define_edges()
-        self.gr_answer_combinations = self._k_shortest_paths(0, 16, num_of_variants)
+        self.tree_paths = list(self._k_shortest_paths(0, 16, num_of_variants))
 
     def _define_nodes(self):
         """Определение вершин"""

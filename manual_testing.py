@@ -170,8 +170,8 @@ def assert_cube_requests(
                 testing_results.append(ars)
                 wrong_answers.append(1)
         else:
-            ars = '{}. - Во время запроса "{}" что-то пошло не так {}'.format(
-                idx, req, system_answer['answer']['message']
+            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(
+                idx, req
             )
 
             testing_results.append(ars)

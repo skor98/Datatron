@@ -211,30 +211,33 @@ class DataRetrieving:
     ):
         """Форматирование главного ответа"""
 
-        # Отсечение ответов ниже порога
-        if answers[0].get_score() > MODEL_CONFIG["relevant_main_answer_threshold"]:
+        # Выбор главного ответа
+        core_answer.answer = answers[0]
+
+        # Если главный ответ по кубам
+        if isinstance(core_answer.answer, CubeAnswer):
             core_answer.status = True
-            # Выбор главного ответа
-            core_answer.answer = answers[0]
 
-            # Если главный ответ по кубам
-            if isinstance(core_answer.answer, CubeAnswer):
-                logging.info(
-                    "Query_ID: {}\tMessage: Главный ответ - "
-                    "ответ по кубу - {} - {}".format(
-                        request_id,
-                        core_answer.answer.get_score(),
-                        core_answer.answer.mdx_query
-                    ))
+            logging.info(
+                "Query_ID: {}\tMessage: Главный ответ - "
+                "ответ по кубу - {} - {}".format(
+                    request_id,
+                    core_answer.answer.get_score(),
+                    core_answer.answer.mdx_query
+                ))
 
-                response = send_request_to_server(
-                    core_answer.answer.mdx_query,
-                    core_answer.answer.cube
-                )
+            response = send_request_to_server(
+                core_answer.answer.mdx_query,
+                core_answer.answer.cube
+            )
 
-                format_cube_answer(core_answer.answer, response)
-            # Если главный ответ по минфину
-            else:
+            format_cube_answer(core_answer.answer, response)
+        # Если главный ответ по минфину
+        else:
+            # фильтр по релевантности на минфин
+            if answers[0].get_score() >= MODEL_CONFIG["relevant_minfin_main_answer_threshold"]:
+                core_answer.status = True
+
                 logging.info(
                     "Query_ID: {}\tMessage: Главный ответ - "
                     "ответ по Минфину - {} - {}".format(
@@ -242,14 +245,15 @@ class DataRetrieving:
                         core_answer.answer.get_score(),
                         core_answer.answer.number
                     ))
-        else:
-            logging.info(
-                "Query_ID: {}\tMessage: Главный ответ не прошел "
-                "порог ({} vs {})".format(
-                    request_id,
-                    answers[0].get_score(),
-                    MODEL_CONFIG["relevant_main_answer_threshold"]
-                ))
+            else:
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный ответ по Минфину "
+                    "не прошел порог ({} vs {})".format(
+                        request_id,
+                        answers[0].get_score(),
+                        MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+                    ))
+
 
     @staticmethod
     def _process_more_answers(

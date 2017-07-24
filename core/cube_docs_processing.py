@@ -70,10 +70,9 @@ class CubeProcessor:
 
         cube_data_list = []
 
-        # TODO: создание графа единоразово
-        logic_tree = Graph(MODEL_CONFIG['tree_k_path_threshold'])
+        tree = Graph.inst(MODEL_CONFIG['tree_k_path_threshold'])
 
-        for path in logic_tree.gr_answer_combinations:
+        for path in tree.tree_paths:
 
             # копия для каждого прогона
             cube_data_copy = copy.deepcopy(cube_data)
@@ -81,7 +80,7 @@ class CubeProcessor:
             try:
                 # последовательное исполнение функций узлов
                 for node_id in path:
-                    logic_tree.node[node_id]['function'](cube_data_copy)
+                    tree.node[node_id]['function'](cube_data_copy)
 
                 # занесение сработавшего пути
                 cube_data_copy.tree_path = path
