@@ -148,37 +148,38 @@ def assert_cube_requests(
         wrong_answers,
         error_answers
 ):
-    response = system_answer['answer'].get('response')
+    response = system_answer['answer']
     if response:
-        try:
-            assert int(answer) == response
-            ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
-            testing_results.append(ars)
-            true_answers.append(1)
-        except AssertionError:
-            ars = (
-                '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {}) | {}'
+        response = response.get('response')
+        if response:
+            try:
+                assert int(answer) == response
+                ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
+                testing_results.append(ars)
+                true_answers.append(1)
+            except AssertionError:
+                ars = (
+                    '{}. - Запрос "{}" отрабатывает некорректно' +
+                    '(должны получать: {}, получаем: {}) | {}'
+                )
+                ars = ars.format(idx,
+                                 req, int(answer),
+                                 response,
+                                 system_answer['answer']['mdx_query'])
+
+                testing_results.append(ars)
+                wrong_answers.append(1)
+        else:
+            ars = '{}. - Во время запроса "{}" что-то пошло не так {}'.format(
+                idx, req, system_answer['answer']['message']
             )
-            ars = ars.format(idx,
-                             req, int(answer),
-                             response,
-                             system_answer['answer']['mdx_query'])
 
             testing_results.append(ars)
-            wrong_answers.append(1)
+            error_answers.append(1)
     else:
-        if system_answer['doc_found']:
-            ars = '{}. - Запрос "{}" выдал верхним ответ по Минфину'
-            ars = ars.format(idx, req)
-        else:
-            ars = '{}. - Запрос "{}" вызвал ошибку: {} | {}'
-            ars = ars.format(idx,
-                             req,
-                             system_answer['answer']['message'],
-                             system_answer['answer']['mdx_query'])
+        ars = '{}. - Ответ на запрос "{}" не был найден'
         testing_results.append(ars)
-        error_answers.append(1)
+        wrong_answers.append(1)
 
 
 def assert_minfin_requests(
@@ -203,39 +204,45 @@ def assert_minfin_requests(
         error_answers.append(1)
         return
 
-    response = response.get('number')
     if response:
-        try:
-            assert question_id == str(response)
-            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
-            ars = ars.format(q_id=question_id,
-                             score=system_answer['answer']['score'],
-                             req=req)
-            # Запрос должен проходить по порогу
-            assert minimal_score < system_answer['answer']['score']
-            testing_results.append(ars)
-            true_answers.append(1)
-        except AssertionError:
-            ars = (
-                '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
-                '(должны получать:{q_id}, получаем:{fl})'
-            )
-            ars = ars.format(q_id=question_id,
-                             score=system_answer['answer']['score'],
-                             req=req, fl=response)
-            wrong_answers.append(1)
-    else:
-        if system_answer['doc_found']:
-            ars_msg = 'Вверхним документом был ответ по кубу'
+        response = response.get('number')
+        if response:
+            try:
+                assert question_id == str(response)
+                ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req)
+                # Запрос должен проходить по порогу
+                assert minimal_score < system_answer['answer']['score']
+                testing_results.append(ars)
+                true_answers.append(1)
+            except AssertionError:
+                ars = (
+                    '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
+                    '(должны получать:{q_id}, получаем:{fl})'
+                )
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req, fl=response)
+                testing_results.append(ars)
+                wrong_answers.append(1)
         else:
-            ars_msg = 'Не определена'
-        base_ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'
-        ars = base_ars.format(
-            q_id=question_id,
-            req=req,
-            msg=ars_msg
+            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                q_id=question_id,
+                req=req,
+                msg='Не определена'
+            )
+            testing_results.append(ars)
+            error_answers.append(1)
+    else:
+        ars = (
+            '{q_id} - На запрос "{req}" ответ не был найден ' +
+            'или, он не прошел по порогу'
         )
-    testing_results.append(ars)
+        ars = ars.format(q_id=question_id, req=req)
+        testing_results.append(ars)
+        error_answers.append(1)
 
 
 def get_test_files(test_path, prefix):
