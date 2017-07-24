@@ -35,25 +35,16 @@ class DataRetrieving:
 
         core_answer = CoreAnswer()
 
-        text_proc = TextPreprocessing(request_id)
-
-        # нормализация запроса пользователя
-        norm_user_request = text_proc.normalization(
+        norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
-            delete_question_words=False
+            request_id
         )
-
-        # Год необходимо учитовать в нормированных данных по кубам
-        # Но необходимо исключать из запросов, иначе вверх
-        # поисковой выдачи выходят документы по Минфину
-        if 'год' in norm_user_request:
-            norm_user_request = norm_user_request.replace(
-                'год', ''
-            )
 
         # получение результатов поиска от Apache Solr в JSON-строке
         solr_response = Solr.get_data(
-            norm_user_request, request_id, SETTINGS.SOLR_MAIN_CORE
+            norm_user_request,
+            request_id,
+            SETTINGS.SOLR_MAIN_CORE
         )['response']
 
         # Если хотя бы 1 документ найден:
@@ -75,9 +66,9 @@ class DataRetrieving:
                 )
             )
 
-            answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
+            answers = DataRetrieving._sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving.format_core_answer(answers, request_id)
+            core_answer = DataRetrieving._format_core_answer(answers, request_id)
         else:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
@@ -88,7 +79,85 @@ class DataRetrieving:
         return core_answer
 
     @staticmethod
-    def sort_answers(minfin_answers: list, cube_answers: list):
+    def _preprocess_user_request(user_request: str, request_id: str):
+        """Предобработка запроса пользователя"""
+
+        text_proc = TextPreprocessing(request_id)
+
+        # нормализация запроса пользователя
+        norm_user_request = text_proc.normalization(
+            user_request,
+            delete_question_words=False
+        )
+
+        # Год необходимо учитовать в нормированных данных по кубам
+        # Но необходимо исключать из запросов, иначе вверх
+        # поисковой выдачи выходят документы по Минфину
+        if 'год' in norm_user_request:
+            norm_user_request = norm_user_request.replace(
+                'год', ''
+            )
+
+        # TODO: раскомментить, как будет готовы тесты
+        # norm_user_request = DataRetrieving._set_user_request(
+        #     norm_user_request, request_id
+        # )
+        # norm_user_request = DataRetrieving._dublicate_user_request(
+        #     norm_user_request, request_id
+        # )
+
+        return norm_user_request
+
+    @staticmethod
+    def _set_user_request(norm_user_request: str, request_id: str):
+        """
+        Удаление повторяющихся слов и увеличение длины запроса
+        при необходимости
+        """
+
+        norm_user_request = norm_user_request.split()
+        set_norm_user_request = set(norm_user_request)
+
+        # удаление повторяющихся слов, чтобы пользователи не читерили
+        if len(set_norm_user_request) != len(norm_user_request):
+            norm_user_request = ' '.join(set_norm_user_request)
+
+            logging.info(
+                "Query_ID: {}\tMessage: Удалено {} повторяющихся слов".format(
+                    request_id,
+                    len(norm_user_request) - len(set_norm_user_request)
+                )
+            )
+
+        return norm_user_request
+
+    @staticmethod
+    def _duplicate_user_request(norm_user_request: str, request_id: str):
+        """
+        Дублирование коротких запросов
+        """
+
+        SHORT_QUESTION_THRESHOLD = 3
+        DUBLICATE_SCORE = 2
+
+        norm_user_request = norm_user_request.split()
+
+        if len(norm_user_request) <= SHORT_QUESTION_THRESHOLD:
+            norm_user_request *= DUBLICATE_SCORE
+
+            logging.info(
+                "Query_ID: {}\tMessage: Запрос из {} слов был "
+                "удлинен в {} раза".format(
+                    request_id,
+                    len(norm_user_request),
+                    DUBLICATE_SCORE
+                )
+            )
+
+        return norm_user_request
+
+    @staticmethod
+    def _sort_answers(minfin_answers: list, cube_answers: list):
         """Сортировка ответов по кубам и минфину в общем списке"""
 
         # Если по минфину найден только 1 ответ
@@ -110,7 +179,7 @@ class DataRetrieving:
         return all_answers
 
     @staticmethod
-    def format_core_answer(answers: list, request_id: str):
+    def _format_core_answer(answers: list, request_id: str):
         """Формирование структуры финального ответа"""
 
         core_answer = CoreAnswer()
@@ -186,6 +255,3 @@ class DataRetrieving:
                 max_score,
                 min_score
             ))
-
-
-
