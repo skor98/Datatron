@@ -65,8 +65,25 @@ def _read_data():
         df = pd.read_excel(
             open(file_path, 'rb'),
             sheetname='questions',
-            converters={'id': str}
+            converters={
+                'id': str,
+                'question': str,
+                'short_answer': str,
+                'full_answer':str,
+            }
         )
+        
+        # Нужно обрезать whitespace
+        COLUMNS_TO_STRIP = (
+            'id',
+            'question',
+            'short_answer',
+            'full_answer'
+        )
+        for row_ind in range(df.shape[0]):
+            for column in COLUMNS_TO_STRIP:
+                df.loc[row_ind, column] = df.loc[row_ind, column].strip()
+
         df = df.fillna(0)
         dfs.append(df)
 
