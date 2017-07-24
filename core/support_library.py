@@ -275,7 +275,9 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
         elif doc['type'] == 'year_dim_member':
             cube_data.year_member = doc
         elif doc['type'] == 'terr_dim_member':
-            cube_data.terr_member = doc
+            # если лучшая территория еще не найдена
+            if not cube_data.terr_member:
+                cube_data.terr_member = doc
         elif doc['type'] == 'cube':
             cube_data.cubes.append(doc)
         elif doc['type'] == 'measure':
