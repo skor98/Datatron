@@ -181,7 +181,7 @@ def form_members_in_hierachy_by_score(cube_data: CubeData):
     tmp_dimensions, idx = [], 0
     while cube_data.members:
         tmp_dimensions.append([])
-        for member in cube_data.members:
+        for member in list(cube_data.members):
             if '{}_{}'.format(member['dimension'], member['cube']) in tmp_dimensions[idx]:
                 continue
             else:
