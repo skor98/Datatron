@@ -99,9 +99,9 @@ def cube_testing(test_sphere, minimal_score):
     error_answers = sum(error_answers)
 
     if test_sphere == 'cube':
-        file_name = 'cube_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
+        file_name = 'cube_{}.txt'
     else:
-        file_name = 'minfin_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
+        file_name = 'minfin_{}.txt'
 
     file_name = file_name.format(
         current_datetime,
