@@ -26,6 +26,7 @@ class CubeData:
     def __init__(self, user_request='', request_id=''):
         self.user_request = user_request
         self.request_id = request_id
+        self.tree_path = None
         self.selected_cube = None
         self.cubes = []
         self.members = []
@@ -221,7 +222,7 @@ def format_cube_answer(cube_answer, response: requests):
     logging.info(
         'Query_ID: {}\tMessage: {}'.format(
             cube_answer.request_id,
-            "Ыыделенные параметры - " + verbal
+            "Выделенные параметры - " + verbal
         ))
 
 

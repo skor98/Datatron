@@ -91,7 +91,7 @@ def define_year_privilege_over_cube(cube_data: CubeData):
     """
 
     if cube_data.year_member:
-        if 'Years' not in cube_data.selected_cube['dimensions']:
+        if 'YEARS' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
                 "function": define_year_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ГОД"
@@ -121,7 +121,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
     """
 
     if cube_data.terr_member:
-        if 'Territories' not in cube_data.selected_cube['dimensions']:
+        if 'TERRITORIES' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
                 "function": define_territory_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ТЕРРИТОРИЯ"

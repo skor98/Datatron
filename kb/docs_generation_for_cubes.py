@@ -108,7 +108,7 @@ class CubeDocsGeneration:
         for cube in dbc.Cube.select():
             for dim_cub in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
-                    if dimension.cube_value not in ('Years', 'Territories'):
+                    if dimension.cube_value not in ('YEARS', 'TERRITORIES'):
                         for dimension_value in dbc.DimensionMember.select().where(
                             dbc.DimensionMember.dimension_id == dimension.id
                         ):
@@ -150,7 +150,7 @@ class CubeDocsGeneration:
             year_values.append(
                 {
                     'type': 'year_dim_member',
-                    'dimension': 'Years',
+                    'dimension': 'YEARS',
                     'cube_value': year,
                     'member_caption': year
                 }
@@ -169,7 +169,7 @@ class CubeDocsGeneration:
                    .select(fn.Distinct(dbc.Member.lem_caption))
                    .join(dbc.DimensionMember)
                    .join(dbc.Dimension)
-                   .where(dbc.Dimension.cube_value == 'Territories'))
+                   .where(dbc.Dimension.cube_value == 'TERRITORIES'))
 
         # Создание документа определенной структуры
         for item in members:

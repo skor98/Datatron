@@ -83,6 +83,9 @@ class CubeProcessor:
                 for node_id in path:
                     logic_tree.node[node_id]['function'](cube_data_copy)
 
+                # занесение сработавшего пути
+                cube_data_copy.tree_path = path
+
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
             except FunctionExecutionError as error:
@@ -108,6 +111,13 @@ class CubeProcessor:
             cube_data_list,
             key=lambda cube_data: cube_data.score[SCORING_MODEL],
             reverse=True)
+
+        logging.info(
+            "Query_ID: {}\tMessage: Лучший ответ создан на пути {}".format(
+                cube_data_list[0].request_id,
+                cube_data_list[0].tree_path
+            )
+        )
 
         return cube_data_list[:threshold + 1]
 
