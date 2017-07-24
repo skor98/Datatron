@@ -23,7 +23,7 @@ RESULTS_FOLDER = 'results'
 
 
 @logs_helper.time_with_message("cube_testing")
-def cube_testing(test_sphere='cube'):
+def cube_testing(test_sphere, minimal_score):
     """Метод для тестирования работы системы по кубам.
     Тесты находятся в папке tests и имеют следующую структуру названия
     cube_<local/server>_<имя куба>
@@ -83,6 +83,7 @@ def cube_testing(test_sphere='cube'):
                         answer,
                         req,
                         system_answer,
+                        minimal_score,
                         testing_results,
                         true_answers,
                         wrong_answers,
@@ -98,9 +99,9 @@ def cube_testing(test_sphere='cube'):
     error_answers = sum(error_answers)
 
     if test_sphere == 'cube':
-        file_name = 'cube_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
+        file_name = 'cube_{}.txt'
     else:
-        file_name = 'minfin_{}_OK_{}_Wrong_{}_Error_{}_Time_{}.txt'
+        file_name = 'minfin_{}.txt'
 
     file_name = file_name.format(
         current_datetime,
@@ -184,47 +185,14 @@ def assert_minfin_requests(
         question_id,
         req,
         system_answer,
+        minimal_score,
         testing_results,
         true_answers,
         wrong_answers,
         error_answers
 ):
     response = system_answer['answer']
-    if response:
-        response = response.get('number')
-        if response:
-            try:
-                assert question_id == str(response)
-                ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
-                ars = ars.format(q_id=question_id,
-                                 score=system_answer['answer']['score'],
-                                 req=req)
-                testing_results.append(ars)
-                true_answers.append(1)
-            except AssertionError:
-                ars = (
-                    '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
-                    '(должны получать:{q_id}, получаем:{fl})'
-                )
-                ars = ars.format(q_id=question_id,
-                                 score=system_answer['answer']['score'],
-                                 req=req, fl=response)
-                testing_results.append(ars)
-                wrong_answers.append(1)
-        else:
-            if system_answer['doc_found']:
-                ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-                    q_id=question_id,
-                    req=req,
-                    msg='Вверхним документом был ответ по кубу'
-                )
-            else:
-                ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-                    q_id=question_id,
-                    req=req,
-                    msg='Не определена'
-                )
-    else:
+    if not response:
         ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
             q_id=question_id,
             req=req,
@@ -233,6 +201,41 @@ def assert_minfin_requests(
 
         testing_results.append(ars)
         error_answers.append(1)
+        return
+
+    response = response.get('number')
+    if response:
+        try:
+            assert question_id == str(response)
+            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['answer']['score'],
+                             req=req)
+            # Запрос должен проходить по порогу
+            assert minimal_score < system_answer['answer']['score']
+            testing_results.append(ars)
+            true_answers.append(1)
+        except AssertionError:
+            ars = (
+                '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
+                '(должны получать:{q_id}, получаем:{fl})'
+            )
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['answer']['score'],
+                             req=req, fl=response)
+            wrong_answers.append(1)
+    else:
+        if system_answer['doc_found']:
+            ars_msg = 'Вверхним документом был ответ по кубу'
+        else:
+            ars_msg = 'Не определена'
+        base_ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'
+        ars = base_ars.format(
+            q_id=question_id,
+            req=req,
+            msg=ars_msg
+        )
+    testing_results.append(ars)
 
 
 def get_test_files(test_path, prefix):
@@ -244,7 +247,12 @@ def get_test_files(test_path, prefix):
 
 
 @logs_helper.time_with_message("get_results")
-def get_results(need_cube=True, need_minfin=True, write_logs=False):
+def get_results(
+        minimal_score=20,
+        need_cube=True,
+        need_minfin=True,
+        write_logs=False
+):
     """
     Возвращает результаты по всем тестам.
     Сначала общий скор, потом детальный скор
@@ -257,13 +265,13 @@ def get_results(need_cube=True, need_minfin=True, write_logs=False):
         logging.getLogger().setLevel(logging.ERROR)
 
     if need_cube:
-        cube_res = cube_testing(test_sphere='cube')
+        cube_res = cube_testing(test_sphere='cube', minimal_score=minimal_score)
         cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
         cube_score = float(cube_res["true"]) / cube_total
         cube_res["score"] = cube_score
 
     if need_minfin:
-        minfin_res = cube_testing(test_sphere='minfin')
+        minfin_res = cube_testing(test_sphere='minfin', minimal_score=minimal_score)
         minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
         minfin_score = float(minfin_res["true"]) / minfin_total
         minfin_res["score"] = minfin_score
@@ -313,6 +321,11 @@ def _main():
         help='Отключает логгирование во время тестирования',
     )
 
+    parser.add_argument(
+        "--threshold", help='Score для отсева ответов.',
+        default=20., type=float
+    )
+
     args = parser.parse_args()
 
     # Если аргументов не было, то тестируем как обычно
@@ -321,6 +334,7 @@ def _main():
         args.minfin = True
 
     score, results = get_results(
+        minimal_score=args.threshold,
         need_cube=args.cube,
         need_minfin=args.minfin,
         write_logs=not args.no_logs
