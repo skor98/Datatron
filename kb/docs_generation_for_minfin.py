@@ -69,10 +69,10 @@ def _read_data():
                 'id': str,
                 'question': str,
                 'short_answer': str,
-                'full_answer':str,
+                'full_answer': str,
             }
         )
-        
+
         # Нужно обрезать whitespace
         COLUMNS_TO_STRIP = (
             'id',
