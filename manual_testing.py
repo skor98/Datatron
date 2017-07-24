@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import argparse
 import json
 import uuid
 import datetime
 import time
 import logging
 from os import path, listdir, makedirs
+from math import isnan
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
@@ -242,7 +244,7 @@ def get_test_files(test_path, prefix):
 
 
 @logs_helper.time_with_message("get_results")
-def get_results(write_logs=False):
+def get_results(need_cube=True, need_minfin=True, write_logs=False):
     """
     Возвращает результаты по всем тестам.
     Сначала общий скор, потом детальный скор
@@ -254,38 +256,82 @@ def get_results(write_logs=False):
         # Временно отключаем логи
         logging.getLogger().setLevel(logging.ERROR)
 
-    cube_res = cube_testing(test_sphere='cube')
-    cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
-    cube_score = float(cube_res["true"]) / cube_total
+    if need_cube:
+        cube_res = cube_testing(test_sphere='cube')
+        cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
+        cube_score = float(cube_res["true"]) / cube_total
+        cube_res["score"] = cube_score
 
-    minfin_res = cube_testing(test_sphere='minfin')
-    minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
-    minfin_score = float(minfin_res["true"]) / minfin_total
+    if need_minfin:
+        minfin_res = cube_testing(test_sphere='minfin')
+        minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
+        minfin_score = float(minfin_res["true"]) / minfin_total
+        minfin_res["score"] = minfin_score
 
     if not write_logs:
         # Возвращаем логи обратно
         logging.getLogger().setLevel(string_to_log_level(LOG_LEVEL))
 
-    # Accuracy по всем результатам
-    total_trues = cube_res["true"] + minfin_res["true"]
-    total_tests = cube_total + minfin_total
-    total_score = float(total_trues) / total_tests
+    if not need_cube:
+        # только минфин; нормальный скоринг неприменим, поэтому возвращаем nan
+        return float('nan'), {"minfin": minfin_res}
+    elif not need_minfin:
+        # только кубы; нормальный скоринг неприменим, поэтому возвращаем nan
+        return float('nan'), {"cube": cube_res}
+    else:
+        # Accuracy по всем результатам
+        total_trues = cube_res["true"] + minfin_res["true"]
+        total_tests = cube_total + minfin_total
+        total_score = float(total_trues) / total_tests
 
-    # Добавим это также к остальным
-    cube_res["score"] = cube_score
-    minfin_res["score"] = minfin_score
-
-    return total_score, {"cube": cube_res, "minfin": minfin_res}
+        return total_score, {"cube": cube_res, "minfin": minfin_res}
 
 
 def _main():
-    score, results = get_results(write_logs=True)
+    # pylint: disable=invalid-name
+    parser = argparse.ArgumentParser(
+        description="""Проводит тестирование качества системы.
+        Если аргументов нет, то будет тестирование всего.
+        """
+    )
+
+    parser.add_argument(
+        "--cube",
+        action='store_true',
+        help='Проводит только тестирование по кубам',
+    )
+
+    parser.add_argument(
+        "--minfin",
+        action='store_true',
+        help='Проводит только тестирование по минфину',
+    )
+
+    parser.add_argument(
+        "--no-logs",
+        action='store_true',
+        help='Отключает логгирование во время тестирования',
+    )
+
+    args = parser.parse_args()
+
+    # Если аргументов не было, то тестируем как обычно
+    if not args.cube and not args.minfin:
+        args.cube = True
+        args.minfin = True
+
+    score, results = get_results(
+        need_cube=args.cube,
+        need_minfin=args.minfin,
+        write_logs=not args.no_logs
+    )
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
     with open(path.join(TEST_PATH, RESULTS_FOLDER, result_file_name), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(json.dumps(results, indent=4)))
-    print("Score: {:.4f}".format(score))
+    if not isnan(score):
+        print("Score: {:.4f}".format(score))
 
 
 if __name__ == "__main__":
