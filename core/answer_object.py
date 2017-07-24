@@ -11,7 +11,6 @@ import json
 class CoreAnswer:
     def __init__(self, message='', error=''):
         self.status = False
-        self.doc_found = 0
         self.answer = None
         self.more_answers_order = ''
         self.more_cube_answers = None

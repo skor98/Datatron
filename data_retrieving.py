@@ -20,6 +20,7 @@ from text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
+from model_manager import MODEL_CONFIG
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -188,12 +189,35 @@ class DataRetrieving:
         THRESHOLD = 5
 
         if answers:
-            core_answer.status = True
-            core_answer.doc_found = len(answers)
+            DataRetrieving._process_main_answer(
+                core_answer,
+                answers,
+                request_id
+            )
 
+            DataRetrieving._process_more_answers(
+                core_answer,
+                answers[1:THRESHOLD + 1],
+                request_id
+            )
+
+        return core_answer
+
+    @staticmethod
+    def _process_main_answer(
+            core_answer: CoreAnswer,
+            answers: list,
+            request_id: str
+    ):
+        """Форматирование главного ответа"""
+
+        # Отсечение ответов ниже порога
+        if answers[0].get_score() > MODEL_CONFIG["relevant_main_answer_threshold"]:
+            core_answer.status = True
             # Выбор главного ответа
             core_answer.answer = answers[0]
 
+            # Если главный ответ по кубам
             if isinstance(core_answer.answer, CubeAnswer):
                 logging.info(
                     "Query_ID: {}\tMessage: Главный ответ - "
@@ -209,6 +233,7 @@ class DataRetrieving:
                 )
 
                 format_cube_answer(core_answer.answer, response)
+            # Если главный ответ по минфину
             else:
                 logging.info(
                     "Query_ID: {}\tMessage: Главный ответ - "
@@ -217,14 +242,14 @@ class DataRetrieving:
                         core_answer.answer.get_score(),
                         core_answer.answer.number
                     ))
-
-            DataRetrieving._process_more_answers(
-                core_answer,
-                answers[1:THRESHOLD + 1],
-                request_id
-            )
-
-        return core_answer
+        else:
+            logging.info(
+                "Query_ID: {}\tMessage: Главный ответ не прошел "
+                "порог ({} vs {})".format(
+                    request_id,
+                    answers[0].get_score(),
+                    MODEL_CONFIG["relevant_main_answer_threshold"]
+                ))
 
     @staticmethod
     def _process_more_answers(
@@ -252,10 +277,12 @@ class DataRetrieving:
 
         if more_cube_answers:
             core_answer.more_cube_answers = more_cube_answers
-            core_answer.more_answers_order = more_answers_order
 
         if more_minfin_answers:
             core_answer.more_minfin_answers = more_minfin_answers
+
+        if more_answers_order:
+            core_answer.more_answers_order = more_answers_order
 
         logging.info(
             "Query_ID: {}\tMessage: В смотри также {} "

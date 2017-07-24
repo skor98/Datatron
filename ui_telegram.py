@@ -394,9 +394,12 @@ def callback_inline(call):
 
 def process_response(message, input_format='text', file_content=None):
     request_id = str(uuid.uuid4())
-    user_name = user_name_str.format(message.chat.first_name, message.chat.last_name)
+    user_name = user_name_str.format(
+        message.chat.first_name,
+        message.chat.last_name)
 
     bot.send_chat_action(message.chat.id, 'typing')
+
     if input_format == 'text':
         result = MessengerManager.make_request(
             message.text,
@@ -429,37 +432,23 @@ def process_response(message, input_format='text', file_content=None):
         else:
             process_minfin_questions(message, result.answer)
 
-        # Реализация смотри также
-        if result.more_answers_order:
-            more_answers = []
-
-            if result.more_cube_answers:
-                for cube_answer in result.more_cube_answers:
-                    more_answers.append(cube_answer)
-
-            if result.more_minfin_answers:
-                for minfin_answer in result.more_minfin_answers:
-                    more_answers.append(minfin_answer)
-
-            more_answers = sorted(
-                more_answers,
-                key=lambda elem: elem.order
+        extra_results = look_further(result)
+        if extra_results:
+            bot.send_message(
+                message.chat.id,
+                "*Смотри также:*\n" + extra_results,
+                parse_mode='Markdown'
             )
-
-            look_also = []
-            for answer in more_answers:
-                look_also.append(
-                    answer_to_look_also_format(answer)
-                )
-
-            look_also = ['{}. {}\n'.format(idx + 1, elem)
-                         for idx, elem in enumerate(look_also)]
-
-            bot.send_message(message.chat.id,
-                             "*Смотри также:*\n" + ''.join(look_also),
-                             parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
+
+        extra_results = look_further(result)
+        if extra_results:
+            bot.send_message(
+                message.chat.id,
+                "Вы *можете посмотреть:*\n" + extra_results,
+                parse_mode='Markdown'
+            )
 
 
 def process_cube_questions(message, cube_result, request_id, input_format):
@@ -487,30 +476,6 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        if minfin_result.score < 20:
-            if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-                bot.send_message(
-                    message.chat.id,
-                    'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-                    parse_mode='Markdown'
-                )
-
-                msg_str = (
-                    'Score найденного Минфин документа *({})* равен *{}*, ' +
-                    'что меньше порогового значений в *20*.'
-                )
-
-                bot.send_message(
-                    message.chat.id,
-                    msg_str.format(minfin_result.number, minfin_result.score),
-                    parse_mode='Markdown'
-                )
-
-                return
-            else:
-                bot.send_message(message.chat.id, "Ответ на Ваш вопрос не был найден :(")
-                return
-
         bot.send_message(
             message.chat.id,
             'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
@@ -684,6 +649,43 @@ def first_letter_lower(input_str):
     if not input_str:
         return ""
     return input_str[:1].lower() + input_str[1:]
+
+
+def look_further(result):
+    """Смотри также/Вы можете посмотреть"""
+
+    # Если "смотри также" есть
+    if result.more_answers_order:
+        # Формирование общего массива c ответами
+        more_answers = []
+
+        if result.more_cube_answers:
+            for cube_answer in result.more_cube_answers:
+                more_answers.append(cube_answer)
+
+        if result.more_minfin_answers:
+            for minfin_answer in result.more_minfin_answers:
+                more_answers.append(minfin_answer)
+
+        # Сортировка ответов
+        more_answers = sorted(
+            more_answers,
+            key=lambda elem: elem.order
+        )
+
+        # Формирование списка "смотри также"
+        look_also = []
+        for answer in more_answers:
+            look_also.append(
+                answer_to_look_also_format(answer)
+            )
+
+        look_also = ['{}. {}\n'.format(idx + 1, elem)
+                     for idx, elem in enumerate(look_also)]
+
+        return ''.join(look_also)
+    else:
+        return ''
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
