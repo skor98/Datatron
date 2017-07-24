@@ -30,6 +30,7 @@ from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
 
 import constants
+
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
 
@@ -429,9 +430,24 @@ def process_response(message, input_format='text', file_content=None):
             process_minfin_questions(message, result.answer)
 
         # Реализация смотри также
-        if result.more_answers:
+        if result.more_answers_order:
+            more_answers = []
+
+            if result.more_cube_answers:
+                for cube_answer in result.more_cube_answers:
+                    more_answers.append(cube_answer)
+
+            if result.more_minfin_answers:
+                for minfin_answer in result.more_minfin_answers:
+                    more_answers.append(minfin_answer)
+
+            more_answers = sorted(
+                more_answers,
+                key=lambda elem: elem.order
+            )
+
             look_also = []
-            for answer in result.more_answers:
+            for answer in more_answers:
                 look_also.append(
                     answer_to_look_also_format(answer)
                 )
@@ -663,6 +679,8 @@ def answer_to_look_also_format(answer):
 
 
 def first_letter_lower(input_str):
+    """Первод первой буквы слова в нижний регистр"""
+
     if not input_str:
         return ""
     return input_str[:1].lower() + input_str[1:]
@@ -683,11 +701,13 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
+
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
+
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():

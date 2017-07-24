@@ -218,40 +218,49 @@ class DataRetrieving:
                         core_answer.answer.number
                     ))
 
-            # Добавление до 5 дополнительных ответов
-            core_answer.more_answers = answers[1:THRESHOLD + 1]
-
-            DataRetrieving._analyze_more_answers(
-                core_answer.more_answers,
+            DataRetrieving._process_more_answers(
+                core_answer,
+                answers[1:THRESHOLD + 1],
                 request_id
             )
 
         return core_answer
 
     @staticmethod
-    def _analyze_more_answers(more_answers: list, request_id: str):
-        max_score = 0
-        min_score = 0
-        cube_answers_num = 0
-        minfin_answers_num = 0
+    def _process_more_answers(
+            core_answer: CoreAnswer,
+            more_answers: list,
+            request_id: str
+    ):
+        """Обработка дополнительных ответов"""
+
+        more_cube_answers = []
+        more_minfin_answers = []
+
+        more_answers_order = ''
+
+        for ind, answer in enumerate(more_answers):
+            answer.order = ind
 
         for answer in more_answers:
             if isinstance(answer, CubeAnswer):
-                cube_answers_num += 1
+                more_cube_answers.append(answer)
+                more_answers_order += '0'
             else:
-                minfin_answers_num += 1
+                more_minfin_answers.append(answer)
+                more_answers_order += '1'
 
-        if more_answers:
-            max_score = more_answers[0].get_score()
-            min_score = more_answers[-1].get_score()
+        if more_cube_answers:
+            core_answer.more_cube_answers = more_cube_answers
+            core_answer.more_answers_order = more_answers_order
+
+        if more_minfin_answers:
+            core_answer.more_minfin_answers = more_minfin_answers
 
         logging.info(
             "Query_ID: {}\tMessage: В смотри также {} "
-            "ответ(а, ов) по кубам и {} по Минфину, "
-            "диапазон Score - [{}, {}]".format(
+            "ответ(а, ов) по кубам и {} по Минфину".format(
                 request_id,
-                cube_answers_num,
-                minfin_answers_num,
-                max_score,
-                min_score
+                len(more_cube_answers),
+                len(more_minfin_answers)
             ))

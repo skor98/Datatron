@@ -13,7 +13,9 @@ class CoreAnswer:
         self.status = False
         self.doc_found = 0
         self.answer = None
-        self.more_answers = None
+        self.more_answers_order = ''
+        self.more_cube_answers = None
+        self.more_minfin_answers = None
         self.message = message
         self.error = error
 
@@ -25,7 +27,9 @@ class CoreAnswer:
             'status',
             'doc_found',
             'answer',
-            'more_answers'
+            'more_answers_order',
+            'more_cube_answers',
+            'more_minfin_answers'
         )
 
         result_dict = {key: getattr(self, key, None) for key in keys_to_return}
@@ -33,6 +37,5 @@ class CoreAnswer:
         return json.dumps(
             result_dict,
             default=lambda obj: getattr(obj, 'to_reduced_object', lambda: None)(),
-            indent=4,
             ensure_ascii=False,
         )

@@ -167,6 +167,7 @@ class CubeAnswer:
         self.response = None
         self.formatted_response = None
         self.feedback = feedback
+        self.order = None
 
     def get_score(self, scoring_model='sum'):
         """

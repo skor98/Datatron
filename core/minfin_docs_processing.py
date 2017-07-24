@@ -78,6 +78,7 @@ class MinfinAnswer:
         self.document_caption = None
         self.document = None
         self.message = None
+        self.order = None
 
     def get_score(self):
         """
