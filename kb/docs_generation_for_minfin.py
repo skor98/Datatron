@@ -64,9 +64,26 @@ def _read_data():
         # номер вопроса 3.10 не становился 3.1
         df = pd.read_excel(
             open(file_path, 'rb'),
-            sheetname='questions',
-            converters={'id': str}
+            converters={
+                'id': str,
+                'question': str,
+                'short_answer': str,
+                'full_answer': str,
+            }
         )
+
+        # Нужно обрезать whitespace
+        COLUMNS_TO_STRIP = (
+            'id',
+            'question',
+            'short_answer',
+            'full_answer'
+        )
+
+        for row_ind in range(df.shape[0]):
+            for column in COLUMNS_TO_STRIP:
+                df.loc[row_ind, column] = df.loc[row_ind, column].strip()
+
         df = df.fillna(0)
         dfs.append(df)
 
@@ -91,79 +108,76 @@ def _refactor_data(data):
 
     docs = []
     for row in data.itertuples():
-        # Если запрос не параметризованных
-        # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
-        if not row.parameterized:
-            doc = MinfinDocument()
-            doc.number = str(row.id)
-            doc.question = row.question
+        doc = MinfinDocument()
+        doc.number = row.id
+        doc.question = row.question
 
-            lem_question = tp.normalization(
-                row.question,
-                delete_digits=True,
-                delete_question_words=False
-            )
-            doc.lem_question = lem_question
+        lem_question = tp.normalization(
+            row.question,
+            delete_digits=True,
+            delete_question_words=False
+        )
+        doc.lem_question = lem_question
 
-            synonym_questions = _get_manual_synonym_questions(doc.number)
+        synonym_questions = _get_manual_synonym_questions(doc.number)
 
-            if synonym_questions:
-                lem_synonym_questions = [
-                    tp.normalization(q,
-                                     delete_digits=True,
-                                     delete_question_words=False)
-                    for q in synonym_questions
+        if synonym_questions:
+            lem_synonym_questions = [
+                tp.normalization(q,
+                                 delete_digits=True,
+                                 delete_question_words=False)
+                for q in synonym_questions
                 ]
-                doc.lem_synonym_questions = lem_synonym_questions
+            doc.lem_synonym_questions = lem_synonym_questions
 
-            doc.short_answer = row.short_answer
-            doc.lem_short_answer = tp.normalization(
-                row.short_answer,
+        doc.short_answer = row.short_answer
+        doc.lem_short_answer = tp.normalization(
+            row.short_answer,
+            delete_digits=True
+        )
+        if row.full_answer:
+            doc.full_answer = row.full_answer
+            doc.lem_full_answer = tp.normalization(
+                row.full_answer,
                 delete_digits=True
             )
-            if row.full_answer:
-                doc.full_answer = row.full_answer
-                doc.lem_full_answer = tp.normalization(
-                    row.full_answer,
-                    delete_digits=True
-                )
-            kw = tp.normalization(row.key_words,
-                                  delete_question_words=False,
-                                  delete_repeatings=True)
+        kw = tp.normalization(row.key_words,
+                              delete_question_words=False,
+                              delete_repeatings=True)
 
-            # Ключевые слова записываются трижды, для увеличения качества поиска документа
-            doc.lem_key_words = ' '.join([kw] * MANUAL_KEY_WORDS_REPETITION)
+        # Ключевые слова записываются трижды, для увеличения качества поиска документа
+        doc.lem_key_words = ' '.join([kw] * MANUAL_KEY_WORDS_REPETITION)
 
-            # Может быть несколько
-            if row.link_name:
-                if ';' in row.link_name:
-                    doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
-                    doc.link = [elem.strip() for elem in row.link.split(';')]
-                else:
-                    doc.link_name = row.link_name.strip()
-                    doc.link = row.link.strip()
+        # Может быть несколько
+        if row.link_name:
+            if ';' in row.link_name:
+                doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
+                doc.link = [elem.strip() for elem in row.link.split(';')]
+            else:
+                doc.link_name = row.link_name.strip()
+                doc.link = row.link.strip()
 
-            # Может быть несколько
-            if row.picture_caption:
-                if ';' in row.picture_caption:
-                    doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
-                    doc.picture = [elem.strip() for elem in row.picture.split(';')]
-                else:
-                    doc.picture_caption = row.picture_caption.strip()
-                    doc.picture = row.picture.strip()
+        # Может быть несколько
+        if row.picture_caption:
+            if ';' in row.picture_caption:
+                doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
+                doc.picture = [elem.strip() for elem in row.picture.split(';')]
+            else:
+                doc.picture_caption = row.picture_caption.strip()
+                doc.picture = row.picture.strip()
 
-            # Может быть несколько
-            if row.document_caption:
-                if ';' in row.document_caption:
-                    doc.document_caption = [
-                        elem.strip() for elem in row.document_caption.split(';')
-                        ]
-                    doc.document = [elem.strip() for elem in row.document.split(';')]
-                else:
-                    doc.document_caption = row.document_caption.strip()
-                    doc.document = row.document.strip()
-
+        # Может быть несколько
+        if row.document_caption:
+            if ';' in row.document_caption:
+                doc.document_caption = [
+                    elem.strip() for elem in row.document_caption.split(';')
+                    ]
+                doc.document = [elem.strip() for elem in row.document.split(';')]
+            else:
+                doc.document_caption = row.document_caption.strip()
+                doc.document = row.document.strip()
         docs.append(doc)
+
     return docs
 
 
@@ -191,8 +205,10 @@ def _get_manual_synonym_questions(question_number):
     port_num = question_number.split('.')[0]
 
     # Выбор файла, который соответствует партии вопроса
-    def is_portion_func(f): return f.endswith(
-        '.txt') and port_num in f and 'manual' in f
+    def is_portion_func(f):
+        return f.endswith(
+            '.txt') and port_num in f and 'manual' in f
+
     file_with_portion = [f for f in listdir(TEST_PATH) if is_portion_func(f)]
 
     # Если такого файла еще нет, так как его не успели написать
