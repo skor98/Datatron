@@ -6,5 +6,7 @@
   "tree_k_path_threshold": 10,
   "best_cube_data_threshold": 5,
   "relevant_minfin_main_answer_threshold": 20,
-  "cube_answers_scoring_model": "sum"
+  "cube_answers_scoring_model": "sum",
+  "short_request_threshold": 3,
+  "repetition_num_for_short_request": 2
 }
