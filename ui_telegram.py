@@ -703,13 +703,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
-
     @app.route('/telebot/')
     def main():
         """Тестовая страница"""
 
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
-
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
