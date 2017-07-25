@@ -246,6 +246,8 @@ class DataRetrieving:
                         core_answer.answer.number
                     ))
             else:
+                core_answer.answer = None
+
                 logging.info(
                     "Query_ID: {}\tMessage: Главный ответ по Минфину "
                     "не прошел порог ({} vs {})".format(
@@ -253,7 +255,6 @@ class DataRetrieving:
                         answers[0].get_score(),
                         MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
                     ))
-
 
     @staticmethod
     def _process_more_answers(
