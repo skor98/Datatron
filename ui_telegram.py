@@ -397,7 +397,7 @@ def callback_inline(call):
             request_id,
             '-'
         ))
-        
+
 
 def send_admin_messages():
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
@@ -596,7 +596,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 def expert_feedback(cube_result):
     expert_fb = cube_result.feedback['formal']
 
-    expert_str = '*Экспертная обратная связь*\n' \
+    expert_str = '**Экспертная обратная связь**\n' \
                  '`- Куб: {}\n- Мера: {}\n- Измерения: {}\n`'
 
     expert_str = expert_str.format(
@@ -625,7 +625,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
-    return '*{}*\n`{}`'.format(title, verbal_str)
+    return '**{}**\n`{}`'.format(title, verbal_str)
 
 
 def loof_also_for_cube(cube_result):
@@ -704,7 +704,7 @@ def look_further(result):
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-    
+
     app = Flask(__name__)
 
     WEBHOOK_URL_BASE = "{}:{}".format(
@@ -718,13 +718,15 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
-    
+
     send_admin_messages()
+
 
     @app.route('/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
+
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
