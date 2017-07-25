@@ -5,7 +5,6 @@
 """
 
 # pylint: disable=invalid-name
-# pylint: disable=missing-docstring
 
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import DispatcherMiddleware
@@ -22,7 +21,10 @@ elif web_api_app is None:
 else:
     server_app = DispatcherMiddleware(web_api_app, {'/telebot': telegram_app})
 
+
 def run_server():
+    """Запуск приложения"""
+
     run_simple(
         hostname=SETTINGS.WEB_SERVER.HOST,
         port=SETTINGS.WEB_SERVER.RUN_PORT,
@@ -31,6 +33,7 @@ def run_server():
         extra_files=SETTINGS_PATH,
         threaded=True,
     )
+
 
 if __name__ == '__main__':
     run_server()

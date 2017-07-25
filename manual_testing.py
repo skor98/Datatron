@@ -15,6 +15,7 @@ from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
 import logs_helper
 from logs_helper import string_to_log_level
+from model_manager import MODEL_CONFIG
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -27,6 +28,7 @@ class QualityTester:
     """
     Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик
     """
+
     def __init__(
             self,
             minimal_score=20,
@@ -87,6 +89,7 @@ class BaseTester:
     """
     Обеспечивает общие примитивы для тестирования кубов и минифина
     """
+
     def __init__(
             self,
             minimal_score,
@@ -159,7 +162,7 @@ class BaseTester:
             "MAC": mean(self.get_absolute_confidences()),
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
-            }
+                }
         }
 
     def get_log_filename_pattern(self):
@@ -232,11 +235,18 @@ class BaseTester:
                     )
 
                     # ToDo: Жёсткая приаязка к структуре JSON
+
+                    score_model = MODEL_CONFIG["cube_answers_scoring_model"]
                     nearest_result = max(
-                        system_answer["more_cube_answers"][0]['score'] if system_answer["more_cube_answers"] else 0,
-                        system_answer["more_minfin_answers"][0]['score'] if system_answer["more_minfin_answers"] else 0
+                        system_answer["more_cube_answers"][0]["score"][score_model]
+                        if system_answer["more_cube_answers"] else 0,
+                        system_answer["more_minfin_answers"][0]["score"]
+                        if system_answer["more_minfin_answers"] else 0
                     )
-                    absolute_confidence = system_answer['answer']['score'] - nearest_result
+
+                    # TODO: Эту метрику нужно считать только для корректных запросов
+                    # На этом месте все падает, если нет answer
+                    absolute_confidence = system_answer['answer']['score'][score_model] - nearest_result
                     self._add_absolute_confidence(absolute_confidence)
                     # self._add_score(system_answer['answer']['score'])
                     time_for_request = datetime.datetime.now() - dt_now
@@ -304,6 +314,7 @@ class MinfinTester(BaseTester):
     """
     Реализует логику и метрики, специфичные для минфина.
     """
+
     def __init__(
             self,
             minimal_score,

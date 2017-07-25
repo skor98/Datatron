@@ -17,6 +17,8 @@ from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
 from kb.kb_support_library import get_default_member_for_dimension
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+
+from model_manager import MODEL_CONFIG
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -317,7 +319,11 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = cube_score + avg_member_score + measure_score
 
-    sum_scoring()
+    # получение скоринг-модели
+    score_model = MODEL_CONFIG["cube_answers_scoring_model"]
+
+    if score_model == 'sum':
+        sum_scoring()
 
 
 def process_with_members(cube_data: CubeData):

@@ -5,5 +5,6 @@
   "solr_documents_to_return": 100,
   "tree_k_path_threshold": 10,
   "best_cube_data_threshold": 5,
-  "relevant_minfin_main_answer_threshold": 20
+  "relevant_minfin_main_answer_threshold": 20,
+  "cube_answers_scoring_model": "sum"
 }

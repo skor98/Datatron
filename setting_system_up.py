@@ -34,12 +34,12 @@ def set_up_db():
 
 def set_up_solr_cube_data(index_way='curl'):
     """
-    Создание и индексирование документов по кубам
-
-    :param index_way: если curl, то индексирование документов в Solr Apache будет черз сURL,
-    если jar_file, то средствами java скрипта от Solr
-    :return:
+    Создание и индексирование документов по кубам. Если
+    index_way=curl, то индексирование документов
+    в Solr Apache будет осуществляться через сURL,
+    иначе средствами java скрипта от Solr
     """
+
     # 2. Генерация и индексация документов
     dga = CubeDocsGeneration()
     dga.clear_index()  # Удаление документов из ядра
