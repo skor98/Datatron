@@ -23,7 +23,7 @@ RESULTS_FOLDER = 'results'
 
 
 @logs_helper.time_with_message("cube_testing")
-def cube_testing(test_sphere, minimal_score):
+def testing(test_sphere, minimal_score):
     """Метод для тестирования работы системы по кубам.
     Тесты находятся в папке tests и имеют следующую структуру названия
     cube_<local/server>_<имя куба>
@@ -272,13 +272,13 @@ def get_results(
         logging.getLogger().setLevel(logging.ERROR)
 
     if need_cube:
-        cube_res = cube_testing(test_sphere='cube', minimal_score=minimal_score)
+        cube_res = testing(test_sphere='cube', minimal_score=minimal_score)
         cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
         cube_score = float(cube_res["true"]) / cube_total
         cube_res["score"] = cube_score
 
     if need_minfin:
-        minfin_res = cube_testing(test_sphere='minfin', minimal_score=minimal_score)
+        minfin_res = testing(test_sphere='minfin', minimal_score=minimal_score)
         minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
         minfin_score = float(minfin_res["true"]) / minfin_total
         minfin_res["score"] = minfin_score

@@ -15,7 +15,7 @@ from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS
-from manual_testing import cube_testing
+from manual_testing import testing
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
@@ -102,11 +102,10 @@ if __name__ == '__main__':
         set_up_db()
     if args.cube:
         set_up_solr_cube_data(args.solr_index)
-        if not args.disable_testing:
-            cube_testing(test_sphere='cube')
     if args.minfin:
         set_up_minfin_data(args.solr_index)
-        if not args.disable_testing:
-            cube_testing(test_sphere='minfin')
+    if not args.disable_testing:
+        testing(test_sphere='cube')
+        testing(test_sphere='minfin')
 
     logging.info("Setting system up complete")
