@@ -738,6 +738,7 @@ if __name__ == '__main__':
         app.run(
             host=SETTINGS.WEB_SERVER.HOST,
             port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
+            ssl_context=(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, './priv_key.pem'),
             debug=False
         )
     else:
