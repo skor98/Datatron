@@ -715,11 +715,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
     bot.remove_webhook()
     bot.set_webhook(
-        url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+        url=WEBHOOK_URL_BASE + '/telebot' + WEBHOOK_URL_PATH,
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
 
-    send_admin_messages()
+    #send_admin_messages()
 
 
     @app.route('/', methods=['GET', 'HEAD'])
@@ -741,5 +741,6 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 # polling cycle
 if __name__ == '__main__':
     if not SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+        bot.remove_webhook()
         send_admin_messages()
         bot.polling(none_stop=True)
