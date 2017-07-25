@@ -586,7 +586,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 def expert_feedback(cube_result):
     expert_fb = cube_result.feedback['formal']
 
-    expert_str = '**Экспертная обратная связь**\n' \
+    expert_str = '*Экспертная обратная связь*\n' \
                  '`- Куб: {}\n- Мера: {}\n- Измерения: {}\n`'
 
     expert_str = expert_str.format(
@@ -615,7 +615,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
-    return '**{}**\n`{}`'.format(title, verbal_str)
+    return '*{}*\n`{}`'.format(title, verbal_str)
 
 
 def loof_also_for_cube(cube_result):

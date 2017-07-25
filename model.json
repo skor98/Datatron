@@ -2,7 +2,7 @@
   "normalization_delete_digits_default": false,
   "normalization_delete_question_words_default": true,
   "normalization_delete_repeatings_default": false,
-  "solr_documents_to_return": 50,
+  "solr_documents_to_return": 100,
   "tree_k_path_threshold": 10,
   "best_cube_data_threshold": 5,
   "relevant_minfin_main_answer_threshold": 20

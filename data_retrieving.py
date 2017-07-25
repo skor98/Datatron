@@ -195,9 +195,13 @@ class DataRetrieving:
                 request_id
             )
 
+            starting_from = 1
+            if not core_answer.answer:
+                starting_from = 0
+
             DataRetrieving._process_more_answers(
                 core_answer,
-                answers[1:THRESHOLD + 1],
+                answers[starting_from:THRESHOLD + 1],
                 request_id
             )
 
@@ -246,6 +250,8 @@ class DataRetrieving:
                         core_answer.answer.number
                     ))
             else:
+                core_answer.answer = None
+
                 logging.info(
                     "Query_ID: {}\tMessage: Главный ответ по Минфину "
                     "не прошел порог ({} vs {})".format(
@@ -253,7 +259,6 @@ class DataRetrieving:
                         answers[0].get_score(),
                         MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
                     ))
-
 
     @staticmethod
     def _process_more_answers(
