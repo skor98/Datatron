@@ -33,6 +33,7 @@ import constants
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
+app = None
 
 logsRetriever = LogsRetriever(LOGS_PATH)
 
@@ -143,21 +144,15 @@ def send_help(message):
 @bot.message_handler(commands=['idea'])
 def get_query_examples(message):
     try:
-        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-            possible_queries = get_random_requests()
-            message_str = "Что *спрашивают* другие пользователи:\n{}"
-            possible_queries = ['- {}\n'.format(query) for query in possible_queries]
-            message_str = message_str.format(''.join(possible_queries))
-            bot.send_message(
-                message.chat.id,
-                message_str,
-                parse_mode='Markdown'
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "Данный функционал в тестировании"
-            )
+        possible_queries = get_random_requests()
+        message_str = "Что *спрашивают* другие пользователи:\n{}"
+        possible_queries = ['- {}\n'.format(query) for query in possible_queries]
+        message_str = message_str.format(''.join(possible_queries))
+        bot.send_message(
+            message.chat.id,
+            message_str,
+            parse_mode='Markdown'
+        )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
 
@@ -396,6 +391,15 @@ def callback_inline(call):
             request_id,
             '-'
         ))
+        
+
+def send_admin_messages():
+    for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
+        # Если бот не добавлен
+        try:
+            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+        except:
+            logging.critical("Админ {} недоступен для отправки сообщения!")
 
 
 def process_response(message, input_format='text', file_content=None):
@@ -641,12 +645,11 @@ def loof_also_for_cube(cube_result):
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
         return loof_also_for_cube(answer)
-    else:
-        return '{} ({}: {})'.format(
-            answer.question,
-            "*Минфин*",
-            answer.score
-        )
+    return '{} ({}: {})'.format(
+        answer.question,
+        "*Минфин*",
+        answer.score
+    )
 
 
 def first_letter_lower(input_str):
@@ -695,27 +698,27 @@ def look_further(result):
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+    
+    app = Flask(__name__)
 
     WEBHOOK_URL_BASE = "{}:{}".format(
         SETTINGS.WEB_SERVER.PUBLIC_LINK,
-        '443'
+        SETTINGS.WEB_SERVER.PUBLIC_PORT
     )
-    WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
-    app = Flask(__name__)
+    WEBHOOK_URL_PATH = "/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
 
     bot.remove_webhook()
     bot.set_webhook(
         url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
         certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
     )
+    
+    send_admin_messages()
 
-
-    @app.route('/telebot/')
+    @app.route('/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
-
         return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
-
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
@@ -729,27 +732,6 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
 # polling cycle
 if __name__ == '__main__':
-    for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
-        # Если бот не добавлен
-        try:
-            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
-        except:
-            logging.critical(
-                "Админ {} недоступен для отправки сообщения!".format(
-                    admin_id
-                )
-            )
-
-    if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-        app.run(
-            host=SETTINGS.WEB_SERVER.HOST,
-            port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
-            debug=False
-        )
-    else:
-        try:
-            bot.remove_webhook()
-        except:
-            pass
-
+    if not SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+        send_admin_messages()
         bot.polling(none_stop=True)

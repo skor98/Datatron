@@ -184,7 +184,7 @@ class MinfinList(Resource):
 
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
-api_version = SETTINGS.WEB_SERVER.VERSION
+api_version = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
@@ -198,13 +198,4 @@ api.add_resource(MinfinList, '/{}/minfin_docs'.format(api_version))
 @app.route('/')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
-
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
-
-
-if __name__ == '__main__':
-    app.run(
-        host=SETTINGS.HOST,
-        port=API_PORT,
-        debug=False
-    )
