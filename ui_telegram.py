@@ -690,7 +690,7 @@ def look_further(result):
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
-    WEBHOOK_URL_BASE = "https://{}:{}".format(
+    WEBHOOK_URL_BASE = "{}:{}".format(
         SETTINGS.WEB_SERVER.PUBLIC_LINK,
         SETTINGS.TELEGRAM.WEBHOOK_PORT
     )
@@ -704,11 +704,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     )
 
 
-    @app.get('/telebot/')
+    @app.route('/telebot/')
     def main():
         """Тестовая страница"""
 
-        return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
+        return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
 
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
@@ -728,7 +728,11 @@ if __name__ == '__main__':
         try:
             bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
         except:
-            logging.critical("Админ {} недоступен для отправки сообщения!")
+            logging.critical(
+                "Админ {} недоступен для отправки сообщения!".format(
+                    admin_id
+                )
+            )
 
     if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         app.run(
