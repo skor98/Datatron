@@ -690,10 +690,11 @@ def look_further(result):
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
-    WEBHOOK_URL_BASE = "https://{}:{}".format(
-        SETTINGS.WEB_SERVER.PUBLIC_LINK,
-        SETTINGS.TELEGRAM.WEBHOOK_PORT
-    )
+#    WEBHOOK_URL_BASE = "{}:{}".format(
+#        SETTINGS.WEB_SERVER.PUBLIC_LINK,
+#        SETTINGS.TELEGRAM.WEBHOOK_PORT
+#    )
+    WEBHOOK_URL_BASE = SETTINGS.WEB_SERVER.PUBLIC_LINK
     WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
     app = Flask(__name__)
 
@@ -704,7 +705,7 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     )
 
 
-    @app.get('/telebot/')
+    @app.route('/telebot/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
 
@@ -734,7 +735,6 @@ if __name__ == '__main__':
         app.run(
             host=SETTINGS.WEB_SERVER.HOST,
             port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
-            ssl_context=(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, './priv_key.pem'),
             debug=False
         )
     else:
