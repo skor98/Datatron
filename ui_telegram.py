@@ -33,7 +33,6 @@ import constants
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
-app = Flask(__name__)
 
 logsRetriever = LogsRetriever(LOGS_PATH)
 
@@ -689,6 +688,22 @@ def look_further(result):
         return ''
 
 
+if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+
+    WEBHOOK_URL_BASE = "https://{}:{}".format(
+        SETTINGS.WEB_SERVER.PUBLIC_LINK,
+        SETTINGS.TELEGRAM.WEBHOOK_PORT
+    )
+    WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
+    app = Flask(__name__)
+
+    bot.remove_webhook()
+    bot.set_webhook(
+        url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+    )
+
+
     @app.get('/telebot/')
     def main():
         """Тестовая страница"""
@@ -716,20 +731,10 @@ if __name__ == '__main__':
             logging.critical("Админ {} недоступен для отправки сообщения!")
 
     if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-        WEBHOOK_URL_BASE = "https://{}:{}".format(
-            SETTINGS.WEB_SERVER.PUBLIC_LINK,
-            SETTINGS.TELEGRAM.WEBHOOK_PORT
-        )
-        WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
-    
-        bot.remove_webhook()
-        bot.set_webhook(
-            url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-            certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
-        )
         app.run(
             host=SETTINGS.WEB_SERVER.HOST,
             port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
+            ssl_context=(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, './priv_key.pem'),
             debug=False
         )
     else:
