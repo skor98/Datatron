@@ -399,7 +399,7 @@ def send_admin_messages():
         try:
             bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
         except:
-            logging.critical("Админ {} недоступен для отправки сообщения!")
+            logging.critical("Админ {} недоступен для отправки сообщения!".format(admin_id))
 
 
 def process_response(message, input_format='text', file_content=None):
