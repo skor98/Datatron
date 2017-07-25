@@ -144,15 +144,21 @@ def send_help(message):
 @bot.message_handler(commands=['idea'])
 def get_query_examples(message):
     try:
-        possible_queries = get_random_requests()
-        message_str = "Что *спрашивают* другие пользователи:\n{}"
-        possible_queries = ['- {}\n'.format(query) for query in possible_queries]
-        message_str = message_str.format(''.join(possible_queries))
-        bot.send_message(
-            message.chat.id,
-            message_str,
-            parse_mode='Markdown'
-        )
+        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+            possible_queries = get_random_requests()
+            message_str = "Что *спрашивают* другие пользователи:\n{}"
+            possible_queries = ['- {}\n'.format(query) for query in possible_queries]
+            message_str = message_str.format(''.join(possible_queries))
+            bot.send_message(
+                message.chat.id,
+                message_str,
+                parse_mode='Markdown'
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                "Данный функционал в тестировании"
+            )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
 
