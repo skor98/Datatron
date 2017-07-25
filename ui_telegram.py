@@ -692,7 +692,7 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
     WEBHOOK_URL_BASE = "{}:{}".format(
         SETTINGS.WEB_SERVER.PUBLIC_LINK,
-        SETTINGS.TELEGRAM.WEBHOOK_PORT
+        '443'
     )
     WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
     app = Flask(__name__)
