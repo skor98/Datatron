@@ -209,3 +209,6 @@ tests/results/
 
 # ignoring databases
 *.db
+
+# ingonring certificates
+*.pem

@@ -64,9 +64,24 @@ def _read_minfin_data():
         cur_df = pd.read_excel(
             open(file_path, 'rb'),
             sheetname='questions',
-            converters={'id': str}
+            converters={'id': str, 'question': str}
         )
-        cur_df = cur_df.fillna(0)
+
+        # удаление пустых строчек в конце и начале элемента
+        for row_ind in range(cur_df.shape[0]):
+            for column in ('id', 'question'):
+                cur_df.loc[row_ind, column] = cur_df.loc[row_ind, column].strip()
+
+        # удаление переносов в середине элемента
+        for row_ind in range(cur_df.shape[0]):
+            cur_df.loc[row_ind, 'question'] = ' '.join(
+                cur_df.loc[row_ind, 'question'].split()
+            )
+
+            # экранирование кавычек
+            if '"' in cur_df.loc[row_ind, 'question']:
+                cur_df.loc[row_ind, 'question'] = cur_df.loc[row_ind, 'question'].replace('"', r'\"')
+
         dfs.append(cur_df)
 
     # Объединение все датафреймов в один
@@ -169,7 +184,7 @@ class MinfinList(Resource):
 
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
-api_version = SETTINGS.WEB_SERVER.VERSION
+api_version = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
@@ -183,13 +198,4 @@ api.add_resource(MinfinList, '/{}/minfin_docs'.format(api_version))
 @app.route('/')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
-
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
-
-
-if __name__ == '__main__':
-    app.run(
-        host=SETTINGS.HOST,
-        port=API_PORT,
-        debug=False
-    )

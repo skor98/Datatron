@@ -9,6 +9,7 @@ import time
 import logging
 from os import path, listdir, makedirs
 from math import isnan
+from statistics import mean
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
@@ -22,227 +23,373 @@ TEST_PATH = 'tests'
 RESULTS_FOLDER = 'results'
 
 
-@logs_helper.time_with_message("cube_testing")
-def testing(test_sphere, minimal_score):
-    """Метод для тестирования работы системы по кубам.
-    Тесты находятся в папке tests и имеют следующую структуру названия
-    cube_<local/server>_<имя куба>
-
-    :return: Словарь с ключами true, long, error и значениями -- количеством документов
-    Также ключ time содержит перцентили по времени выполнения запроса
+class QualityTester:
     """
+    Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик
+    """
+    def __init__(
+            self,
+            minimal_score=20,
+            is_need_cube=True,
+            is_need_minfin=True,
+            is_need_logging=False
+    ):
+        if not is_need_cube and not is_need_minfin:
+            raise Exception("Пустое тестирование! Нужно указать хотя бы чтот-то")
 
-    testing_results = []
-    true_answers = []
-    wrong_answers = []
-    error_answers = []
-    seconds = []
-    start_time = time.time()
+        self._testers = {}
+        if is_need_cube:
+            self._testers["cube"] = CubeTester(minimal_score, is_need_logging=is_need_logging)
+        if is_need_minfin:
+            self._testers["minfin"] = MinfinTester(minimal_score, is_need_logging=is_need_logging)
+        self._is_need_logging = is_need_logging
 
-    if test_sphere == 'cube':
-        test_files_paths = get_test_files(TEST_PATH, "cubes_test")
-        logging.info('Идет тестирование по вопросам к кубам')
-    else:
-        test_files_paths = get_test_files(TEST_PATH, "minfin_test")
-        logging.info('Идет тестирование по вопросам для Министерства Финансов')
+    def run(self):
+        """
+        Главный метод взаимодействия с тестером
+        """
+        if not self._is_need_logging:
+            # Временно отключаем логи
+            logging.getLogger().setLevel(logging.ERROR)
 
-    for tf in test_files_paths:
-        with open(tf, 'r', encoding='utf-8') as file_in:
-            doc_name_output_str = 'Файл: ' + path.basename(tf)
-            testing_results.append(doc_name_output_str)
-            logging.info(doc_name_output_str)
+        if "cube" in self._testers:
+            cube_res = self._testers["cube"].run()
+            cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
+            cube_score = float(cube_res["true"]) / cube_total
+            cube_res["score"] = cube_score
 
-            for idx, line in enumerate(file_in):
-                line = ' '.join(line.split())
+        if "minfin" in self._testers:
+            minfin_res = self._testers["minfin"].run()
+            minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
+            minfin_score = float(minfin_res["true"]) / minfin_total
+            minfin_res["score"] = minfin_score
 
-                if line.startswith('*'):
-                    continue
+        if not self._is_need_logging:
+            # Возвращаем логи обратно
+            logging.getLogger().setLevel(string_to_log_level(LOG_LEVEL))
 
-                logging.info(line)
-                req, answer = line.split(':')
+        if "cube" not in self._testers:
+            # только минфин; нормальный скоринг неприменим, поэтому возвращаем nan
+            return float('nan'), {"minfin": minfin_res}
+        elif "minfin" not in self._testers:
+            # только кубы; нормальный скоринг неприменим, поэтому возвращаем nan
+            return float('nan'), {"cube": cube_res}
 
-                # Посчитаем время
-                dt_now = datetime.datetime.now()
-                system_answer = json.loads(DataRetrieving.get_data(
-                    req, uuid.uuid4()
-                ).toJSON())
+        # Accuracy по всем результатам
+        total_trues = cube_res["true"] + minfin_res["true"]
+        total_tests = cube_total + minfin_total
+        total_score = float(total_trues) / total_tests
 
-                if test_sphere == 'cube':
-                    assert_cube_requests(
+        return total_score, {"cube": cube_res, "minfin": minfin_res}
+
+
+class BaseTester:
+    """
+    Обеспечивает общие примитивы для тестирования кубов и минифина
+    """
+    def __init__(
+            self,
+            minimal_score,
+            percentiles=tuple([25, 50, 75, 90, 95]),
+            is_need_logging=False
+    ):
+        self._minimal_score = minimal_score
+        self._percentiles = percentiles
+        self._is_need_logging = is_need_logging
+
+        self._trues = 0
+        self._wrongs = 0
+        self._errors = 0
+        self._scores = []
+        self._seconds = []
+        self._text_results = []
+        self._abs_confidences = []
+
+    def get_minimal_score(self):
+        return self._minimal_score
+
+    def _add_true(self):
+        self._trues += 1
+
+    def get_trues(self):
+        return self._trues
+
+    def _add_wrong(self):
+        self._wrongs += 1
+
+    def get_wrongs(self):
+        return self._wrongs
+
+    def _add_error(self):
+        self._errors += 1
+
+    def get_errors(self):
+        return self._errors
+
+    def _add_score(self, score: float):
+        self._scores.append(score)
+
+    def get_scores(self):
+        return tuple(self._scores)
+
+    def _add_absolute_confidence(self, val: float):
+        self._abs_confidences.append(val)
+
+    def get_absolute_confidences(self):
+        return tuple(self._abs_confidences)
+
+    def add_time(self, seconds: float):
+        self._seconds.append(seconds)
+
+    def add_text_result(self, text: str):
+        self._text_results.append(text)
+
+    def get_test_files_paths(self):
+        raise NotImplementedError
+
+    def get_results(self):
+        """
+        Преобразует все имеющиеся статистики
+        """
+        self._seconds.sort()
+        return {
+            "true": self.get_trues(),
+            "wrong": self.get_wrongs(),
+            "error": self.get_errors(),
+            "MAC": mean(self.get_absolute_confidences()),
+            "time": {
+                per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
+            }
+        }
+
+    def get_log_filename_pattern(self):
+        raise NotImplementedError
+
+    def before_test_run(self):
+        raise NotImplementedError
+
+    def write_log(self, time_to_write):
+        """
+        Записывает логи в файл. Используется старая реализация
+        """
+        if not self._is_need_logging:
+            return
+
+        file_name = self.get_log_filename_pattern()
+
+        file_name = file_name.format(
+            datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT),
+            self.get_trues(),
+            self.get_wrongs(),
+            self.get_errors(),
+            time_to_write
+        )
+
+        if not path.exists(path.join(TEST_PATH, RESULTS_FOLDER)):
+            makedirs(path.join(TEST_PATH, RESULTS_FOLDER))
+
+        log_filename = path.join(TEST_PATH, RESULTS_FOLDER, file_name)
+        with open(log_filename, 'w', encoding='utf-8') as file_out:
+            file_out.write('\n'.join(self._text_results))
+
+        logging.info('Тестирование завершено')
+        logging.info('Лог прогона записан в файл {}'.format(file_name))
+
+    def _check_result(self, idx, req, question_id, system_answer):
+        raise NotImplementedError
+
+    def run(self):
+        self.before_test_run()
+        start_time = time.time()
+        test_files_paths = self.get_test_files_paths()
+
+        for test_path in test_files_paths:
+            with open(test_path, 'r', encoding='utf-8') as file_in:
+                doc_name_output_str = 'Файл: ' + path.basename(test_path)
+                self.add_text_result(doc_name_output_str)
+                logging.info(doc_name_output_str)
+
+                for idx, line in enumerate(file_in):
+                    line = ' '.join(line.split())
+
+                    if line.startswith('*'):
+                        continue
+
+                    logging.info(line)
+                    req, answer = line.split(':')
+
+                    # Посчитаем время
+                    dt_now = datetime.datetime.now()
+                    system_answer = json.loads(DataRetrieving.get_data(
+                        req, uuid.uuid4()
+                    ).toJSON())
+
+                    self._check_result(
                         idx,
                         req,
                         answer,
                         system_answer,
-                        testing_results,
-                        true_answers,
-                        wrong_answers,
-                        error_answers
                     )
-                else:
-                    assert_minfin_requests(
-                        answer,
-                        req,
-                        system_answer,
-                        minimal_score,
-                        testing_results,
-                        true_answers,
-                        wrong_answers,
-                        error_answers
+
+                    # ToDo: Жёсткая приаязка к структуре JSON
+                    nearest_result = max(
+                        system_answer["more_cube_answers"][0]['score'] if system_answer["more_cube_answers"] else 0,
+                        system_answer["more_minfin_answers"][0]['score'] if system_answer["more_minfin_answers"] else 0
                     )
-                time_for_request = datetime.datetime.now() - dt_now
-                seconds.append(time_for_request.total_seconds())
+                    absolute_confidence = system_answer['answer']['score'] - nearest_result
+                    self._add_absolute_confidence(absolute_confidence)
+                    # self._add_score(system_answer['answer']['score'])
+                    time_for_request = datetime.datetime.now() - dt_now
+                    self.add_time(time_for_request.total_seconds())
 
-    current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
-
-    true_answers = sum(true_answers)
-    wrong_answers = sum(wrong_answers)
-    error_answers = sum(error_answers)
-
-    if test_sphere == 'cube':
-        file_name = 'cube_{}.txt'
-    else:
-        file_name = 'minfin_{}.txt'
-
-    file_name = file_name.format(
-        current_datetime,
-        true_answers,
-        wrong_answers,
-        error_answers,
-        int(time.time() - start_time)
-    )
-
-    # создание папки для тестов
-    if not path.exists(path.join(TEST_PATH, RESULTS_FOLDER)):
-        makedirs(path.join(TEST_PATH, RESULTS_FOLDER))
-
-    with open(path.join(TEST_PATH, RESULTS_FOLDER, file_name), 'w', encoding='utf-8') as file_out:
-        file_out.write('\n'.join(testing_results))
-
-    logging.info('Тестирование завершено')
-    logging.info('Лог прогона записан в файл {}'.format(file_name))
-
-    # Подготавливаемся для счёта перцентилей
-    seconds.sort()
-
-    return {
-        "true": true_answers,
-        "wrong": wrong_answers,
-        "error": error_answers,
-        "time": {
-            "25": seconds[round(len(seconds) * 0.25)],
-            "50": seconds[round(len(seconds) * 0.50)],
-            "75": seconds[round(len(seconds) * 0.75)],
-            "90": seconds[round(len(seconds) * 0.90)],
-            "95": seconds[round(len(seconds) * 0.95)]
-        }
-    }
+        self.write_log(int(time.time() - start_time))
+        return self.get_results()
 
 
-def assert_cube_requests(
-        idx,
-        req,
-        answer,
-        system_answer,
-        testing_results,
-        true_answers,
-        wrong_answers,
-        error_answers
-):
-    response = system_answer['answer']
-    if response:
+class CubeTester(BaseTester):
+    def __init__(
+            self,
+            minimal_score,
+            percentiles=tuple([25, 50, 75, 90, 95]),
+            is_need_logging=False
+    ):
+        super().__init__(minimal_score, percentiles, is_need_logging)
+
+    def get_test_files_paths(self):
+        return get_test_files(TEST_PATH, "cubes_test")
+
+    def get_log_filename_pattern(self):
+        return 'cube_{}.txt'
+
+    def before_test_run(self):
+        logging.info('Идет тестирование по вопросам к кубам')
+
+    def _check_result(self, idx, req, answer, system_answer):
+        response = system_answer['answer']
+
+        if not response:
+            ars = '{}. - Ответ на запрос "{}" не был найден'
+            self.add_text_result(ars)
+            self._add_wrong()
+            return
+
         response = response.get('response')
-        if response:
-            try:
-                assert int(answer) == response
-                ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
-                testing_results.append(ars)
-                true_answers.append(1)
-            except AssertionError:
-                ars = (
-                    '{}. - Запрос "{}" отрабатывает некорректно' +
-                    '(должны получать: {}, получаем: {}) | {}'
-                )
-                ars = ars.format(idx,
-                                 req, int(answer),
-                                 response,
-                                 system_answer['answer']['mdx_query'])
+        if not response:
+            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
+            self.add_text_result(ars)
+            self._add_wrong()
+            return
 
-                testing_results.append(ars)
-                wrong_answers.append(1)
+        if int(answer) == response:
+            ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
+            self.add_text_result(ars)
+            self._add_true()
         else:
-            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(
-                idx, req
+            ars = (
+                '{}. - Запрос "{}" отрабатывает некорректно' +
+                '(должны получать: {}, получаем: {}) | {}'
+            )
+            ars = ars.format(
+                idx,
+                req, int(answer),
+                response,
+                system_answer['answer']['mdx_query']
             )
 
-            testing_results.append(ars)
-            error_answers.append(1)
-    else:
-        ars = '{}. - Ответ на запрос "{}" не был найден'
-        testing_results.append(ars)
-        wrong_answers.append(1)
+            self.add_text_result(ars)
+            self._add_wrong()
 
 
-def assert_minfin_requests(
-        question_id,
-        req,
-        system_answer,
-        minimal_score,
-        testing_results,
-        true_answers,
-        wrong_answers,
-        error_answers
-):
-    response = system_answer['answer']
-    if not response:
-        ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
-            q_id=question_id,
-            req=req,
-            msg='Не определена'
-        )
+class MinfinTester(BaseTester):
+    """
+    Реализует логику и метрики, специфичные для минфина.
+    """
+    def __init__(
+            self,
+            minimal_score,
+            percentiles=tuple([25, 50, 75, 90, 95]),
+            is_need_logging=False
+    ):
+        super().__init__(minimal_score, percentiles, is_need_logging)
+        self._threshold_confidences = []
 
-        testing_results.append(ars)
-        error_answers.append(1)
-        return
+    def _add_threshold_confidence(self, val: float):
+        self._threshold_confidences.append(val)
 
-    if response:
-        response = response.get('number')
-        if response:
-            try:
-                assert question_id == str(response)
-                ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
-                ars = ars.format(q_id=question_id,
-                                 score=system_answer['answer']['score'],
-                                 req=req)
-                # Запрос должен проходить по порогу
-                assert minimal_score < system_answer['answer']['score']
-                testing_results.append(ars)
-                true_answers.append(1)
-            except AssertionError:
-                ars = (
-                    '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
-                    '(должны получать:{q_id}, получаем:{fl})'
-                )
-                ars = ars.format(q_id=question_id,
-                                 score=system_answer['answer']['score'],
-                                 req=req, fl=response)
-                testing_results.append(ars)
-                wrong_answers.append(1)
-        else:
+    def get_threshold_confidences(self):
+        return tuple(self._threshold_confidences)
+
+    def get_test_files_paths(self):
+        return get_test_files(TEST_PATH, "minfin_test")
+
+    def get_log_filename_pattern(self):
+        return 'minfin_{}.txt'
+
+    def before_test_run(self):
+        logging.info('Идет тестирование по вопросам для Министерства Финансов')
+
+    def get_results(self):
+        res = super().get_results()
+
+        # Mean Threshold Confidence
+        res["MTC"] = mean(self.get_threshold_confidences())
+
+        return res
+
+    def _check_result(self, idx, req, question_id, system_answer):
+        response = system_answer['answer']
+        if not response:
             ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
                 q_id=question_id,
                 req=req,
                 msg='Не определена'
             )
-            testing_results.append(ars)
-            error_answers.append(1)
-    else:
-        ars = (
-            '{q_id} - На запрос "{req}" ответ не был найден ' +
-            'или, он не прошел по порогу'
-        )
-        ars = ars.format(q_id=question_id, req=req)
-        testing_results.append(ars)
-        error_answers.append(1)
+
+            self.add_text_result(ars)
+            self._add_error()
+            return
+
+        if not response:
+            ars = (
+                '{q_id} - На запрос "{req}" ответ не был найден ' +
+                'или, он не прошел по порогу'
+            )
+            ars = ars.format(q_id=question_id, req=req)
+            self.add_text_result(ars)
+            self._add_error()
+            return
+
+        response = response.get('number')
+        if not response:
+            ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
+                q_id=question_id,
+                req=req,
+                msg='Не определена'
+            )
+            self.add_text_result(ars)
+            self._add_error()
+            return
+
+        if question_id == str(response) and self._minimal_score < system_answer['answer']['score']:
+            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['answer']['score'],
+                             req=req)
+            self.add_text_result(ars)
+            self._add_true()
+
+            # Поскольку запрос успешно прошёл, то его скор можно заносить
+            self._add_threshold_confidence(system_answer['answer']['score'] - self._minimal_score)
+        else:
+            ars = (
+                '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
+                '(должны получать:{q_id}, получаем:{fl})'
+            )
+            ars = ars.format(q_id=question_id,
+                             score=system_answer['answer']['score'],
+                             req=req, fl=response)
+            self.add_text_result(ars)
+            self._add_wrong()
 
 
 def get_test_files(test_path, prefix):
@@ -267,39 +414,15 @@ def get_results(
     Если write_logs=False, то логи не пишутся
     :return: score, {"cube": cube_results,"minfin":minfin_results}
     """
-    if not write_logs:
-        # Временно отключаем логи
-        logging.getLogger().setLevel(logging.ERROR)
 
-    if need_cube:
-        cube_res = testing(test_sphere='cube', minimal_score=minimal_score)
-        cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
-        cube_score = float(cube_res["true"]) / cube_total
-        cube_res["score"] = cube_score
+    tester = QualityTester(
+        minimal_score=minimal_score,
+        is_need_cube=need_cube,
+        is_need_minfin=need_minfin,
+        is_need_logging=write_logs
+    )
 
-    if need_minfin:
-        minfin_res = testing(test_sphere='minfin', minimal_score=minimal_score)
-        minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
-        minfin_score = float(minfin_res["true"]) / minfin_total
-        minfin_res["score"] = minfin_score
-
-    if not write_logs:
-        # Возвращаем логи обратно
-        logging.getLogger().setLevel(string_to_log_level(LOG_LEVEL))
-
-    if not need_cube:
-        # только минфин; нормальный скоринг неприменим, поэтому возвращаем nan
-        return float('nan'), {"minfin": minfin_res}
-    elif not need_minfin:
-        # только кубы; нормальный скоринг неприменим, поэтому возвращаем nan
-        return float('nan'), {"cube": cube_res}
-    else:
-        # Accuracy по всем результатам
-        total_trues = cube_res["true"] + minfin_res["true"]
-        total_tests = cube_total + minfin_total
-        total_score = float(total_trues) / total_tests
-
-        return total_score, {"cube": cube_res, "minfin": minfin_res}
+    return tester.run()
 
 
 def _main():
