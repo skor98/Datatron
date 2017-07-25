@@ -195,9 +195,13 @@ class DataRetrieving:
                 request_id
             )
 
+            starting_from = 1
+            if not core_answer.answer:
+                starting_from = 0
+
             DataRetrieving._process_more_answers(
                 core_answer,
-                answers[1:THRESHOLD + 1],
+                answers[starting_from:THRESHOLD + 1],
                 request_id
             )
 
