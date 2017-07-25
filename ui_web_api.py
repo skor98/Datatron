@@ -64,9 +64,24 @@ def _read_minfin_data():
         cur_df = pd.read_excel(
             open(file_path, 'rb'),
             sheetname='questions',
-            converters={'id': str}
+            converters={'id': str, 'question': str}
         )
-        cur_df = cur_df.fillna(0)
+
+        # удаление пустых строчек в конце и начале элемента
+        for row_ind in range(cur_df.shape[0]):
+            for column in ('id', 'question'):
+                cur_df.loc[row_ind, column] = cur_df.loc[row_ind, column].strip()
+
+        # удаление переносов в середине элемента
+        for row_ind in range(cur_df.shape[0]):
+            cur_df.loc[row_ind, 'question'] = ' '.join(
+                cur_df.loc[row_ind, 'question'].split()
+            )
+
+            # экранирование кавычек
+            if '"' in cur_df.loc[row_ind, 'question']:
+                cur_df.loc[row_ind, 'question'] = cur_df.loc[row_ind, 'question'].replace('"', r'\"')
+
         dfs.append(cur_df)
 
     # Объединение все датафреймов в один
