@@ -8,5 +8,7 @@
   "relevant_minfin_main_answer_threshold": 20,
   "cube_answers_scoring_model": "sum",
   "short_request_threshold": 3,
-  "repetition_num_for_short_request": 2
+  "repetition_num_for_short_request": 2,
+  "minfin_manual_key_words_repetition": 5,
+  "minfin_tf_idf_key_words_repetition": 1
 }
