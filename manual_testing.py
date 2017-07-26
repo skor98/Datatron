@@ -19,6 +19,7 @@ from statistics import mean
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
+from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
 import logs_helper
 from logs_helper import string_to_log_level
 from model_manager import MODEL_CONFIG
@@ -27,8 +28,6 @@ from model_manager import MODEL_CONFIG
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
-TEST_PATH = 'tests'
-RESULTS_FOLDER = 'results'
 
 
 class QualityTester:
@@ -226,10 +225,10 @@ class BaseTester:
             time_to_write
         )
 
-        if not path.exists(path.join(TEST_PATH, RESULTS_FOLDER)):
-            makedirs(path.join(TEST_PATH, RESULTS_FOLDER))
+        if not path.exists(TEST_PATH_RESULTS):
+            makedirs(TEST_PATH_RESULTS)
 
-        log_filename = path.join(TEST_PATH, RESULTS_FOLDER, file_name)
+        log_filename = path.join(TEST_PATH_RESULTS, file_name)
         with open(log_filename, 'w', encoding='utf-8') as file_out:
             file_out.write('\n'.join(self._text_results))
 
@@ -353,7 +352,7 @@ class CubeTester(BaseTester):
         super().__init__(minimal_score, percentiles, is_need_logging)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "cubes_test_mdx")
+        return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
 
     def get_log_filename_pattern(self):
         return 'cube_{}.txt'
@@ -472,7 +471,7 @@ class MinfinTester(BaseTester):
         return tuple(self._threshold_confidences)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "minfin_test")
+        return get_test_files(TEST_PATH_MINFIN, "minfin_test")
 
     def get_log_filename_pattern(self):
         return 'minfin_{}.txt'
@@ -637,7 +636,7 @@ def _main():
     )
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
-    with open(path.join(TEST_PATH, RESULTS_FOLDER, result_file_name), 'w') as f_out:
+    with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(json.dumps(results, indent=4)))
     if not isnan(score):
