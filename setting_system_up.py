@@ -9,6 +9,7 @@ import logging
 import sys
 import argparse
 import json
+import datetime
 
 from os import path
 from math import isnan
@@ -18,6 +19,10 @@ from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import get_results
+from config import TEST_PATH_RESULTS, DATETIME_FORMAT
+
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
@@ -108,7 +113,14 @@ if __name__ == '__main__':
         set_up_minfin_data(args.solr_index)
     if not args.disable_testing:
         score, results = get_results(write_logs=True)
+
+        current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
+        result_file_name = "results_{}.json".format(current_datetime)
+        with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:
+            json.dump(results, f_out, indent=4)
+
         print("Results: {}".format(json.dumps(results, indent=4)))
+
         if not isnan(score):
             print("Score: {:.4f}".format(score))
 

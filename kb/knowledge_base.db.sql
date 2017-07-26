@@ -2986,7 +2986,7 @@ INSERT INTO `dimensionmember` VALUES (1560,11);
 INSERT INTO `dimensionmember` VALUES (1560,17);
 INSERT INTO `dimensionmember` VALUES (1560,21);
 INSERT INTO `dimensionmember` VALUES (1560,28);
-INSERT INTO `dimensionmember` VALUES (1560,31);
+INSERT INTO `dimensionmember` VALUES (1561,31);
 INSERT INTO `dimension` VALUES (1,'MONTHS','Месяц',NULL,NULL,0);
 INSERT INTO `dimension` VALUES (2,'YEARS','Год',NULL,NULL,44);
 INSERT INTO `dimension` VALUES (3,'MARKS','Показатели',NULL,NULL,0);

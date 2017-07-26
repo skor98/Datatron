@@ -99,13 +99,12 @@ class DataRetrieving:
                 'год', ''
             )
 
-        # TODO: раскомментить, как будет готовы тесты
-        # norm_user_request = DataRetrieving._set_user_request(
-        #     norm_user_request, request_id
-        # )
-        # norm_user_request = DataRetrieving._dublicate_user_request(
-        #     norm_user_request, request_id
-        # )
+        norm_user_request = DataRetrieving._set_user_request(
+            norm_user_request, request_id
+        )
+        norm_user_request = DataRetrieving._multiple_user_request(
+            norm_user_request, request_id
+        )
 
         return norm_user_request
 
@@ -116,24 +115,24 @@ class DataRetrieving:
         при необходимости
         """
 
-        norm_user_request = norm_user_request.split()
-        set_norm_user_request = set(norm_user_request)
+        request_words = norm_user_request.split()
+        set_of_request_words = set(request_words)
 
         # удаление повторяющихся слов, чтобы пользователи не читерили
-        if len(set_norm_user_request) != len(norm_user_request):
-            norm_user_request = ' '.join(set_norm_user_request)
+        if len(set_of_request_words) != len(request_words):
+            norm_user_request = ' '.join(set_of_request_words)
 
             logging.info(
                 "Query_ID: {}\tMessage: Удалено {} повторяющихся слов".format(
                     request_id,
-                    len(norm_user_request) - len(set_norm_user_request)
+                    len(request_words) - len(set_of_request_words)
                 )
             )
 
         return norm_user_request
 
     @staticmethod
-    def _duplicate_user_request(norm_user_request: str, request_id: str):
+    def _multiple_user_request(norm_user_request: str, request_id: str):
         """
         Дублирование коротких запросов
         """
