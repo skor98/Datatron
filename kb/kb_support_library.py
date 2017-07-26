@@ -126,10 +126,10 @@ def get_default_member_for_dimension(cube_name, dimension_cube_value):
                 'member_cube_value': def_value.cube_value}
 
 
-def get_with_member_to_given_member(cube_value):
+def get_with_member_to_given_member(member_id):
     """Возвращает связанное значение измерения с данным"""
 
-    given_member = dbc.Member.get(dbc.Member.cube_value == cube_value)
+    given_member = dbc.Member.get(dbc.Member.id == member_id)
 
     if given_member.with_member:
         with_member = dbc.Member.get(dbc.Member.id == given_member.with_member)

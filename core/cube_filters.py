@@ -133,6 +133,13 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
             if elem['cube'] == cube_data.selected_cube['cube']
             ]
 
+        if not cube_data.terr_member.get(cube_data.selected_cube['cube'], None):
+            raise FunctionExecutionError({
+                "function": define_territory_privilege_over_cube.__name__,
+                "message": "Найденный КУБ не поддерживает "
+                           "такой элемент измерения ТЕРРИТОРИЯ"
+            })
+
         if cube_data.terr_member.get('connected_value.dimension_cube_value', None):
             cube_data.terr_member = {
                 'dimension': cube_data.terr_member['dimension'],

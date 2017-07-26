@@ -8,8 +8,10 @@
 import logging
 import sys
 import argparse
+import json
 
 from os import path
+from math import isnan
 
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
@@ -32,7 +34,7 @@ def set_up_db():
     kbs.set_up_db()
 
 
-def set_up_solr_cube_data(index_way='curl'):
+def set_up_cube_data(index_way='curl'):
     """
     Создание и индексирование документов по кубам. Если
     index_way=curl, то индексирование документов
@@ -101,7 +103,7 @@ if __name__ == '__main__':
     if args.db:
         set_up_db()
     if args.cube:
-        set_up_solr_cube_data(args.solr_index)
+        set_up_cube_data(args.solr_index)
     if args.minfin:
         set_up_minfin_data(args.solr_index)
     if not args.disable_testing:
