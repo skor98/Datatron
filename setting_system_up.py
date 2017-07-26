@@ -15,7 +15,7 @@ from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS
-from manual_testing import testing
+from manual_testing import get_results
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
@@ -105,7 +105,9 @@ if __name__ == '__main__':
     if args.minfin:
         set_up_minfin_data(args.solr_index)
     if not args.disable_testing:
-        testing(test_sphere='cube')
-        testing(test_sphere='minfin')
+        score, results = get_results(write_logs=True)
+        print("Results: {}".format(json.dumps(results, indent=4)))
+        if not isnan(score):
+            print("Score: {:.4f}".format(score))
 
     logging.info("Setting system up complete")
