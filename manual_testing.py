@@ -267,6 +267,7 @@ class BaseTester:
         """
         nearest_result = 0
         if system_answer["more_cube_answers"]:
+            score_model = MODEL_CONFIG["cube_answers_scoring_model"]
             nearest_result = max(
                 nearest_result,
                 system_answer["more_cube_answers"][0]["score"][score_model]
