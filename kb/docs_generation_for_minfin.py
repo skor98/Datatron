@@ -85,7 +85,14 @@ def _read_data():
         for row_ind in range(df.shape[0]):
             for column in COLUMNS_TO_STRIP:
                 df.loc[row_ind, column] = df.loc[row_ind, column].strip()
-                df.loc[row_ind, column] = df.loc[row_ind, column].replace("\n", " ")
+
+                # Из полного ответа деление на абзацы лучше не убирать
+                if column == 'full_answer':
+                    continue
+
+                df.loc[row_ind, column] = ' '.join(
+                    df.loc[row_ind, column].split()
+                )
 
         df = df.fillna(0)
         dfs.append(df)
