@@ -85,6 +85,7 @@ def _read_data():
         for row_ind in range(df.shape[0]):
             for column in COLUMNS_TO_STRIP:
                 df.loc[row_ind, column] = df.loc[row_ind, column].strip()
+                df.loc[row_ind, column] = df.loc[row_ind, column].replace("\n", " ")
 
         df = df.fillna(0)
         dfs.append(df)
