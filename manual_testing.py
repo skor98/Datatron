@@ -290,8 +290,9 @@ class CubeTester(BaseTester):
             self._add_wrong()
             return
 
+        # TODO: реализовать сравнение по MDX-запросу
         if int(answer) == response:
-            ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
+            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
             self.add_text_result(ars)
             self._add_true()
         else:
