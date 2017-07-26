@@ -128,7 +128,7 @@ def format_numerical(number: float):
     if '-' in str_num:
         num_len -= 1
 
-    if num_len < 6:
+    if num_len <= 6:
         res = str_num
     elif 6 < num_len <= 9:
         res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
