@@ -12,6 +12,8 @@ from os import listdir, path
 
 from text_preprocessing import TextPreprocessing
 from config import SETTINGS
+from model_manager import MODEL_CONFIG
+
 import logs_helper  # pylint: disable=unused-import
 
 # Название файла с готовой структурой данных
@@ -84,6 +86,14 @@ def _read_data():
             for column in COLUMNS_TO_STRIP:
                 df.loc[row_ind, column] = df.loc[row_ind, column].strip()
 
+                # Из полного ответа деление на абзацы лучше не убирать
+                if column == 'full_answer':
+                    continue
+
+                df.loc[row_ind, column] = ' '.join(
+                    df.loc[row_ind, column].split()
+                )
+
         df = df.fillna(0)
         dfs.append(df)
 
@@ -101,7 +111,7 @@ def _refactor_data(data):
     """
 
     # количество повторений ключевых слов прописанных методологом
-    MANUAL_KEY_WORDS_REPETITION = 5
+    manual_key_words_repetition = MODEL_CONFIG["minfin_manual_key_words_repetition"]
 
     # объекта класса, осуществляющего нормализацию
     tp = TextPreprocessing(uuid.uuid4())
@@ -146,7 +156,7 @@ def _refactor_data(data):
                               delete_repeatings=True)
 
         # Ключевые слова записываются трижды, для увеличения качества поиска документа
-        doc.lem_key_words = ' '.join([kw] * MANUAL_KEY_WORDS_REPETITION)
+        doc.lem_key_words = ' '.join([kw] * manual_key_words_repetition)
 
         # Может быть несколько
         if row.link_name:
@@ -204,8 +214,12 @@ def _get_manual_synonym_questions(question_number):
     # Номер партии
     port_num = question_number.split('.')[0]
 
-    # Выбор файла, который соответствует партии вопроса
     def is_portion_func(f):
+        """
+        Выбор вручную прописанных тестов
+        для определенной партии вопросов
+        """
+
         return f.endswith(
             '.txt') and port_num in f and 'manual' in f
 
@@ -279,15 +293,14 @@ def _add_automatic_key_words(documents):
     Добавление автоматических ключевых слов с помощью TF-IDF
     """
 
-    # Количество повторений ключевых слов, созданных
-    # с помощью TF-IDF метода
-    TF_IDF_KEY_WORDS_REPETITION = 1
+    # Количество повторений ключевых слов, созданных с помощью TF-IDF метода
+    tf_idf_key_words_repetition = MODEL_CONFIG["minfin_tf_idf_key_words_repetition"]
 
     matrix = _calculate_matrix(documents)
 
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)
-        extra_key_words *= TF_IDF_KEY_WORDS_REPETITION
+        extra_key_words *= tf_idf_key_words_repetition
         doc.lem_key_words += ' {}'.format(' '.join(extra_key_words))
 
 

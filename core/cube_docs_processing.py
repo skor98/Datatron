@@ -102,13 +102,13 @@ class CubeProcessor:
         """Выбор нескольких лучших ответов по кубам"""
 
         threshold = MODEL_CONFIG['best_cube_data_threshold']
-        SCORING_MODEL = 'sum'
+        scoring_model = MODEL_CONFIG["cube_answers_scoring_model"]
 
         csl.delete_repetitions(cube_data_list)
 
         cube_data_list = sorted(
             cube_data_list,
-            key=lambda cube_data: cube_data.score[SCORING_MODEL],
+            key=lambda cube_data: cube_data.score[scoring_model],
             reverse=True)
 
         logging.info(
@@ -168,7 +168,10 @@ class CubeAnswer:
         self.feedback = feedback
         self.order = None
 
-    def get_score(self, scoring_model='sum'):
+    def get_score(
+            self,
+            scoring_model=MODEL_CONFIG["cube_answers_scoring_model"]
+    ):
         """
         Функция для получения score, используемого
         как ключа для сортировки

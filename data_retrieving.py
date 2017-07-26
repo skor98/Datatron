@@ -138,20 +138,20 @@ class DataRetrieving:
         Дублирование коротких запросов
         """
 
-        SHORT_QUESTION_THRESHOLD = 3
-        DUBLICATE_SCORE = 2
+        short_question_threshold = MODEL_CONFIG["short_request_threshold"]
+        multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
 
         norm_user_request = norm_user_request.split()
 
-        if len(norm_user_request) <= SHORT_QUESTION_THRESHOLD:
-            norm_user_request *= DUBLICATE_SCORE
+        if len(norm_user_request) <= short_question_threshold:
+            norm_user_request *= multiplier
 
             logging.info(
                 "Query_ID: {}\tMessage: Запрос из {} слов был "
                 "удлинен в {} раза".format(
                     request_id,
                     len(norm_user_request),
-                    DUBLICATE_SCORE
+                    multiplier
                 )
             )
 
@@ -159,7 +159,7 @@ class DataRetrieving:
 
     @staticmethod
     def _sort_answers(minfin_answers: list, cube_answers: list):
-        """Сортировка ответов по кубам и минфину в общем списке"""
+        """Совокупное ранжирование ответов по кубам и минфину"""
 
         # Если по минфину найден только 1 ответ
         if not isinstance(minfin_answers, list):
@@ -170,7 +170,6 @@ class DataRetrieving:
             cube_answers = [cube_answers]
 
         # Фильтрация выборки в порядке убывания по score
-        # TODO: подумать над улучшением параметра для сравнения
         all_answers = sorted(
             cube_answers + minfin_answers,
             key=lambda ans: ans.get_score(),
@@ -250,6 +249,7 @@ class DataRetrieving:
                         core_answer.answer.number
                     ))
             else:
+                # Обнуление найденого ответа
                 core_answer.answer = None
 
                 logging.info(

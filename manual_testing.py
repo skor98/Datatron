@@ -1,12 +1,18 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+Содержит в себе CUI и классы для получения качества работы текущий алгоритмов.
+Причём, это это качество должно быть легко узнавать из внешнего кода.
+"""
+
 import argparse
 import json
 import uuid
 import datetime
 import time
 import logging
+import re
 from os import path, listdir, makedirs
 from math import isnan
 from statistics import mean
@@ -15,7 +21,9 @@ from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
 import logs_helper
 from logs_helper import string_to_log_level
+from model_manager import MODEL_CONFIG
 
+# Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
@@ -25,8 +33,10 @@ RESULTS_FOLDER = 'results'
 
 class QualityTester:
     """
-    Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик
+    Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик.
+    Является основным классом, которого должно быть достаточно для внешних нужд.
     """
+
     def __init__(
             self,
             minimal_score=20,
@@ -85,8 +95,10 @@ class QualityTester:
 
 class BaseTester:
     """
-    Обеспечивает общие примитивы для тестирования кубов и минифина
+    Обеспечивает общие примитивы для тестирования кубов и минифина.
+    Общие метрики и логики должны реализовываться именно здесь
     """
+
     def __init__(
             self,
             minimal_score,
@@ -106,24 +118,31 @@ class BaseTester:
         self._abs_confidences = []
 
     def get_minimal_score(self):
+        """Возвращает пороговый score"""
         return self._minimal_score
 
     def _add_true(self):
+        """Добавляет ещё один истинный результат"""
         self._trues += 1
 
     def get_trues(self):
+        """Возвращает число истинных результатов"""
         return self._trues
 
     def _add_wrong(self):
+        """Добавляет результат, ответ которого был неправильный"""
         self._wrongs += 1
 
     def get_wrongs(self):
+        """Возвращает число ошибочных результатов"""
         return self._wrongs
 
     def _add_error(self):
+        """Добавляет результат, при получении котрого была ошибка"""
         self._errors += 1
 
     def get_errors(self):
+        """Возвращает число результатов, при обработке которых был ошибка"""
         return self._errors
 
     def _add_score(self, score: float):
@@ -136,20 +155,34 @@ class BaseTester:
         self._abs_confidences.append(val)
 
     def get_absolute_confidences(self):
+        """
+        Возвращает разницы между правильным ответом и ближайшим к нему.
+        Разница абсолютная!
+        Гарантируются, что результирующий tuple не пуст
+        """
+        if not self._abs_confidences:
+            # Вернём хоть что-то, иначе среднее не посчитать
+            return tuple([0])
         return tuple(self._abs_confidences)
 
     def add_time(self, seconds: float):
+        """Добавляет время, затраченное на получения результата"""
         self._seconds.append(seconds)
 
     def add_text_result(self, text: str):
+        """Добавляет строчку для записи в логи"""
         self._text_results.append(text)
 
     def get_test_files_paths(self):
+        """
+        Возвращает последовательность путей к тестовым файлам.
+        Должно быть переопределено.
+        """
         raise NotImplementedError
 
     def get_results(self):
         """
-        Преобразует все имеющиеся статистики
+        Считает все базовые статистики. Может быть переопределён для добавления новых
         """
         self._seconds.sort()
         return {
@@ -163,9 +196,17 @@ class BaseTester:
         }
 
     def get_log_filename_pattern(self):
+        """
+        Предполагается, что разные тесты могут писать в разные файлы
+        Должен быть переопределён
+        """
         raise NotImplementedError
 
     def before_test_run(self):
+        """
+        Нужно, чтобы что-то вывести в логи, подготовить какой-то кэш и т.д.
+        Должен быть переопределён
+        """
         raise NotImplementedError
 
     def write_log(self, time_to_write):
@@ -196,14 +237,75 @@ class BaseTester:
         logging.info('Лог прогона записан в файл {}'.format(file_name))
 
     def _check_result(self, idx, req, question_id, system_answer):
+        """
+        Проверяет результат теста.
+        Должен быть переопределён
+        """
         raise NotImplementedError
 
+    def process_all(self, idx, req, question_id, system_answer):
+        """
+        Нужен для обработки статистик, общих для всех тестов,
+        независимо от их результата.
+        Может быть переопределён.
+        """
+        pass
+
+    def process_true(self, idx, req, question_id, system_answer):
+        """
+        Нужен для обработки статистик, только по истинным тестам.
+        Может быть переопределён.
+        """
+        # pylint: disable=unused-argument
+        self._add_true()
+
+        # self._add_score(system_answer['answer']['score'])
+
+    def _get_nearest_result(self, system_answer):
+        """
+        Возвращает скор ближайшего результата или 0, если его нет
+        """
+        nearest_result = 0
+        if system_answer["more_cube_answers"]:
+            score_model = MODEL_CONFIG["cube_answers_scoring_model"]
+            nearest_result = max(
+                nearest_result,
+                system_answer["more_cube_answers"][0]["score"][score_model]
+            )
+        if system_answer["more_minfin_answers"]:
+            nearest_result = max(
+                nearest_result,
+                system_answer["more_minfin_answers"][0]["score"]
+            )
+        return nearest_result
+
+    def process_wrong(self, idx, req, question_id, system_answer):
+        """
+        Нужен для обработки статистик, только по неверным тестам.
+        Может быть переопределён.
+        """
+        # pylint: disable=unused-argument
+        self._add_wrong()
+
+    def process_error(self, idx, req, question_id, system_answer):
+        """
+        Нужен для обработки статистик, только по ошибочным запросам.
+        Может быть переопределён.
+        """
+        # pylint: disable=unused-argument
+        self._add_error()
+
     def run(self):
+        """
+        Запускает тестирование. Метод общий, но вызывает специфические
+        для каждого тестирования методы, что позволяет реализовывать
+        разное поведение.
+        Переопределение не нужно
+        """
         self.before_test_run()
         start_time = time.time()
-        test_files_paths = self.get_test_files_paths()
 
-        for test_path in test_files_paths:
+        for test_path in self.get_test_files_paths():
             with open(test_path, 'r', encoding='utf-8') as file_in:
                 doc_name_output_str = 'Файл: ' + path.basename(test_path)
                 self.add_text_result(doc_name_output_str)
@@ -231,14 +333,6 @@ class BaseTester:
                         system_answer,
                     )
 
-                    # ToDo: Жёсткая приаязка к структуре JSON
-                    nearest_result = max(
-                        system_answer["more_cube_answers"][0]['score'] if system_answer["more_cube_answers"] else 0,
-                        system_answer["more_minfin_answers"][0]['score'] if system_answer["more_minfin_answers"] else 0
-                    )
-                    absolute_confidence = system_answer['answer']['score'] - nearest_result
-                    self._add_absolute_confidence(absolute_confidence)
-                    # self._add_score(system_answer['answer']['score'])
                     time_for_request = datetime.datetime.now() - dt_now
                     self.add_time(time_for_request.total_seconds())
 
@@ -247,6 +341,9 @@ class BaseTester:
 
 
 class CubeTester(BaseTester):
+    """
+    Реализует логику и метрики, специфичные для кубов
+    """
     def __init__(
             self,
             minimal_score,
@@ -256,7 +353,7 @@ class CubeTester(BaseTester):
         super().__init__(minimal_score, percentiles, is_need_logging)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "cubes_test")
+        return get_test_files(TEST_PATH, "cubes_test_mdx")
 
     def get_log_filename_pattern(self):
         return 'cube_{}.txt'
@@ -264,46 +361,101 @@ class CubeTester(BaseTester):
     def before_test_run(self):
         logging.info('Идет тестирование по вопросам к кубам')
 
+    def process_true(self, idx, req, question_id, system_answer):
+        """
+        Добавляет Absolute Confidence, т.к. скор специфичен для минфина и кубов
+        """
+        super().process_true(idx, req, question_id, system_answer)
+
+        score_model = MODEL_CONFIG["cube_answers_scoring_model"]
+
+        nearest_result = self._get_nearest_result(system_answer)
+        absolute_confidence = system_answer['answer']['score'][score_model] - nearest_result
+        self._add_absolute_confidence(absolute_confidence)
+
     def _check_result(self, idx, req, answer, system_answer):
         response = system_answer['answer']
 
         if not response:
             ars = '{}. - Ответ на запрос "{}" не был найден'
             self.add_text_result(ars)
-            self._add_wrong()
+            self.process_wrong(idx, req, answer, system_answer)
             return
 
-        response = response.get('response')
+        response = response.get('mdx_query')
         if not response:
             ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
             self.add_text_result(ars)
-            self._add_wrong()
+            self.process_wrong(idx, req, answer, system_answer)
             return
 
-        if int(answer) == response:
-            ars = '{}. + Запрос "{}" отрабатывает корректно |'.format(idx, req)
+        if self._mdx_queries_equality(answer, response):
+            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
             self.add_text_result(ars)
-            self._add_true()
+            self.process_true(idx, req, answer, system_answer)
         else:
             ars = (
                 '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {}) | {}'
+                '(должны получать: {}, получаем: {})'
             )
             ars = ars.format(
                 idx,
-                req, int(answer),
-                response,
-                system_answer['answer']['mdx_query']
+                req,
+                answer,
+                response
             )
 
             self.add_text_result(ars)
-            self._add_wrong()
+            self.process_wrong(idx, req, answer, system_answer)
+
+    def _mdx_queries_equality(self, mdx_query1, mdx_query2):
+        """Проверка равенства двух MDX-запросов"""
+
+        measure_p = re.compile('(?<=\[MEASURES\]\.\[)\w*')
+        cube_p = re.compile('(?<=FROM \[)\w*')
+        members_p = re.compile('(\[\w+\]\.\[[0-9-]*\])')
+
+        def get_measure(mdx_query):
+            """Получение регуляркой меры"""
+            return measure_p.search(mdx_query).group()
+
+        def get_cube(mdx_query):
+            """Получение регуляркой куба"""
+            return cube_p.search(mdx_query).group()
+
+        def get_members(mdx_query):
+            """Получение регуляркой элементов измерений"""
+            return members_p.findall(mdx_query)
+
+        mdx_query1 = mdx_query1.upper()
+        mdx_query2 = mdx_query2.upper()
+
+        q1_measure, q1_cube, q1_members = (
+            get_measure(mdx_query1),
+            get_cube(mdx_query1),
+            get_members(mdx_query1)
+        )
+
+        q2_measure, q2_cube, q2_members = (
+            get_measure(mdx_query2),
+            get_cube(mdx_query2),
+            get_members(mdx_query2)
+        )
+
+        measure_equal = (q1_measure == q2_measure)
+        cube_equal = (q1_cube == q2_cube)
+
+        # игнорирование порядка элементов измерений
+        members_equal = (set(q1_members) == set(q2_members))
+
+        return bool(measure_equal and cube_equal and members_equal)
 
 
 class MinfinTester(BaseTester):
     """
     Реализует логику и метрики, специфичные для минфина.
     """
+
     def __init__(
             self,
             minimal_score,
@@ -329,12 +481,28 @@ class MinfinTester(BaseTester):
         logging.info('Идет тестирование по вопросам для Министерства Финансов')
 
     def get_results(self):
+        """
+        Добавляет дополнительно Mean Threshold Confidence к статистикам
+        """
         res = super().get_results()
 
         # Mean Threshold Confidence
         res["MTC"] = mean(self.get_threshold_confidences())
 
         return res
+
+    def process_true(self, idx, req, question_id, system_answer):
+        """
+        Добавляет Absolute Confidence, т.к. скор специфичен для минфина и кубов
+        Также добавляет Threshold Confidence
+        """
+        super().process_true(idx, req, question_id, system_answer)
+
+        nearest_result = self._get_nearest_result(system_answer)
+        absolute_confidence = system_answer['answer']['score'] - nearest_result
+        self._add_absolute_confidence(absolute_confidence)
+
+        self._add_threshold_confidence(system_answer['answer']['score'] - self._minimal_score)
 
     def _check_result(self, idx, req, question_id, system_answer):
         response = system_answer['answer']
@@ -346,7 +514,7 @@ class MinfinTester(BaseTester):
             )
 
             self.add_text_result(ars)
-            self._add_error()
+            self.process_error(idx, req, question_id, system_answer)
             return
 
         if not response:
@@ -356,7 +524,7 @@ class MinfinTester(BaseTester):
             )
             ars = ars.format(q_id=question_id, req=req)
             self.add_text_result(ars)
-            self._add_error()
+            self.process_error(idx, req, question_id, system_answer)
             return
 
         response = response.get('number')
@@ -367,7 +535,7 @@ class MinfinTester(BaseTester):
                 msg='Не определена'
             )
             self.add_text_result(ars)
-            self._add_error()
+            self.process_error(idx, req, question_id, system_answer)
             return
 
         if question_id == str(response) and self._minimal_score < system_answer['answer']['score']:
@@ -376,10 +544,7 @@ class MinfinTester(BaseTester):
                              score=system_answer['answer']['score'],
                              req=req)
             self.add_text_result(ars)
-            self._add_true()
-
-            # Поскольку запрос успешно прошёл, то его скор можно заносить
-            self._add_threshold_confidence(system_answer['answer']['score'] - self._minimal_score)
+            self.process_true(idx, req, question_id, system_answer)
         else:
             ars = (
                 '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
@@ -389,15 +554,16 @@ class MinfinTester(BaseTester):
                              score=system_answer['answer']['score'],
                              req=req, fl=response)
             self.add_text_result(ars)
-            self._add_wrong()
+            self.process_wrong(idx, req, question_id, system_answer)
 
 
 def get_test_files(test_path, prefix):
-    test_files_paths = []
-    for file in listdir(test_path):
-        if file.startswith(prefix):
-            test_files_paths.append(path.join(test_path, file))
-    return test_files_paths
+    """
+    Генератор путей к файлам с указанымм префиксом
+    """
+    for file_name in listdir(test_path):
+        if file_name.startswith(prefix):
+            yield path.join(test_path, file_name)
 
 
 @logs_helper.time_with_message("get_results")
