@@ -7,6 +7,7 @@ import uuid
 import datetime
 import time
 import logging
+import re
 from os import path, listdir, makedirs
 from math import isnan
 from statistics import mean
@@ -266,7 +267,7 @@ class CubeTester(BaseTester):
         super().__init__(minimal_score, percentiles, is_need_logging)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "cubes_test")
+        return get_test_files(TEST_PATH, "cubes_test_mdx")
 
     def get_log_filename_pattern(self):
         return 'cube_{}.txt'
@@ -283,32 +284,73 @@ class CubeTester(BaseTester):
             self._add_wrong()
             return
 
-        response = response.get('response')
+        response = response.get('mdx_query')
         if not response:
             ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
             self.add_text_result(ars)
             self._add_wrong()
             return
 
-        # TODO: реализовать сравнение по MDX-запросу
-        if int(answer) == response:
+        if self._mdx_queries_equality(answer, response):
             ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
             self.add_text_result(ars)
             self._add_true()
         else:
             ars = (
                 '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {}) | {}'
+                '(должны получать: {}, получаем: {})'
             )
             ars = ars.format(
                 idx,
-                req, int(answer),
-                response,
-                system_answer['answer']['mdx_query']
+                req,
+                answer,
+                response
             )
 
             self.add_text_result(ars)
             self._add_wrong()
+
+    def _mdx_queries_equality(self, mdx_query1, mdx_query2):
+        """Проверка равенства двух MDX-запросов"""
+
+        measure_p = re.compile('(?<=\[MEASURES\]\.\[)\w*')
+        cube_p = re.compile('(?<=FROM \[)\w*')
+        members_p = re.compile('(\[\w+\]\.\[[0-9-]*\])')
+
+        def get_measure(mdx_query):
+            """Получение регуляркой меры"""
+            return measure_p.search(mdx_query).group()
+
+        def get_cube(mdx_query):
+            """Получение регуляркой куба"""
+            return cube_p.search(mdx_query).group()
+
+        def get_members(mdx_query):
+            """Получение регуляркой элементов измерений"""
+            return members_p.findall(mdx_query)
+
+        mdx_query1 = mdx_query1.upper()
+        mdx_query2 = mdx_query2.upper()
+
+        q1_measure, q1_cube, q1_members = (
+            get_measure(mdx_query1),
+            get_cube(mdx_query1),
+            get_members(mdx_query1)
+        )
+
+        q2_measure, q2_cube, q2_members = (
+            get_measure(mdx_query2),
+            get_cube(mdx_query2),
+            get_members(mdx_query2)
+        )
+
+        measure_equal = (q1_measure == q2_measure)
+        cube_equal = (q1_cube == q2_cube)
+
+        # игнорирование порядка элементов измерений
+        members_equal = (set(q1_members) == set(q2_members))
+
+        return bool(measure_equal and cube_equal and members_equal)
 
 
 class MinfinTester(BaseTester):
