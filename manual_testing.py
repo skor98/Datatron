@@ -3,7 +3,7 @@
 
 """
 Содержит в себе CUI и классы для получения качества работы текущий алгоритмов.
-Причём, это это качество должно быть легко узнавать из внешнего кода.
+Причём, это качество должно быть легко узнавать из внешнего кода.
 """
 
 import argparse
@@ -411,9 +411,9 @@ class CubeTester(BaseTester):
     def _mdx_queries_equality(self, mdx_query1, mdx_query2):
         """Проверка равенства двух MDX-запросов"""
 
-        measure_p = re.compile('(?<=\[MEASURES\]\.\[)\w*')
-        cube_p = re.compile('(?<=FROM \[)\w*')
-        members_p = re.compile('(\[\w+\]\.\[[0-9-]*\])')
+        measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
+        cube_p = re.compile(r'(?<=FROM \[)\w*')
+        members_p = re.compile(r'(\[\w+\]\.\[[0-9-]*\])')
 
         def get_measure(mdx_query):
             """Получение регуляркой меры"""
