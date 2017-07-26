@@ -11,7 +11,7 @@ import pandas as pd
 from os import listdir, path
 
 from text_preprocessing import TextPreprocessing
-from config import SETTINGS
+from config import SETTINGS, TEST_PATH_MINFIN
 from model_manager import MODEL_CONFIG
 
 import logs_helper  # pylint: disable=unused-import
@@ -22,10 +22,6 @@ output_file = 'minfin_data_for_indexing.json'
 
 # Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
-
-# Путь к папке, в которую будут записываться автоматические
-# тесты по вопросам от Минфина
-TEST_PATH = 'tests'
 
 
 def set_up_minfin_data(index_way='curl'):
@@ -223,14 +219,14 @@ def _get_manual_synonym_questions(question_number):
         return f.endswith(
             '.txt') and port_num in f and 'manual' in f
 
-    file_with_portion = [f for f in listdir(TEST_PATH) if is_portion_func(f)]
+    file_with_portion = [f for f in listdir(TEST_PATH_MINFIN) if is_portion_func(f)]
 
     # Если такого файла еще нет, так как его не успели написать
     if not file_with_portion:
         return None
 
     # Добавление синонимичных запросов
-    with open(path.join(TEST_PATH, file_with_portion[0]), 'r', encoding='utf-8') as file:
+    with open(path.join(TEST_PATH_MINFIN, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
             line = line.split(':')
             if line[1].strip() == question_number:
@@ -312,7 +308,7 @@ def _create_tests(files_names, data_frames):
 
     for file_name, df in zip(files_names, data_frames):
         file_path = path.join(
-            TEST_PATH,
+            TEST_PATH_MINFIN,
             'minfin_test_auto_for_{}.txt'.format(file_name.rsplit('.', 1)[0])
         )
 

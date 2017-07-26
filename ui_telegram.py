@@ -707,7 +707,7 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
     app = Flask(__name__)
 
-    WEBHOOK_URL_BASE = "{}:{}".format(
+    WEBHOOK_URL_BASE = "{}:{}/telebot".format(
         SETTINGS.WEB_SERVER.PUBLIC_LINK,
         SETTINGS.WEB_SERVER.PUBLIC_PORT
     )
@@ -715,8 +715,8 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
     bot.remove_webhook()
     bot.set_webhook(
-        url=WEBHOOK_URL_BASE + '/telebot' + WEBHOOK_URL_PATH,
-        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+        url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
+        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'r')
     )
 
     #send_admin_messages()
