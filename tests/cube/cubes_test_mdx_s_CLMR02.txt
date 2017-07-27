@@ -48,7 +48,7 @@
 Облигации с фиксированной процентной ставкой купонного дохода:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-17])
 Долг по облигациям с фиксированной процентной ставкой купонного дохода:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-17])
 Долг по облигациям с ФПС купонного дохода:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-17])
-Задолженность по облигациям с ФПС:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-17])
+Задолженность по ГСО-ППС:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-17])
 Облигации внутренних облигационных займов:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-18])
 Госдолг по облигациям внутренних облигационных займов:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-18])
 Долг по облигациям внутренних облигационных займов:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-18])
