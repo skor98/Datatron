@@ -21,6 +21,10 @@ SYNONYMS = [
 class Word(object):
     
     def __init__(self, parsed_word):
+        if isinstance(parsed_word, str):
+            parsed_word = Phrase.morph.parse(parsed_word)[0]
+        elif isinstance(parsed_word, Word):
+            parsed_word = parsed_word.original
         self.original = parsed_word
         self.normal = parsed_word.normal_form
         self.verbal = parsed_word.word
@@ -43,7 +47,7 @@ class Word(object):
         if not isinstance(other, (Phrase, Word)):
             return self.agrees(Phrase(other))
         match = False
-        for grammeme in ('number', 'case', 'person', 'gender'):
+        for grammeme in ('number', 'case', 'person', 'gender', 'animacy'):
             gr_pair = (getattr(self, grammeme),
                        getattr(other, grammeme))
             if None in gr_pair:
@@ -61,7 +65,7 @@ class Word(object):
         if not isinstance(other, (Phrase, Word)):
             return self.make_agree(Phrase(other))
         res = self.clone()
-        for grammeme in ('number', 'case', 'person', 'gender'):
+        for grammeme in ('number', 'case', 'person', 'gender', 'animacy'):
             gr_pair = (getattr(res, grammeme),
                        getattr(other, grammeme))
             if gr_pair[0] != gr_pair[1] and None not in gr_pair:
@@ -111,6 +115,9 @@ class Word(object):
     
     def __str__(self):
         return self.verbal
+    
+    def __repr__(self):
+        return self.original.__repr__()
 
 class Phrase(object):
     
@@ -140,8 +147,14 @@ class Phrase(object):
         return None if self.mainpos is None else self[self.mainpos]
             
     def inflect(self, grammemes):
-        return Phrase([w.inflect(grammemes) if w.case == self.main().case else w 
-                      for w in self.structure], self.mainpos)
+        if self.mainpos is None:
+            return self.clone()
+        newmain = self.main().inflect(grammemes)
+        return Phrase(
+                [w.make_agree(newmain) if w.agrees(self.main()) else w
+                 for w in self.structure],
+                self.mainpos
+        )
     
     def find_in(self, context):
         if not isinstance(context, Phrase):

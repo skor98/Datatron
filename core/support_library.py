@@ -16,6 +16,9 @@ from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
 from kb.kb_support_library import get_default_member_for_dimension
+
+from core.ling_parser import Phrase
+
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 
 from model_manager import MODEL_CONFIG
@@ -457,7 +460,7 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
 def delete_repetitions(cube_data_list: list):
     """
     Удаление из результата после прогона дерева
-    повторяющихся комбинация
+    повторяющихся комбинаций
     """
 
     cube_data_repr = []
@@ -488,3 +491,62 @@ def delete_repetitions(cube_data_list: list):
             before_deleting - after_deleting
         )
     )
+
+
+def feedback_preprocessing(verbal_feedback):
+    """
+    Преобразование для дальнейшего парсинга словаря с вербальными значениями измерений.
+    Здесь же обрабатываются замены отдельных значений на более удобные.
+    """
+    res = {'куб': verbal_feedback.get('domain')}
+    for dim in verbal_feedback.get('dims', []):
+        newkey = dim['dimension_caption'].split(' ', 1)[0].lower()
+        res[newkey] = dim['member_caption']
+
+    if res.get('территория', '').lower() == 'неуказанная территория':
+        res['территория'] = 'РФ'
+    if verbal_feedback.get('measure', 'значение').lower() == 'значение':
+        res['мера'] = None
+    else:
+        res['мера'] = verbal_feedback.get('measure')
+
+    return {key: Phrase(res[key]) for key in res if res[key] is not None}
+
+
+def make_pretty_feedback(mask, verbal_feedback):
+    """
+    Создание человекочитаемого фидбека из словаря по маске.
+    """
+    prepr_feedback = feedback_preprocessing(verbal_feedback)
+
+    res = []
+    for word in mask.split('{'):
+        if '}' not in word:
+            res.append(word)
+            continue
+
+        code, context = word.split('}', 1)
+        code = code.split('?')
+        word_index = 2 if code[0] == '' else 0
+        word = code[word_index].split('*')
+        val = prepr_feedback.get(word[0].lstrip('_').lower())
+        if val is None:
+            res.append(context)
+            continue
+
+        if len(word) == 1:
+            val = val.verbal
+        else:
+            val = val.inflect(word[1:]).verbal
+
+        if word[0][0] == '_':
+            pass
+        elif word[0][0].isupper():
+            val = val[0].upper() + val[1:]
+        else:
+            val = val[0].lower() + val[1:]
+
+        code[word_index] = val
+        res += code + [context]
+
+    return ''.join(res)
