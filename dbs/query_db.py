@@ -10,9 +10,9 @@ import pandas as pd
 
 from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
-from kb.docs_generation_for_minfin import read_data
 from config import QUERY_DB_PATH
 from model_manager import MODEL_CONFIG
+from kb.kb_support_library import read_minfin_data
 
 _database = SqliteDatabase(QUERY_DB_PATH)
 
@@ -92,6 +92,8 @@ def get_random_requests(num=5):
     """N рандомных запросов по кубам и Минфину"""
     
     def get_queries_from_db():
+        """Чтение 5 рандобных запросов из БД"""
+
         user_requests = []
         query = (UserQuery
                  .select(UserQuery.query)
@@ -104,19 +106,24 @@ def get_random_requests(num=5):
         return user_requests
 
     def get_queries_from_files():
+        """Чтение всех вопросов по Минфину"""
+
         # чтение данных по минфину
-        _, dfs = read_data()
+        _, dfs = read_minfin_data()
 
         data = pd.concat(dfs)
         data = data['question']
 
+        return data
+
     if get_random_requests.data is None:
         if MODEL_CONFIG["enable_idea_command_from_db"]:
-            get_random_requests.data = get_queries_from_db()
+            return get_queries_from_db()
         else:
-            pass
+            get_random_requests.data = get_queries_from_files()
+            return get_random_requests.data.sample(num).tolist()
     else:
-        return get_random_requests.data
+        return get_random_requests.data.sample(num).tolist()
 
 
 get_random_requests.data = None

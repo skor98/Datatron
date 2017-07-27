@@ -16,7 +16,7 @@ from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
 
 from messenger_manager import MessengerManager
-from kb.docs_generation_for_minfin import read_data
+from kb.kb_support_library import read_minfin_data
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
 from config import SETTINGS
@@ -56,7 +56,7 @@ def _read_minfin_data():
     """
 
     # чтение данные по минфину
-    _, dfs = read_data()
+    _, dfs = read_minfin_data()
 
     # Объединение все датафреймов в один
     data = pd.concat(dfs)

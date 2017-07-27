@@ -5,9 +5,13 @@
 Поддерживающие скрипты к базе знаний
 """
 
+import pandas as pd
+from os import listdir, path
+
 import kb.kb_db_creation as dbc
 
 from text_preprocessing import TextPreprocessing
+from config import SETTINGS
 
 
 def get_caption_for_measure(cube_value, cube_name):
@@ -238,3 +242,62 @@ def create_dimension_lem_key_words():
                      )
 
             query.execute()
+
+
+def read_minfin_data():
+    """Чтение данных по минфину"""
+    path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
+
+    files = []
+    file_paths = []
+
+    # Сохранение имеющихся в дериктории xlsx файлов
+    for file in listdir(path_to_folder_file):
+        if file.endswith(".xlsx"):
+            file_paths.append(path.join(path_to_folder_file, file))
+            files.append(file)
+
+    # Создания листа с датафреймами по всем документам
+    dfs = []
+    for file_path in file_paths:
+        # id документа имеет структуру {партия}.{порядковый номер}
+        # id необходимо имплицитно привести к типу str, чтобы
+        # номер вопроса 3.10 не становился 3.1
+        df = pd.read_excel(
+            open(file_path, 'rb'),
+            converters={
+                'id': str,
+                'question': str,
+                'short_answer': str,
+                'full_answer': str,
+            }
+        )
+
+        # Нужно обрезать whitespace
+        COLUMNS_TO_STRIP = (
+            'id',
+            'question',
+            'short_answer',
+            'full_answer'
+        )
+
+        for row_ind in range(df.shape[0]):
+            for column in COLUMNS_TO_STRIP:
+                df.loc[row_ind, column] = df.loc[row_ind, column].strip()
+
+                # Из полного ответа деление на абзацы лучше не убирать
+                if column == 'full_answer':
+                    continue
+
+                df.loc[row_ind, column] = ' '.join(
+                    df.loc[row_ind, column].split()
+                )
+
+                # экранирование кавычек
+                if '"' in df.loc[row_ind, 'question']:
+                    df.loc[row_ind, 'question'] = df.loc[row_ind, 'question'].replace('"', r'\"')
+
+        df = df.fillna(0)
+        dfs.append(df)
+
+    return files, dfs
