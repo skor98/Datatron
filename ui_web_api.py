@@ -9,16 +9,17 @@
 from os import listdir, path, makedirs
 import logging
 from uuid import uuid4
+import json
 
 import pandas as pd
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
 
 from messenger_manager import MessengerManager
 from kb.docs_generation_for_minfin import read_data
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
-from config import SETTINGS, API_PORT
+from config import SETTINGS
 
 
 # pylint: disable=no-self-use
@@ -33,6 +34,13 @@ def get_minfin_data():
     """
     if get_minfin_data.data is None:
         get_minfin_data.data = _read_minfin_data()
+
+        # Можно сразу привести к байтам, чтобы не делать это каждый раз
+        get_minfin_data.data = json.dumps(
+            get_minfin_data.data,
+            ensure_ascii=False,
+            indent=4
+        ).encode("utf-8")
     return get_minfin_data.data
 
 
@@ -155,6 +163,20 @@ api_version = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
 parser.add_argument('query', type=str)
+
+
+@api.representation('application/json')
+def output_json(data, code, headers=None):
+    """
+    Переопределим кодирование, чтобы не кодировать уже закодированное
+    И отправлять юникод
+    """
+    if isinstance(data, bytes):
+        resp = make_response(data, code)
+    else:
+        resp = make_response(json.dumps(data).encode("utf-8"), code)
+    resp.headers.extend(headers or {})
+    return resp
 
 api.add_resource(VoiceQuery, '/{}/voice'.format(api_version))
 api.add_resource(TextQuery, '/{}/text'.format(api_version))

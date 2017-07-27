@@ -36,4 +36,4 @@ class CoreAnswer:
             result_dict,
             default=lambda obj: getattr(obj, 'to_reduced_object', lambda: None)(),
             ensure_ascii=False,
-        )
+        ).encode("utf-8")
