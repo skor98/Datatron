@@ -13,6 +13,7 @@ from os import listdir, path
 from text_preprocessing import TextPreprocessing
 from config import SETTINGS, TEST_PATH_MINFIN
 from model_manager import MODEL_CONFIG
+from kb.kb_support_library import read_minfin_data
 
 import logs_helper  # pylint: disable=unused-import
 
@@ -30,8 +31,15 @@ def set_up_minfin_data(index_way='curl'):
     документов для ответа на вопросы Минфина
     """
 
-    print('Начата работа с документами для Министерства Финансов')
-    minfin_docs = _refactor_data(_read_data())
+    logging.info('Начата работа с документами для Министерства Финансов')
+
+    # чтение данные по минфину
+    files, dfs = read_minfin_data()
+
+    # Автоматическая генерация тестов
+    _create_tests(files, dfs)
+
+    minfin_docs = _refactor_data(pd.concat(dfs))
 
     if MODEL_CONFIG["enable_minfin_tf_idf_key_words_calculation"]:
         _add_automatic_key_words(minfin_docs)
@@ -41,66 +49,6 @@ def set_up_minfin_data(index_way='curl'):
         _index_data_via_curl()
     else:
         _index_data_via_jar_file()
-
-
-def _read_data():
-    """
-    Чтение данных из xlsx с помощью pandas и их переработка
-    """
-
-    files = []
-    file_paths = []
-
-    # Сохранение имеющихся в дериктории xlsx файлов
-    for file in listdir(path_to_folder_file):
-        if file.endswith(".xlsx"):
-            file_paths.append(path.join(path_to_folder_file, file))
-            files.append(file)
-
-    # Создания листа с датафреймами по всем документам
-    dfs = []
-    for file_path in file_paths:
-        # id документа имеет структуру {партия}.{порядковый номер}
-        # id необходимо имплицитно привести к типу str, чтобы
-        # номер вопроса 3.10 не становился 3.1
-        df = pd.read_excel(
-            open(file_path, 'rb'),
-            converters={
-                'id': str,
-                'question': str,
-                'short_answer': str,
-                'full_answer': str,
-            }
-        )
-
-        # Нужно обрезать whitespace
-        COLUMNS_TO_STRIP = (
-            'id',
-            'question',
-            'short_answer',
-            'full_answer'
-        )
-
-        for row_ind in range(df.shape[0]):
-            for column in COLUMNS_TO_STRIP:
-                df.loc[row_ind, column] = df.loc[row_ind, column].strip()
-
-                # Из полного ответа деление на абзацы лучше не убирать
-                if column == 'full_answer':
-                    continue
-
-                df.loc[row_ind, column] = ' '.join(
-                    df.loc[row_ind, column].split()
-                )
-
-        df = df.fillna(0)
-        dfs.append(df)
-
-    # Автоматическая генерация тестов
-    _create_tests(files, dfs)
-
-    # Объединение все датафреймов в один
-    return pd.concat(dfs)
 
 
 def _refactor_data(data):
