@@ -18,7 +18,7 @@ from flask_restful import reqparse, abort, Api, Resource
 from messenger_manager import MessengerManager
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
-from config import SETTINGS, API_PORT
+from config import SETTINGS
 
 
 # pylint: disable=no-self-use
@@ -33,7 +33,7 @@ def get_minfin_data():
     """
     if get_minfin_data.data is None:
         get_minfin_data.data = _read_minfin_data()
-        
+
         # Можно сразу привести к байтам, чтобы не делать это каждый раз
         get_minfin_data.data = json.dumps(
             get_minfin_data.data,
@@ -198,9 +198,14 @@ parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
 parser.add_argument('query', type=str)
 
+
 @api.representation('application/json')
 def output_json(data, code, headers=None):
-    if  isinstance(data, bytes):
+    """
+    Переопределим кодирование, чтобы не кодировать уже закодированное
+    И отправлять юникод
+    """
+    if isinstance(data, bytes):
         resp = make_response(data, code)
     else:
         resp = make_response(json.dumps(data).encode("utf-8"), code)
