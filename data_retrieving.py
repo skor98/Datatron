@@ -121,11 +121,6 @@ class DataRetrieving:
         request_words = norm_user_request.split()
         unique_of_request_words = set(request_words)
 
-        # [
-        #     unique_of_request_words.append(i) for i in request_words
-        #     if not unique_of_request_words.count(i)
-        # ]
-
         # удаление повторяющихся слов, чтобы пользователи не читерили
         if len(unique_of_request_words) != len(request_words):
             norm_user_request = ' '.join(unique_of_request_words)
