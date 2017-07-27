@@ -468,6 +468,13 @@ class MinfinTester(BaseTester):
         self._threshold_confidences.append(val)
 
     def get_threshold_confidences(self):
+        """
+
+        Гарантируются, что результирующий tuple не пуст
+        """
+        if not self._threshold_confidences:
+            # Вернём хоть что-то, иначе среднее не посчитать
+            return tuple([0])
         return tuple(self._threshold_confidences)
 
     def get_test_files_paths(self):
