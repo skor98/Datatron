@@ -32,7 +32,10 @@ def set_up_minfin_data(index_way='curl'):
 
     print('Начата работа с документами для Министерства Финансов')
     minfin_docs = _refactor_data(_read_data())
-    # _add_automatic_key_words(minfin_docs)
+
+    if MODEL_CONFIG["enable_minfin_tf_idf_key_words_calculation"]:
+        _add_automatic_key_words(minfin_docs)
+
     _write_data(minfin_docs)
     if index_way == 'curl':
         _index_data_via_curl()

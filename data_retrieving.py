@@ -99,12 +99,15 @@ class DataRetrieving:
                 'год', ''
             )
 
-        norm_user_request = DataRetrieving._set_user_request(
-            norm_user_request, request_id
-        )
-        norm_user_request = DataRetrieving._multiple_user_request(
-            norm_user_request, request_id
-        )
+        if MODEL_CONFIG["delete_repeating_words_in_request"]:
+            norm_user_request = DataRetrieving._set_user_request(
+                norm_user_request, request_id
+            )
+
+        if MODEL_CONFIG["enable_repetition_for_short_request"]:
+            norm_user_request = DataRetrieving._multiple_user_request(
+                norm_user_request, request_id
+            )
 
         return norm_user_request
 
@@ -116,16 +119,21 @@ class DataRetrieving:
         """
 
         request_words = norm_user_request.split()
-        set_of_request_words = set(request_words)
+        unique_of_request_words = set(request_words)
+
+        # [
+        #     unique_of_request_words.append(i) for i in request_words
+        #     if not unique_of_request_words.count(i)
+        # ]
 
         # удаление повторяющихся слов, чтобы пользователи не читерили
-        if len(set_of_request_words) != len(request_words):
-            norm_user_request = ' '.join(set_of_request_words)
+        if len(unique_of_request_words) != len(request_words):
+            norm_user_request = ' '.join(unique_of_request_words)
 
             logging.info(
                 "Query_ID: {}\tMessage: Удалено {} повторяющихся слов".format(
                     request_id,
-                    len(request_words) - len(set_of_request_words)
+                    len(request_words) - len(unique_of_request_words)
                 )
             )
 
@@ -140,9 +148,7 @@ class DataRetrieving:
         short_question_threshold = MODEL_CONFIG["short_request_threshold"]
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
 
-        norm_user_request = norm_user_request.split()
-
-        if len(norm_user_request) <= short_question_threshold:
+        if len(norm_user_request.split()) <= short_question_threshold:
             norm_user_request *= multiplier
 
             logging.info(
