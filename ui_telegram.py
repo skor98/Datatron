@@ -738,9 +738,12 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         else:
             abort(403)
 
+def long_polling():
+    bot.remove_webhook()
+    send_admin_messages()
+    bot.polling(none_stop=True)
+
 # polling cycle
 if __name__ == '__main__':
     if not SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-        bot.remove_webhook()
-        send_admin_messages()
-        bot.polling(none_stop=True)
+        long_polling()
