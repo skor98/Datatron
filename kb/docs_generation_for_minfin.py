@@ -30,8 +30,15 @@ def set_up_minfin_data(index_way='curl'):
     документов для ответа на вопросы Минфина
     """
 
-    print('Начата работа с документами для Министерства Финансов')
-    minfin_docs = _refactor_data(_read_data())
+    logging.info('Начата работа с документами для Министерства Финансов')
+
+    # чтение данные по минфину
+    files, dfs = read_data()
+
+    # Автоматическая генерация тестов
+    _create_tests(files, dfs)
+
+    minfin_docs = _refactor_data(pd.concat(dfs))
 
     if MODEL_CONFIG["enable_minfin_tf_idf_key_words_calculation"]:
         _add_automatic_key_words(minfin_docs)
@@ -43,7 +50,7 @@ def set_up_minfin_data(index_way='curl'):
         _index_data_via_jar_file()
 
 
-def _read_data():
+def read_data():
     """
     Чтение данных из xlsx с помощью pandas и их переработка
     """
@@ -93,14 +100,14 @@ def _read_data():
                     df.loc[row_ind, column].split()
                 )
 
+                # экранирование кавычек
+                if '"' in df.loc[row_ind, 'question']:
+                    df.loc[row_ind, 'question'] = df.loc[row_ind, 'question'].replace('"', r'\"')
+
         df = df.fillna(0)
         dfs.append(df)
 
-    # Автоматическая генерация тестов
-    _create_tests(files, dfs)
-
-    # Объединение все датафреймов в один
-    return pd.concat(dfs)
+    return files, dfs
 
 
 def _refactor_data(data):

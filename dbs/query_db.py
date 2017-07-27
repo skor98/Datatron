@@ -6,10 +6,13 @@
 """
 
 import datetime
+import pandas as pd
 
 from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
+from kb.docs_generation_for_minfin import read_data
 from config import QUERY_DB_PATH
+from model_manager import MODEL_CONFIG
 
 _database = SqliteDatabase(QUERY_DB_PATH)
 
@@ -86,17 +89,35 @@ def get_queries(user_id, time_delta):
 
 
 def get_random_requests(num=5):
-    user_requests = []
-    query = (UserQuery
-             .select(UserQuery.query)
-             .order_by(fn.Random())
-             .distinct()
-             .limit(num))
+    """N рандомных запросов по кубам и Минфину"""
+    
+    def get_queries_from_db():
+        user_requests = []
+        query = (UserQuery
+                 .select(UserQuery.query)
+                 .order_by(fn.Random())
+                 .distinct()
+                 .limit(num))
 
-    for elem in query:
-        user_requests.append(elem.query)
+        for elem in query:
+            user_requests.append(elem.query)
+        return user_requests
 
-    return user_requests
+    def get_queries_from_files():
+        # чтение данных по минфину
+        _, dfs = read_data()
+
+        data = pd.concat(dfs)
+        data = data['question']
+
+    if get_random_requests.data is None:
+        if MODEL_CONFIG["enable_idea_command_from_db"]:
+            get_random_requests.data = get_queries_from_db()
+        else:
+            pass
+    else:
+        return get_random_requests.data
 
 
+get_random_requests.data = None
 _is_inited = False
