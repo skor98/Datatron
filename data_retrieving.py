@@ -99,13 +99,15 @@ class DataRetrieving:
                 'год', ''
             )
 
-        # TODO: раскомментить, как будет готовы тесты
-        # norm_user_request = DataRetrieving._set_user_request(
-        #     norm_user_request, request_id
-        # )
-        # norm_user_request = DataRetrieving._dublicate_user_request(
-        #     norm_user_request, request_id
-        # )
+        if MODEL_CONFIG["delete_repeating_words_in_request"]:
+            norm_user_request = DataRetrieving._set_user_request(
+                norm_user_request, request_id
+            )
+
+        if MODEL_CONFIG["enable_repetition_for_short_request"]:
+            norm_user_request = DataRetrieving._multiple_user_request(
+                norm_user_request, request_id
+            )
 
         return norm_user_request
 
@@ -116,24 +118,29 @@ class DataRetrieving:
         при необходимости
         """
 
-        norm_user_request = norm_user_request.split()
-        set_norm_user_request = set(norm_user_request)
+        request_words = norm_user_request.split()
+        unique_of_request_words = set(request_words)
+
+        # [
+        #     unique_of_request_words.append(i) for i in request_words
+        #     if not unique_of_request_words.count(i)
+        # ]
 
         # удаление повторяющихся слов, чтобы пользователи не читерили
-        if len(set_norm_user_request) != len(norm_user_request):
-            norm_user_request = ' '.join(set_norm_user_request)
+        if len(unique_of_request_words) != len(request_words):
+            norm_user_request = ' '.join(unique_of_request_words)
 
             logging.info(
                 "Query_ID: {}\tMessage: Удалено {} повторяющихся слов".format(
                     request_id,
-                    len(norm_user_request) - len(set_norm_user_request)
+                    len(request_words) - len(unique_of_request_words)
                 )
             )
 
         return norm_user_request
 
     @staticmethod
-    def _duplicate_user_request(norm_user_request: str, request_id: str):
+    def _multiple_user_request(norm_user_request: str, request_id: str):
         """
         Дублирование коротких запросов
         """
@@ -141,9 +148,7 @@ class DataRetrieving:
         short_question_threshold = MODEL_CONFIG["short_request_threshold"]
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
 
-        norm_user_request = norm_user_request.split()
-
-        if len(norm_user_request) <= short_question_threshold:
+        if len(norm_user_request.split()) <= short_question_threshold:
             norm_user_request *= multiplier
 
             logging.info(

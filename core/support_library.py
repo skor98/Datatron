@@ -159,7 +159,7 @@ def format_cube_answer(cube_answer, response: requests):
     else:
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
-        logging.exception(
+        logging.error(
             'Query_ID: {}\tMessage: Запрос к серверу вызвал ошибку {}'.format(
                 cube_answer.request_id,
                 response.status_code
@@ -172,7 +172,7 @@ def format_cube_answer(cube_answer, response: requests):
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
-        logging.exception(
+        logging.error(
             "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
                 cube_answer.request_id,
                 response.get('message', '')
@@ -203,7 +203,6 @@ def format_cube_answer(cube_answer, response: requests):
 
         # Добавление к неформатированного результата
         # Если формат меры - 0, то просто целое число без знаков после запятой
-        # TODO: проверить типы возвращаемых значений
         if not value_format:
             cube_answer.response = int(str(value).split('.')[0])
         # Если формат для меры - 1, то возращается полученный неокругленный результат
@@ -355,10 +354,15 @@ def process_with_member_for_territory(cube_data: CubeData):
 
         if connected_dim:
             # удаление других найденных значений для BGLevels
+            # а также уже указанных элементов измерения ТЕРРИТОРИЯ,
+            # которые могли появиться в cube_data.members
+            # через связанные значений
             cube_data.members = [
                 member for member in cube_data.members
-                if member['dimension'] != connected_dim
-                ]
+                if (
+                    member['dimension'] != connected_dim and
+                    member['dimension'] != cube_data.terr_member['dimension']
+                )]
 
             # добавление связанного значения
             cube_data.members.append(

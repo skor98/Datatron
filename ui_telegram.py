@@ -146,7 +146,7 @@ def get_query_examples(message):
     try:
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             possible_queries = get_random_requests()
-            message_str = "Что *спрашивают* другие пользователи:\n{}"
+            message_str = "Вы можете спросить:\n{}"
             possible_queries = ['- {}\n'.format(query) for query in possible_queries]
             message_str = message_str.format(''.join(possible_queries))
             bot.send_message(

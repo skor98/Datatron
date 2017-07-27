@@ -9,6 +9,10 @@
   "cube_answers_scoring_model": "sum",
   "short_request_threshold": 3,
   "repetition_num_for_short_request": 2,
+  "enable_repetition_for_short_request": true,
+  "delete_repeating_words_in_request": true,
   "minfin_manual_key_words_repetition": 5,
-  "minfin_tf_idf_key_words_repetition": 1
+  "minfin_tf_idf_key_words_repetition": 1,
+  "enable_minfin_tf_idf_key_words_calculation": false,
+  "enable_idea_command_from_db": false
 }

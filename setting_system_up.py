@@ -8,14 +8,21 @@
 import logging
 import sys
 import argparse
+import json
+import datetime
 
 from os import path
+from math import isnan
 
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS
 from manual_testing import get_results
+from config import TEST_PATH_RESULTS, DATETIME_FORMAT
+
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
 
@@ -32,7 +39,7 @@ def set_up_db():
     kbs.set_up_db()
 
 
-def set_up_solr_cube_data(index_way='curl'):
+def set_up_cube_data(index_way='curl'):
     """
     Создание и индексирование документов по кубам. Если
     index_way=curl, то индексирование документов
@@ -101,12 +108,19 @@ if __name__ == '__main__':
     if args.db:
         set_up_db()
     if args.cube:
-        set_up_solr_cube_data(args.solr_index)
+        set_up_cube_data(args.solr_index)
     if args.minfin:
         set_up_minfin_data(args.solr_index)
     if not args.disable_testing:
         score, results = get_results(write_logs=True)
+
+        current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
+        result_file_name = "results_{}.json".format(current_datetime)
+        with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:
+            json.dump(results, f_out, indent=4)
+
         print("Results: {}".format(json.dumps(results, indent=4)))
+
         if not isnan(score):
             print("Score: {:.4f}".format(score))
 

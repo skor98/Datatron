@@ -3,7 +3,7 @@
 
 """
 Содержит в себе CUI и классы для получения качества работы текущий алгоритмов.
-Причём, это это качество должно быть легко узнавать из внешнего кода.
+Причём, это качество дОлжно быть легко узнаваемым из внешнего кода.
 """
 
 import argparse
@@ -19,6 +19,7 @@ from statistics import mean
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
+from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
 import logs_helper
 from logs_helper import string_to_log_level
 from model_manager import MODEL_CONFIG
@@ -27,8 +28,6 @@ from model_manager import MODEL_CONFIG
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
-TEST_PATH = 'tests'
-RESULTS_FOLDER = 'results'
 
 
 class QualityTester:
@@ -226,10 +225,10 @@ class BaseTester:
             time_to_write
         )
 
-        if not path.exists(path.join(TEST_PATH, RESULTS_FOLDER)):
-            makedirs(path.join(TEST_PATH, RESULTS_FOLDER))
+        if not path.exists(TEST_PATH_RESULTS):
+            makedirs(TEST_PATH_RESULTS)
 
-        log_filename = path.join(TEST_PATH, RESULTS_FOLDER, file_name)
+        log_filename = path.join(TEST_PATH_RESULTS, file_name)
         with open(log_filename, 'w', encoding='utf-8') as file_out:
             file_out.write('\n'.join(self._text_results))
 
@@ -353,7 +352,7 @@ class CubeTester(BaseTester):
         super().__init__(minimal_score, percentiles, is_need_logging)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "cubes_test_mdx")
+        return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
 
     def get_log_filename_pattern(self):
         return 'cube_{}.txt'
@@ -411,9 +410,9 @@ class CubeTester(BaseTester):
     def _mdx_queries_equality(self, mdx_query1, mdx_query2):
         """Проверка равенства двух MDX-запросов"""
 
-        measure_p = re.compile('(?<=\[MEASURES\]\.\[)\w*')
-        cube_p = re.compile('(?<=FROM \[)\w*')
-        members_p = re.compile('(\[\w+\]\.\[[0-9-]*\])')
+        measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
+        cube_p = re.compile(r'(?<=FROM \[)\w*')
+        members_p = re.compile(r'(\[\w+\]\.\[[0-9-]*\])')
 
         def get_measure(mdx_query):
             """Получение регуляркой меры"""
@@ -472,7 +471,7 @@ class MinfinTester(BaseTester):
         return tuple(self._threshold_confidences)
 
     def get_test_files_paths(self):
-        return get_test_files(TEST_PATH, "minfin_test")
+        return get_test_files(TEST_PATH_MINFIN, "minfin_test")
 
     def get_log_filename_pattern(self):
         return 'minfin_{}.txt'
@@ -637,7 +636,7 @@ def _main():
     )
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
-    with open(path.join(TEST_PATH, RESULTS_FOLDER, result_file_name), 'w') as f_out:
+    with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:
         json.dump(results, f_out, indent=4)
     print("Results: {}".format(json.dumps(results, indent=4)))
     if not isnan(score):
