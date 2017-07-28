@@ -553,7 +553,9 @@ def process_minfin_questions(message, minfin_result):
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
-        bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
+
+        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+            bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
@@ -646,10 +648,13 @@ def loof_also_for_cube(cube_result):
     verbal_fb_list.extend(
         first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
 
-    verbal_fb_list.append('({}: {})'.format(
-        "*База знаний*",
-        cube_result.get_score()
-    ))
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        verbal_fb_list.append('({}: {})'.format(
+            "*База знаний*",
+            cube_result.get_score()
+        ))
+    else:
+        verbal_fb_list.append('({})'.format("*База знаний*"))
 
     return ' '.join(verbal_fb_list)
 
@@ -657,12 +662,18 @@ def loof_also_for_cube(cube_result):
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
         return loof_also_for_cube(answer)
-    return '{} ({}: {})'.format(
-        answer.question,
-        "*Минфин*",
-        answer.score
-    )
-
+    else:
+        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+            return '{} ({}: {})'.format(
+                answer.question,
+                "*Минфин*",
+                answer.score
+            )
+        else:
+            return '{} ({})'.format(
+                answer.question,
+                "*Минфин*"
+            )
 
 def first_letter_lower(input_str):
     """Первод первой буквы слова в нижний регистр"""
