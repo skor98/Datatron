@@ -90,7 +90,7 @@ def get_queries(user_id, time_delta):
 
 def get_random_requests(num=5):
     """N рандомных запросов по кубам и Минфину"""
-    
+
     def get_queries_from_db():
         """Чтение 5 рандобных запросов из БД"""
 
@@ -122,8 +122,8 @@ def get_random_requests(num=5):
         else:
             get_random_requests.data = get_queries_from_files()
             return get_random_requests.data.sample(num).tolist()
-    else:
-        return get_random_requests.data.sample(num).tolist()
+
+    return get_random_requests.data.sample(num).tolist()
 
 
 get_random_requests.data = None

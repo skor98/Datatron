@@ -8,6 +8,7 @@
 одного логгера.
 """
 
+import re
 import sys
 import datetime
 import logging
@@ -165,7 +166,7 @@ class LogsRetriever:
             return self._get_queries_logs(user_id, time_delta)
         # Логи последнего запроса
         else:
-            return self._get_request_logs(user_id)
+            raise Exception("Неизвестный тип лога {}".format(kind))
 
     def _get_all_logs(self):
         """Возвращает весь файл с логами"""
@@ -181,62 +182,48 @@ class LogsRetriever:
         return '\n'.join(get_queries(user_id, time_delta))
 
     def _get_session_logs(self, user_id, time_delta):
-        """Логи только текущей сессии"""
+        """
+        Логи только текущей сессии
+        Возвращает список запросов и их идентификторов
+        """
+        user_re = re.compile(
+            r"Query_ID:\s*([\d\w-]+)\s*ID-пользователя:\s*{}.*Запрос:\s*(.+)\s*Формат".format(user_id)
+        )
+        query_pattern = r".*Query_ID:\s*{}.*"
         logs = []
 
-        time_delta = datetime.timedelta(minutes=time_delta)
-        log_start_analyze_datetime = (datetime.datetime.today() - time_delta)
-
-        for line in reversed(list(open(self.path_to_log_file, encoding='utf-8'))):
-            line = line.split('\t')
-
+        dt_now = datetime.datetime.now()
+        possible_querie_res = []
+        for line in open(self.path_to_log_file, encoding='utf-8'):
+            line = line.strip()
             try:
-                if line[1] not in ('DEBUG', 'ERROR'):
-                    log_data = LogsRetriever._get_dt_from_line(line[0])
-                    if log_data >= log_start_analyze_datetime:
-                        logs.append('\t'.join(line))
-            except IndexError:
-                pass
-
-        queries_id = []
-        for log in logs:
-            log = log.split('\t')
-            try:
-                if str(user_id) == LogsRetriever._get_value_from_log_part(log[4]):
-                    queries_id.append(LogsRetriever._get_value_from_log_part(log[2]))
-            except IndexError:
-                pass
-
-        for log in list(logs):
-            try:
-                if LogsRetriever._get_value_from_log_part(log.split('\t')[2]) not in queries_id:
-                    logs.remove(log)
-            except IndexError:
-                pass
-
-        return '\n'.join(list(reversed(logs)))
-
-    def _get_request_logs(self, user_id):
-        logs = []
-        query_id = None
-
-        for line in reversed(list(open(self.path_to_log_file, encoding='utf-8'))):
-            line = line.split('\t')
-
-            try:
-                if line[1] not in ('DEBUG', 'ERROR'):
-                    logs.append('\t'.join(line))
-                    if str(user_id) == LogsRetriever._get_value_from_log_part(line[4]):
-                        query_id = LogsRetriever._get_value_from_log_part(line[2])
+                is_found_in_query = False
+                for query_re in possible_querie_res:
+                    if query_re.match(line):
+                        logs.append(line)
+                        is_found_in_query = True
                         break
-            except IndexError:
-                pass
+                if is_found_in_query:
+                    continue
 
-        for log in list(logs):
-            try:
-                if LogsRetriever._get_value_from_log_part(log.split('\t')[2]) != query_id:
-                    logs.remove(log)
-            except IndexError:
+                # Этот блок кода должен быть в начале, так быстрее
+                query_id, query_text = user_re.findall(line)[0]
+                query_id = query_id.strip()
+                query_text = query_text.strip()
+
+                line_splitted = line.split()
+                line_dt = datetime.datetime.strptime(
+                    line_splitted[0] + " " + line_splitted[1],
+                    DATETIME_FORMAT
+                )
+                if line_dt + time_delta < dt_now:
+                    # слишком старое
+                    continue
+                possible_querie_res.append(re.compile(query_pattern.format(query_id)))
+
+                logs.append("{} {}".format(query_id, query_text))
+            except:
+                # Если возникла ошибка, то RegExp не подходит или это стек трейс
                 pass
 
         return '\n'.join(list(reversed(logs)))

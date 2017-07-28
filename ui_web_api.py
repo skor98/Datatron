@@ -6,7 +6,7 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
-from os import listdir, path, makedirs
+from os import path, makedirs
 import logging
 from uuid import uuid4
 import json
@@ -61,13 +61,15 @@ def _read_minfin_data():
     # Объединение все датафреймов в один
     data = pd.concat(dfs)
     logging.info("Прочитано {} записей минфина".format(data.shape[0]))
-    return tuple({
-                     "id": item[0],
-                     "question": item[1]
-                 } for item in zip(
-        data["id"].tolist(),
-        data["question"].tolist()
-    ))
+    return tuple(
+        {
+            "id": item[0],
+            "question": item[1]
+        } for item in zip(
+            data["id"].tolist(),
+            data["question"].tolist()
+        )
+    )
 
 
 def is_valid_api_key(api_key):
@@ -158,7 +160,7 @@ class MinfinList(Resource):
 
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
-api_version = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
+API_VERSION = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
@@ -178,9 +180,9 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
-api.add_resource(VoiceQuery, '/{}/voice'.format(api_version))
-api.add_resource(TextQuery, '/{}/text'.format(api_version))
-api.add_resource(MinfinList, '/{}/minfin_docs'.format(api_version))
+api.add_resource(VoiceQuery, '/{}/voice'.format(API_VERSION))
+api.add_resource(TextQuery, '/{}/text'.format(API_VERSION))
+api.add_resource(MinfinList, '/{}/minfin_docs'.format(API_VERSION))
 
 
 @app.route('/')
