@@ -19,7 +19,7 @@ def select_first_cube(cube_data: CubeData):
     """Выбор первого куба"""
 
     # Если кубов не найдено
-    if not len(cube_data.cubes):
+    if not cube_data.cubes:
         raise FunctionExecutionError({
             "function": select_first_cube.__name__,
             "message": "Кубов не было найдено"
@@ -48,7 +48,9 @@ def select_third_cube(cube_data: CubeData):
     if len(cube_data.cubes) < 3:
         raise FunctionExecutionError({
             "function": select_third_cube.__name__,
-            "message": "Найдено только 2 куба"
+            "message": "Найдено только {} куба".format(
+                len(cube_data.cubes)
+            )
         })
 
     cube_data.selected_cube = cube_data.cubes[2]
@@ -61,7 +63,9 @@ def select_forth_cube(cube_data: CubeData):
     if len(cube_data.cubes) < 4:
         raise FunctionExecutionError({
             "function": select_forth_cube.__name__,
-            "message": "Найдено только 3 куба"
+            "message": "Найдено только {} куба".format(
+                len(cube_data.cubes)
+            )
         })
 
     cube_data.selected_cube = cube_data.cubes[3]
@@ -87,7 +91,7 @@ def define_year_privilege_over_cube(cube_data: CubeData):
     """
 
     if cube_data.year_member:
-        if 'Years' not in cube_data.selected_cube['dimensions']:
+        if 'YEARS' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
                 "function": define_year_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ГОД"
@@ -117,7 +121,7 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
     """
 
     if cube_data.terr_member:
-        if 'Territories' not in cube_data.selected_cube['dimensions']:
+        if 'TERRITORIES' not in cube_data.selected_cube['dimensions']:
             raise FunctionExecutionError({
                 "function": define_territory_privilege_over_cube.__name__,
                 "message": "Найденный КУБ не содержит измерения ТЕРРИТОРИЯ"
@@ -129,12 +133,31 @@ def define_territory_privilege_over_cube(cube_data: CubeData):
             if elem['cube'] == cube_data.selected_cube['cube']
             ]
 
-        cube_data.terr_member = {
-            'dimension': cube_data.terr_member['dimension'],
-            'cube': cube_data.selected_cube,
-            'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
-            'score': cube_data.terr_member['score']
-        }
+        if not cube_data.terr_member.get(cube_data.selected_cube['cube'], None):
+            raise FunctionExecutionError({
+                "function": define_territory_privilege_over_cube.__name__,
+                "message": "Найденный КУБ не поддерживает "
+                           "такой элемент измерения ТЕРРИТОРИЯ"
+            })
+
+        if cube_data.terr_member.get('connected_value.dimension_cube_value', None):
+            cube_data.terr_member = {
+                'dimension': cube_data.terr_member['dimension'],
+                'cube': cube_data.selected_cube['cube'],
+                'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
+                'score': cube_data.terr_member['score'],
+                'connected_value.dimension_cube_value':
+                    cube_data.terr_member['connected_value.dimension_cube_value'],
+                'connected_value.member_cube_value':
+                    cube_data.terr_member['connected_value.member_cube_value']
+            }
+        else:
+            cube_data.terr_member = {
+                'dimension': cube_data.terr_member['dimension'],
+                'cube': cube_data.selected_cube['cube'],
+                'cube_value': cube_data.terr_member[cube_data.selected_cube['cube']],
+                'score': cube_data.terr_member['score'],
+            }
 
 
 def define_cube_privilege_over_territory(cube_data: CubeData):
@@ -165,7 +188,7 @@ def form_members_in_hierachy_by_score(cube_data: CubeData):
     tmp_dimensions, idx = [], 0
     while cube_data.members:
         tmp_dimensions.append([])
-        for member in cube_data.members:
+        for member in list(cube_data.members):
             if '{}_{}'.format(member['dimension'], member['cube']) in tmp_dimensions[idx]:
                 continue
             else:

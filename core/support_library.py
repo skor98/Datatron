@@ -5,10 +5,10 @@
 Вспомогательные методы для работы с кубами
 """
 
-import requests
 import logging
 import json
 import datetime
+import requests
 import numpy
 
 from kb.kb_support_library import get_cube_caption
@@ -16,14 +16,22 @@ from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_representation_format
 from kb.kb_support_library import get_default_member_for_dimension
+
+from core.ling_parser import Phrase
+
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+
+from model_manager import MODEL_CONFIG
 import logs_helper  # pylint: disable=unused-import
 
 
 class CubeData:
     """Структура для данных передаваемых между узлами"""
 
-    def __init__(self):
+    def __init__(self, user_request='', request_id=''):
+        self.user_request = user_request
+        self.request_id = request_id
+        self.tree_path = None
         self.selected_cube = None
         self.cubes = []
         self.members = []
@@ -52,6 +60,13 @@ def send_request_to_server(mdx_query: str, cube: str):
         'http://conf.prod.fm.epbs.ru/mdxexpert/CellsetByMdx',
         data_to_post
     )
+
+    # TODO: костыль на тот случай пока сервер отвечает через раз
+    if api_response.status_code != 200:
+        api_response = requests.post(
+            'http://conf.prod.fm.epbs.ru/mdxexpert/CellsetByMdx',
+            data_to_post
+        )
 
     return api_response
 
@@ -116,7 +131,7 @@ def format_numerical(number: float):
     if '-' in str_num:
         num_len -= 1
 
-    if num_len < 6:
+    if num_len <= 6:
         res = str_num
     elif 6 < num_len <= 9:
         res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
@@ -128,48 +143,54 @@ def format_numerical(number: float):
     return res
 
 
-def format_cube_answer(cube_answer, request_id: str, response: requests):
+def format_cube_answer(cube_answer, response: requests):
     """
     Работа над ответом по кубу: получение данных, форматирование
     ответа, добавление обратной связи
     """
 
-    # TODO: переписать
+    if response.status_code == 200:
+        try:
+            response = response.json()
+        except json.JSONDecodeError:
+            cube_answer.status = False
+            cube_answer.message = ERROR_GENERAL
+            logging.exception(
+                'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(cube_answer.request_id)
+            )
+            return
+    else:
+        cube_answer.status = False
+        cube_answer.message = ERROR_GENERAL
+        logging.error(
+            'Query_ID: {}\tMessage: Запрос к серверу вызвал ошибку {}'.format(
+                cube_answer.request_id,
+                response.status_code
+            )
+        )
+        return
 
-    response = response.text
-    value = None
-
-    # Обработка случая, когда подобные запросы блокируются администратором (в кафе, например)
-    if 'Доступ закрыт!' in response:
+    # Обработка случая, когда MDX-запрос некорректный
+    if not response.get('success', 1):
         cube_answer.status = False
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
-        value = response
-        logging.warning("Запрос {} не прошел. Запрещены POST-запросы".format(
-            request_id
-        ))
-    # Обработка случая, когда что-то пошло не так, например,
-    # в запросе указан неизвестный параметр
-    elif '"success":false' in response:
-        cube_answer.status = False
-        cube_answer.message = ERROR_GENERAL
-        cube_answer.response = response
-        value = response
-        logging.warning("Для запроса {} создался MDX-запрос с некорректными параметрами".format(
-            request_id
-        ))
+        logging.error(
+            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
+                cube_answer.request_id,
+                response.get('message', '')
+            ))
     # Обработка случая, когда данных нет
-    elif json.loads(response)["cells"][0][0]["value"] is None:
+    elif response["cells"][0][0]["value"] is None:
         cube_answer.status = False
         cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
         cube_answer.response = None
     # В остальных случаях
     else:
         # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
-        value = float(json.loads(response)["cells"][0][0]["value"])
-        cube_answer.response = value
+        value = float(response["cells"][0][0]["value"])
 
-        # Получение из базы знаний (knowledge_base.dbs) формата для меры
+        # Получение из базы знаний (knowledge_base.db) формата для меры
         value_format = get_representation_format(cube_answer.mdx_query)
 
         # Добавление форматированного результата
@@ -196,19 +217,17 @@ def format_cube_answer(cube_answer, request_id: str, response: requests):
 
     # Создание фидбека в другом формате для удобного логирования
     feedback_verbal = cube_answer.feedback['verbal']
-    verbal = '0. {}'.format(feedback_verbal['measure']) + ' '
+    verbal = '1. {}'.format(feedback_verbal['measure']) + ' '
 
     # pylint: disable=invalid-sequence-index
-    verbal += ' '.join([str(idx + 1) + '. ' + val['member_caption']
+    verbal += ' '.join([str(idx + 2) + '. ' + val['member_caption']
                         for idx, val in enumerate(feedback_verbal['dims'])])
 
-    logging_str = 'Query_ID: {}\tSolr: {}\tMDX-запрос: {}\tЧисло: {}'
-    logging.info(logging_str.format(
-        request_id,
-        verbal,
-        cube_answer.mdx_query,
-        value
-    ))
+    logging.info(
+        'Query_ID: {}\tMessage: {}'.format(
+            cube_answer.request_id,
+            "Выделенные параметры - " + verbal
+        ))
 
 
 def manage_years(cube_data: CubeData):
@@ -222,7 +241,9 @@ def manage_years(cube_data: CubeData):
         if int(year) < 2006:
             if int(year) < 10:
                 year = '0' + year
-            cube_data.year_member = str(datetime.datetime.strptime(year, '%y').year)
+            year = str(datetime.datetime.strptime(year, '%y').year)
+
+            cube_data.year_member['cube_value'] = year
 
 
 def check_if_year_is_current(cube_data: CubeData):
@@ -242,7 +263,7 @@ def filter_measures_by_selected_cube(cube_data: CubeData):
             ]
 
 
-def group_documents(solr_documents: list):
+def group_documents(solr_documents: list, user_request: str, request_id: str):
     """
     Разбитие найденных документы по переменным
     для различных типов вопросов
@@ -251,7 +272,7 @@ def group_documents(solr_documents: list):
     # Найденные документы по Минфин вопросам
     minfin_docs = []
 
-    cube_data = CubeData()
+    cube_data = CubeData(user_request, request_id)
 
     for doc in solr_documents:
         if doc['type'] == 'dim_member':
@@ -259,13 +280,26 @@ def group_documents(solr_documents: list):
         elif doc['type'] == 'year_dim_member':
             cube_data.year_member = doc
         elif doc['type'] == 'terr_dim_member':
-            cube_data.terr_member = doc
+            # если лучшая территория еще не найдена
+            if not cube_data.terr_member:
+                cube_data.terr_member = doc
         elif doc['type'] == 'cube':
             cube_data.cubes.append(doc)
         elif doc['type'] == 'measure':
             cube_data.measures.append(doc)
         elif doc['type'] == 'minfin':
             minfin_docs.append(doc)
+
+    logging.info(
+        "Query_ID: {}\tMessage: Найдено {} cubes, "
+        "{} dim_members, {} year_dim_member, {} terr_dim_member, {} measures".format(
+            request_id,
+            len(cube_data.cubes),
+            len(cube_data.members),
+            1 if cube_data.year_member else 0,
+            1 if cube_data.terr_member else 0,
+            len(cube_data.measures)
+        ))
 
     return minfin_docs, cube_data
 
@@ -287,7 +321,11 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = cube_score + avg_member_score + measure_score
 
-    sum_scoring()
+    # получение скоринг-модели
+    score_model = MODEL_CONFIG["cube_answers_scoring_model"]
+
+    if score_model == 'sum':
+        sum_scoring()
 
 
 def process_with_members(cube_data: CubeData):
@@ -308,12 +346,48 @@ def process_with_members(cube_data: CubeData):
             )
 
 
+def process_with_member_for_territory(cube_data: CubeData):
+    """Обработка связанных значений для ТЕРРИТОРИЙ"""
+
+    if cube_data.terr_member:
+        connected_dim = cube_data.terr_member.get(
+            'connected_value.dimension_cube_value',
+            None
+        )
+
+        if connected_dim:
+            # удаление других найденных значений для BGLevels
+            # а также уже указанных элементов измерения ТЕРРИТОРИЯ,
+            # которые могли появиться в cube_data.members
+            # через связанные значений
+            cube_data.members = [
+                member for member in cube_data.members
+                if (
+                    member['dimension'] != connected_dim and
+                    member['dimension'] != cube_data.terr_member['dimension']
+                )]
+
+            # добавление связанного значения
+            cube_data.members.append(
+                {
+                    'dimension': connected_dim,
+                    'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                }
+            )
+
+
 def process_default_members(cube_data: CubeData):
     """Обработка дефолтных значений"""
 
     # используемые измерения на основе выдачи Solr,
     # а также измерения связанных элементов
     used_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+    if cube_data.terr_member:
+        used_cube_dimensions.append(cube_data.terr_member['dimension'])
+
+    if cube_data.year_member:
+        used_cube_dimensions.append(cube_data.year_member['dimension'])
 
     # не использованные измерения
     unused_dimensions = (
@@ -339,7 +413,7 @@ def process_default_measures(cube_data: CubeData):
         cube_data.selected_measure = cube_data.selected_cube['default_measure']
 
 
-def create_mdx_query(cube_data: CubeData, type='basic'):
+def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
     """
     Формирование MDX-запроса различных видов, на основе найденных документов
     """
@@ -358,6 +432,20 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
                 member['cube_value']
             ))
 
+        # Отдельная обработка лет
+        if cube_data.year_member:
+            dim_str_value.append(dim_tmp.format(
+                cube_data.year_member['dimension'],
+                cube_data.year_member['cube_value']
+            ))
+
+        # Отдельная обработка территория
+        if cube_data.terr_member:
+            dim_str_value.append(dim_tmp.format(
+                cube_data.terr_member['dimension'],
+                cube_data.terr_member['cube_value']
+            ))
+
         cube_data.mdx_query = mdx_template.format(
             cube_data.selected_measure,
             cube_data.selected_cube['cube'],
@@ -365,5 +453,100 @@ def create_mdx_query(cube_data: CubeData, type='basic'):
         )
 
     # закладка под расширение типов MDX-запросов
-    if type == 'basic':
+    if mdx_type == 'basic':
         create_basic_mdx_query()
+
+
+def delete_repetitions(cube_data_list: list):
+    """
+    Удаление из результата после прогона дерева
+    повторяющихся комбинаций
+    """
+
+    cube_data_repr = []
+    before_deleting = len(cube_data_list)
+
+    for cube_data in list(cube_data_list):
+
+        elements = [cube_data.selected_cube['cube']]
+
+        for member in cube_data.members:
+            elements.append(member['member_caption'])
+
+        for measure in cube_data.measures:
+            elements.append(measure['member_caption'])
+
+        str_cube_data_elems = ''.join(elements)
+
+        if str_cube_data_elems in cube_data_repr:
+            cube_data_list.remove(cube_data)
+        else:
+            cube_data_repr.append(str_cube_data_elems)
+
+    after_deleting = len(cube_data_list)
+
+    logging.info(
+        "Query_ID: {}\tMessage: Удаление {} повторяющихся запросов".format(
+            cube_data_list[0].request_id,
+            before_deleting - after_deleting
+        )
+    )
+
+
+def feedback_preprocessing(verbal_feedback):
+    """
+    Преобразование для дальнейшего парсинга словаря с вербальными значениями измерений.
+    Здесь же обрабатываются замены отдельных значений на более удобные.
+    """
+    res = {'куб': verbal_feedback.get('domain')}
+    for dim in verbal_feedback.get('dims', []):
+        newkey = dim['dimension_caption'].split(' ', 1)[0].lower()
+        res[newkey] = dim['member_caption']
+
+    if res.get('территория', '').lower() == 'неуказанная территория':
+        res['территория'] = 'РФ'
+    if verbal_feedback.get('measure', 'значение').lower() == 'значение':
+        res['мера'] = None
+    else:
+        res['мера'] = verbal_feedback.get('measure')
+
+    return {key: Phrase(res[key]) for key in res if res[key] is not None}
+
+
+def make_pretty_feedback(mask, verbal_feedback):
+    """
+    Создание человекочитаемого фидбека из словаря по маске.
+    """
+    prepr_feedback = feedback_preprocessing(verbal_feedback)
+
+    res = []
+    for word in mask.split('{'):
+        if '}' not in word:
+            res.append(word)
+            continue
+
+        code, context = word.split('}', 1)
+        code = code.split('?')
+        word_index = 2 if code[0] == '' else 0
+        word = code[word_index].split('*')
+        val = prepr_feedback.get(word[0].lstrip('_').lower())
+        if val is None:
+            res.append(context)
+            continue
+
+        if len(word) == 1:
+            val = val.verbal
+        else:
+            val = val.inflect(word[1:]).verbal
+
+        if word[0][0] == '_':
+            pass
+        elif word[0][0].isupper():
+            val = val[0].upper() + val[1:]
+        else:
+            val = val[0].lower() + val[1:]
+
+        code[word_index] = val
+        res += code + [context]
+
+    return ''.join(res)

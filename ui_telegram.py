@@ -30,8 +30,10 @@ from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
 
 import constants
+
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
+app = None
 
 logsRetriever = LogsRetriever(LOGS_PATH)
 
@@ -143,7 +145,7 @@ def send_help(message):
 def get_query_examples(message):
     try:
         possible_queries = get_random_requests()
-        message_str = "Что *спрашивают* другие пользователи:\n{}"
+        message_str = "Вы можете спросить:\n{}"
         possible_queries = ['- {}\n'.format(query) for query in possible_queries]
         message_str = message_str.format(''.join(possible_queries))
         bot.send_message(
@@ -391,11 +393,23 @@ def callback_inline(call):
         ))
 
 
+def send_admin_messages():
+    for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
+        # Если бот не добавлен
+        try:
+            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+        except:
+            logging.critical("Админ {} недоступен для отправки сообщения!".format(admin_id))
+
+
 def process_response(message, input_format='text', file_content=None):
-    request_id = uuid.uuid4()
-    user_name = user_name_str.format(message.chat.first_name, message.chat.last_name)
+    request_id = str(uuid.uuid4())
+    user_name = user_name_str.format(
+        message.chat.first_name,
+        message.chat.last_name)
 
     bot.send_chat_action(message.chat.id, 'typing')
+
     if input_format == 'text':
         result = MessengerManager.make_request(
             message.text,
@@ -428,22 +442,23 @@ def process_response(message, input_format='text', file_content=None):
         else:
             process_minfin_questions(message, result.answer)
 
-        # Реализация смотри также
-        if result.more_answers:
-            look_also = []
-            for answer in result.more_answers:
-                look_also.append(
-                    answer_to_look_also_format(answer)
-                )
-
-            look_also = ['{}. {}\n'.format(idx + 1, elem)
-                         for idx, elem in enumerate(look_also)]
-
-            bot.send_message(message.chat.id,
-                             "*Смотри также:*\n" + ''.join(look_also),
-                             parse_mode='Markdown')
+        extra_results = look_further(result)
+        if extra_results:
+            bot.send_message(
+                message.chat.id,
+                "*Смотри также:*\n" + extra_results,
+                parse_mode='Markdown'
+            )
     else:
         bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
+
+        extra_results = look_further(result)
+        if extra_results:
+            bot.send_message(
+                message.chat.id,
+                "Вы *можете посмотреть:*\n" + extra_results,
+                parse_mode='Markdown'
+            )
 
 
 def process_cube_questions(message, cube_result, request_id, input_format):
@@ -471,30 +486,6 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        if minfin_result.score < 20:
-            if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-                bot.send_message(
-                    message.chat.id,
-                    'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-                    parse_mode='Markdown'
-                )
-
-                msg_str = (
-                    'Score найденного Минфин документа *({})* равен *{}*, ' +
-                    'что меньше порогового значений в *20*.'
-                )
-
-                bot.send_message(
-                    message.chat.id,
-                    msg_str.format(minfin_result.number, minfin_result.score),
-                    parse_mode='Markdown'
-                )
-
-                return
-            else:
-                bot.send_message(message.chat.id, "Ответ на Ваш вопрос не был найден :(")
-                return
-
         bot.send_message(
             message.chat.id,
             'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
@@ -654,40 +645,83 @@ def loof_also_for_cube(cube_result):
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
         return loof_also_for_cube(answer)
-    else:
-        return '{} ({}: {})'.format(
-            answer.question,
-            "*Минфин*",
-            answer.score
-        )
+    return '{} ({}: {})'.format(
+        answer.question,
+        "*Минфин*",
+        answer.score
+    )
 
 
 def first_letter_lower(input_str):
+    """Первод первой буквы слова в нижний регистр"""
+
     if not input_str:
         return ""
     return input_str[:1].lower() + input_str[1:]
 
 
+def look_further(result):
+    """Смотри также/Вы можете посмотреть"""
+
+    # Если "смотри также" есть
+    if result.more_answers_order:
+        # Формирование общего массива c ответами
+        more_answers = []
+
+        if result.more_cube_answers:
+            for cube_answer in result.more_cube_answers:
+                more_answers.append(cube_answer)
+
+        if result.more_minfin_answers:
+            for minfin_answer in result.more_minfin_answers:
+                more_answers.append(minfin_answer)
+
+        # Сортировка ответов
+        more_answers = sorted(
+            more_answers,
+            key=lambda elem: elem.order
+        )
+
+        # Формирование списка "смотри также"
+        look_also = []
+        for answer in more_answers:
+            look_also.append(
+                answer_to_look_also_format(answer)
+            )
+
+        look_also = ['{}. {}\n'.format(idx + 1, elem)
+                     for idx, elem in enumerate(look_also)]
+
+        return ''.join(look_also)
+    else:
+        return ''
+
+
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 
-    WEBHOOK_URL_BASE = "https://{}:{}".format(
-        SETTINGS.WEB_SERVER.PUBLIC_LINK,
-        SETTINGS.TELEGRAM.WEBHOOK_PORT
-    )
-    WEBHOOK_URL_PATH = "/telebot/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
     app = Flask(__name__)
+
+    WEBHOOK_URL_BASE = "{}:{}/telebot".format(
+        SETTINGS.WEB_SERVER.PUBLIC_LINK,
+        SETTINGS.WEB_SERVER.PUBLIC_PORT
+    )
+    WEBHOOK_URL_PATH = "/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
 
     bot.remove_webhook()
     bot.set_webhook(
         url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'rb')
+        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'r')
     )
 
-    @app.get('/telebot/')
+
+    # send_admin_messages()
+
+
+    @app.route('/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
+        return '<center><h1>Welcome to Datatron Telegram Webhook page</h1></center>'
 
-        return '<center><h1>Welcome to Datatron Telegram Webhook page (testing instance)</h1></center>'
 
     @app.route(WEBHOOK_URL_PATH, methods=['POST'])
     def webhook():
@@ -699,20 +733,14 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
         else:
             abort(403)
 
+
+def long_polling():
+    bot.remove_webhook()
+    send_admin_messages()
+    bot.polling(none_stop=True)
+
+
 # polling cycle
 if __name__ == '__main__':
-    for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
-        # Если бот не добавлен
-        try:
-            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
-        except:
-            logging.critical("Админ {} недоступен для отправки сообщения!")
-
-    if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
-        app.run(
-            host=SETTINGS.WEB_SERVER.HOST,
-            port=SETTINGS.TELEGRAM.WEBHOOK_PORT,
-            debug=False
-        )
-    else:
-        bot.polling(none_stop=True)
+    if not SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
+        long_polling()

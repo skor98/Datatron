@@ -78,6 +78,7 @@ class MinfinAnswer:
         self.document_caption = None
         self.document = None
         self.message = None
+        self.order = None
 
     def get_score(self):
         """
@@ -86,7 +87,7 @@ class MinfinAnswer:
         """
         return self.score
 
-    def todict_API(self):
+    def to_reduced_object(self):
         keys_to_return = (
             'type',
             'number',

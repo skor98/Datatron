@@ -80,8 +80,11 @@ class TextPreprocessing:
 
         normalized_request = ' '.join(tokens)
 
-        logging_str = "Query_ID: {}\tЗапрос после нормализации: {}"
-        logging.info(logging_str.format(self.request_id, normalized_request))
+        logging.info(
+            "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
+                self.request_id, normalized_request
+            )
+        )
 
         return normalized_request
 

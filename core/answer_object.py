@@ -11,9 +11,10 @@ import json
 class CoreAnswer:
     def __init__(self, message='', error=''):
         self.status = False
-        self.doc_found = 0
         self.answer = None
-        self.more_answers = None
+        self.more_answers_order = ''
+        self.more_cube_answers = None
+        self.more_minfin_answers = None
         self.message = message
         self.error = error
 
@@ -23,16 +24,16 @@ class CoreAnswer:
     def toJSON_API(self):
         keys_to_return = (
             'status',
-            'doc_found',
             'answer',
-            'more_answers'
+            'more_answers_order',
+            'more_cube_answers',
+            'more_minfin_answers'
         )
 
         result_dict = {key: getattr(self, key, None) for key in keys_to_return}
 
         return json.dumps(
             result_dict,
-            default=lambda obj: getattr(obj, 'todict_API', lambda: None)(),
-            indent=4,
+            default=lambda obj: getattr(obj, 'to_reduced_object', lambda: None)(),
             ensure_ascii=False,
-        )
+        ).encode("utf-8")

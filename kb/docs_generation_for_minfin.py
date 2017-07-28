@@ -11,7 +11,10 @@ import pandas as pd
 from os import listdir, path
 
 from text_preprocessing import TextPreprocessing
-from config import SETTINGS
+from config import SETTINGS, TEST_PATH_MINFIN
+from model_manager import MODEL_CONFIG
+from kb.kb_support_library import read_minfin_data
+
 import logs_helper  # pylint: disable=unused-import
 
 # Название файла с готовой структурой данных
@@ -21,10 +24,6 @@ output_file = 'minfin_data_for_indexing.json'
 # Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
 
-# Путь к папке, в которую будут записываться автоматические
-# тесты по вопросам от Минфина
-TEST_PATH = 'tests'
-
 
 def set_up_minfin_data(index_way='curl'):
     """
@@ -32,49 +31,24 @@ def set_up_minfin_data(index_way='curl'):
     документов для ответа на вопросы Минфина
     """
 
-    print('Начата работа с документами для Министерства Финансов')
-    minfin_docs = _refactor_data(_read_data())
-    _add_automatic_key_words(minfin_docs)
+    logging.info('Начата работа с документами для Министерства Финансов')
+
+    # чтение данные по минфину
+    files, dfs = read_minfin_data()
+
+    # Автоматическая генерация тестов
+    _create_tests(files, dfs)
+
+    minfin_docs = _refactor_data(pd.concat(dfs))
+
+    if MODEL_CONFIG["enable_minfin_tf_idf_key_words_calculation"]:
+        _add_automatic_key_words(minfin_docs)
+
     _write_data(minfin_docs)
     if index_way == 'curl':
         _index_data_via_curl()
     else:
         _index_data_via_jar_file()
-
-
-def _read_data():
-    """
-    Чтение данных из xlsx с помощью pandas и их переработка
-    """
-
-    files = []
-    file_paths = []
-
-    # Сохранение имеющихся в дериктории xlsx файлов
-    for file in listdir(path_to_folder_file):
-        if file.endswith(".xlsx"):
-            file_paths.append(path.join(path_to_folder_file, file))
-            files.append(file)
-
-    # Создания листа с датафреймами по всем документам
-    dfs = []
-    for file_path in file_paths:
-        # id документа имеет структуру {партия}.{порядковый номер}
-        # id необходимо имплицитно привести к типу str, чтобы
-        # номер вопроса 3.10 не становился 3.1
-        df = pd.read_excel(
-            open(file_path, 'rb'),
-            sheetname='questions',
-            converters={'id': str}
-        )
-        df = df.fillna(0)
-        dfs.append(df)
-
-    # Автоматическая генерация тестов
-    _create_tests(files, dfs)
-
-    # Объединение все датафреймов в один
-    return pd.concat(dfs)
 
 
 def _refactor_data(data):
@@ -84,87 +58,83 @@ def _refactor_data(data):
     """
 
     # количество повторений ключевых слов прописанных методологом
-    MANUAL_KEY_WORDS_REPETITION = 5
+    manual_key_words_repetition = MODEL_CONFIG["minfin_manual_key_words_repetition"]
 
     # объекта класса, осуществляющего нормализацию
     tp = TextPreprocessing(uuid.uuid4())
 
     docs = []
     for row in data.itertuples():
-        # Если запрос не параметризованных
-        # Я хз, будут ли параметризованные запросу для минфин доков, но на всякий случай
-        if not row.parameterized:
-            doc = MinfinDocument()
-            doc.number = str(row.id)
-            doc.question = row.question
+        doc = MinfinDocument()
+        doc.number = row.id
+        doc.question = row.question
 
-            lem_question = tp.normalization(
-                row.question,
-                delete_digits=True,
-                delete_question_words=False
-            )
-            doc.lem_question = lem_question
+        lem_question = tp.normalization(
+            row.question,
+            delete_digits=True,
+            delete_question_words=False
+        )
+        doc.lem_question = lem_question
 
-            synonym_questions = _get_manual_synonym_questions(doc.number)
+        synonym_questions = _get_manual_synonym_questions(doc.number)
 
-            if synonym_questions:
-                lem_synonym_questions = [
-                    tp.normalization(q,
-                                     delete_digits=True,
-                                     delete_question_words=False)
-                    for q in synonym_questions
+        if synonym_questions:
+            lem_synonym_questions = [
+                tp.normalization(q,
+                                 delete_digits=True,
+                                 delete_question_words=False)
+                for q in synonym_questions
                 ]
-                doc.lem_synonym_questions = lem_synonym_questions
+            doc.lem_synonym_questions = lem_synonym_questions
 
-            doc.short_answer = row.short_answer
-            doc.lem_short_answer = tp.normalization(
-                row.short_answer,
+        doc.short_answer = row.short_answer
+        doc.lem_short_answer = tp.normalization(
+            row.short_answer,
+            delete_digits=True
+        )
+        if row.full_answer:
+            doc.full_answer = row.full_answer
+            doc.lem_full_answer = tp.normalization(
+                row.full_answer,
                 delete_digits=True
             )
-            if row.full_answer:
-                doc.full_answer = row.full_answer
-                doc.lem_full_answer = tp.normalization(
-                    row.full_answer,
-                    delete_digits=True
-                )
-            kw = tp.normalization(row.key_words,
-                                  delete_question_words=False,
-                                  delete_repeatings=True)
+        kw = tp.normalization(row.key_words,
+                              delete_question_words=False,
+                              delete_repeatings=True)
 
-            # Ключевые слова записываются трижды, для увеличения качества поиска документа
-            doc.lem_key_words = ' '.join([kw] * MANUAL_KEY_WORDS_REPETITION)
+        # Ключевые слова записываются трижды, для увеличения качества поиска документа
+        doc.lem_key_words = ' '.join([kw] * manual_key_words_repetition)
 
-            # Может быть несколько
-            if row.link_name:
-                if ';' in row.link_name:
-                    doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
-                    doc.link = [elem.strip() for elem in row.link.split(';')]
-                else:
-                    doc.link_name = row.link_name.strip()
-                    doc.link = row.link.strip()
+        # Может быть несколько
+        if row.link_name:
+            if ';' in row.link_name:
+                doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
+                doc.link = [elem.strip() for elem in row.link.split(';')]
+            else:
+                doc.link_name = row.link_name.strip()
+                doc.link = row.link.strip()
 
-            # Может быть несколько
-            if row.picture_caption:
-                if ';' in row.picture_caption:
-                    doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
-                    doc.picture = [elem.strip() for elem in row.picture.split(';')]
-                else:
-                    doc.picture_caption = row.picture_caption.strip()
-                    doc.picture = row.picture.strip()
+        # Может быть несколько
+        if row.picture_caption:
+            if ';' in row.picture_caption:
+                doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
+                doc.picture = [elem.strip() for elem in row.picture.split(';')]
+            else:
+                doc.picture_caption = row.picture_caption.strip()
+                doc.picture = row.picture.strip()
 
-            # Может быть несколько
-            if row.document_caption:
-                if ';' in row.document_caption:
-                    doc.document_caption = [
-                        elem.strip() for elem in row.document_caption.split(';')
-                        ]
-                    doc.document = [elem.strip() for elem in row.document.split(';')]
+        # Может быть несколько
+        if row.document_caption:
+            if ';' in row.document_caption:
+                doc.document_caption = [
+                    elem.strip() for elem in row.document_caption.split(';')
                     ]
-                else:
-                    doc.document_caption = row.document_caption.strip()
-                    doc.document = row.document.strip()
-
+                doc.document = [elem.strip() for elem in row.document.split(';')]
+            else:
+                doc.document_caption = row.document_caption.strip()
+                doc.document = row.document.strip()
         docs.append(doc)
+
     return docs
 
 
@@ -191,17 +161,23 @@ def _get_manual_synonym_questions(question_number):
     # Номер партии
     port_num = question_number.split('.')[0]
 
-    # Выбор файла, который соответствует партии вопроса
-    def is_portion_func(f): return f.endswith(
-        '.txt') and port_num in f and 'manual' in f
-    file_with_portion = [f for f in listdir(TEST_PATH) if is_portion_func(f)]
+    def is_portion_func(f):
+        """
+        Выбор вручную прописанных тестов
+        для определенной партии вопросов
+        """
+
+        return f.endswith(
+            '.txt') and port_num in f and 'manual' in f
+
+    file_with_portion = [f for f in listdir(TEST_PATH_MINFIN) if is_portion_func(f)]
 
     # Если такого файла еще нет, так как его не успели написать
     if not file_with_portion:
         return None
 
     # Добавление синонимичных запросов
-    with open(path.join(TEST_PATH, file_with_portion[0]), 'r', encoding='utf-8') as file:
+    with open(path.join(TEST_PATH_MINFIN, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
             line = line.split(':')
             if line[1].strip() == question_number:
@@ -264,15 +240,14 @@ def _add_automatic_key_words(documents):
     Добавление автоматических ключевых слов с помощью TF-IDF
     """
 
-    # Количество повторений ключевых слов, созданных
-    # с помощью TF-IDF метода
-    TF_IDF_KEY_WORDS_REPETITION = 1
+    # Количество повторений ключевых слов, созданных с помощью TF-IDF метода
+    tf_idf_key_words_repetition = MODEL_CONFIG["minfin_tf_idf_key_words_repetition"]
 
     matrix = _calculate_matrix(documents)
 
     for idx, doc in enumerate(documents):
         extra_key_words = _key_words_for_doc(idx, matrix)
-        extra_key_words *= TF_IDF_KEY_WORDS_REPETITION
+        extra_key_words *= tf_idf_key_words_repetition
         doc.lem_key_words += ' {}'.format(' '.join(extra_key_words))
 
 
@@ -284,7 +259,7 @@ def _create_tests(files_names, data_frames):
 
     for file_name, df in zip(files_names, data_frames):
         file_path = path.join(
-            TEST_PATH,
+            TEST_PATH_MINFIN,
             'minfin_test_auto_for_{}.txt'.format(file_name.rsplit('.', 1)[0])
         )
 

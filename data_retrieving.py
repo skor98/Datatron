@@ -20,6 +20,8 @@ from text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
+from model_manager import MODEL_CONFIG
+import logs_helper  # pylint: disable=unused-import
 
 
 class DataRetrieving:
@@ -34,6 +36,53 @@ class DataRetrieving:
 
         core_answer = CoreAnswer()
 
+        norm_user_request = DataRetrieving._preprocess_user_request(
+            user_request,
+            request_id
+        )
+
+        # получение результатов поиска от Apache Solr в JSON-строке
+        solr_response = Solr.get_data(
+            norm_user_request,
+            request_id,
+            SETTINGS.SOLR_MAIN_CORE
+        )['response']
+
+        # Если хотя бы 1 документ найден:
+        if solr_response['numFound']:
+            minfin_docs, cube_data = group_documents(
+                solr_response['docs'],
+                user_request,
+                request_id
+            )
+
+            minfin_answers = MinfinProcessor.get_data(minfin_docs)
+            cube_answers = CubeProcessor.get_data(cube_data)
+
+            logging.info(
+                "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
+                    request_id,
+                    len(cube_answers),
+                    len(minfin_answers)
+                )
+            )
+
+            answers = DataRetrieving._sort_answers(minfin_answers, cube_answers)
+
+            core_answer = DataRetrieving._format_core_answer(answers, request_id)
+        else:
+            # Обработка случая, когда документы не найдены
+            core_answer.message = ERROR_NO_DOCS_FOUND
+            logging.info(
+                'Query_ID: {}\tMessage: Документа не найдены'.format(request_id)
+            )
+
+        return core_answer
+
+    @staticmethod
+    def _preprocess_user_request(user_request: str, request_id: str):
+        """Предобработка запроса пользователя"""
+
         text_proc = TextPreprocessing(request_id)
 
         # нормализация запроса пользователя
@@ -42,40 +91,75 @@ class DataRetrieving:
             delete_question_words=False
         )
 
-        # получение результатов поиска от Apache Solr в JSON-строке
-        solr_response = Solr.get_data(norm_user_request, SETTINGS.SOLR_MAIN_CORE)['response']
+        # Год необходимо учитовать в нормированных данных по кубам
+        # Но необходимо исключать из запросов, иначе вверх
+        # поисковой выдачи выходят документы по Минфину
+        if 'год' in norm_user_request:
+            norm_user_request = norm_user_request.replace(
+                'год', ''
+            )
 
-        # Если хотя бы 1 документ найден:
-        if solr_response['numFound']:
-            # TODO: следующие 2 параметра могут быть полезны для аналитики
-            # максимальный score по выдаче
-            max_score = solr_response['maxScore']
+        if MODEL_CONFIG["delete_repeating_words_in_request"]:
+            norm_user_request = DataRetrieving._set_user_request(
+                norm_user_request, request_id
+            )
 
-            # количество найденных документов
-            docs_num_found = solr_response['numFound']
+        if MODEL_CONFIG["enable_repetition_for_short_request"]:
+            norm_user_request = DataRetrieving._multiple_user_request(
+                norm_user_request, request_id
+            )
 
-            minfin_docs, cube_data = group_documents(solr_response['docs'])
-
-            minfin_answers = MinfinProcessor.get_data(minfin_docs)
-            cube_answers = CubeProcessor.get_data(cube_data, user_request)
-
-            answers = DataRetrieving.sort_answers(minfin_answers, cube_answers)
-
-            core_answer = DataRetrieving.format_core_answer(answers, request_id)
-        else:
-            pass
-            # Обработка случая, когда документы не найдены
-            core_answer.message = ERROR_NO_DOCS_FOUND
-
-            # TODO: повысить содержательность логирования
-            logging_str = 'Документы не найдены Query_ID: {}'.format(request_id)
-            logging.info(logging_str)
-
-        return core_answer
+        return norm_user_request
 
     @staticmethod
-    def sort_answers(minfin_answers: list, cube_answers: list):
-        """Сортировка ответов по кубам и минфину в общем списке"""
+    def _set_user_request(norm_user_request: str, request_id: str):
+        """
+        Удаление повторяющихся слов и увеличение длины запроса
+        при необходимости
+        """
+
+        request_words = norm_user_request.split()
+        unique_of_request_words = set(request_words)
+
+        # удаление повторяющихся слов, чтобы пользователи не читерили
+        if len(unique_of_request_words) != len(request_words):
+            norm_user_request = ' '.join(unique_of_request_words)
+
+            logging.info(
+                "Query_ID: {}\tMessage: Удалено {} повторяющихся слов".format(
+                    request_id,
+                    len(request_words) - len(unique_of_request_words)
+                )
+            )
+
+        return norm_user_request
+
+    @staticmethod
+    def _multiple_user_request(norm_user_request: str, request_id: str):
+        """
+        Дублирование коротких запросов
+        """
+
+        short_question_threshold = MODEL_CONFIG["short_request_threshold"]
+        multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
+
+        if len(norm_user_request.split()) <= short_question_threshold:
+            norm_user_request *= multiplier
+
+            logging.info(
+                "Query_ID: {}\tMessage: Запрос из {} слов был "
+                "удлинен в {} раза".format(
+                    request_id,
+                    len(norm_user_request),
+                    multiplier
+                )
+            )
+
+        return norm_user_request
+
+    @staticmethod
+    def _sort_answers(minfin_answers: list, cube_answers: list):
+        """Совокупное ранжирование ответов по кубам и минфину"""
 
         # Если по минфину найден только 1 ответ
         if not isinstance(minfin_answers, list):
@@ -86,15 +170,16 @@ class DataRetrieving:
             cube_answers = [cube_answers]
 
         # Фильтрация выборки в порядке убывания по score
-        # TODO: подумать над улучшением параметра для сравнения
-        all_answers = sorted(cube_answers + minfin_answers,
-                             key=lambda ans: ans.get_score(),
-                             reverse=True)
+        all_answers = sorted(
+            cube_answers + minfin_answers,
+            key=lambda ans: ans.get_score(),
+            reverse=True
+        )
 
         return all_answers
 
     @staticmethod
-    def format_core_answer(answers: list, request_id: str):
+    def _format_core_answer(answers: list, request_id: str):
         """Формирование структуры финального ответа"""
 
         core_answer = CoreAnswer()
@@ -103,21 +188,115 @@ class DataRetrieving:
         THRESHOLD = 5
 
         if answers:
-            core_answer.status = True
-            core_answer.doc_found = len(answers)
+            DataRetrieving._process_main_answer(
+                core_answer,
+                answers,
+                request_id
+            )
 
-            # Выбор главного ответа
-            core_answer.answer = answers[0]
+            starting_from = 1
+            if not core_answer.answer:
+                starting_from = 0
 
-            if isinstance(core_answer.answer, CubeAnswer):
-                response = send_request_to_server(
-                    core_answer.answer.mdx_query,
-                    core_answer.answer.cube
-                )
-
-                format_cube_answer(core_answer.answer, request_id, response)
-
-            # Добавление до 5 дополнительных ответов
-            core_answer.more_answers = answers[1:THRESHOLD + 1]
+            DataRetrieving._process_more_answers(
+                core_answer,
+                answers[starting_from:THRESHOLD + 1],
+                request_id
+            )
 
         return core_answer
+
+    @staticmethod
+    def _process_main_answer(
+            core_answer: CoreAnswer,
+            answers: list,
+            request_id: str
+    ):
+        """Форматирование главного ответа"""
+
+        # Выбор главного ответа
+        core_answer.answer = answers[0]
+
+        # Если главный ответ по кубам
+        if isinstance(core_answer.answer, CubeAnswer):
+            core_answer.status = True
+
+            logging.info(
+                "Query_ID: {}\tMessage: Главный ответ - "
+                "ответ по кубу - {} - {}".format(
+                    request_id,
+                    core_answer.answer.get_score(),
+                    core_answer.answer.mdx_query
+                ))
+
+            response = send_request_to_server(
+                core_answer.answer.mdx_query,
+                core_answer.answer.cube
+            )
+
+            format_cube_answer(core_answer.answer, response)
+        # Если главный ответ по минфину
+        else:
+            # фильтр по релевантности на минфин
+            if answers[0].get_score() >= MODEL_CONFIG["relevant_minfin_main_answer_threshold"]:
+                core_answer.status = True
+
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный ответ - "
+                    "ответ по Минфину - {} - {}".format(
+                        request_id,
+                        core_answer.answer.get_score(),
+                        core_answer.answer.number
+                    ))
+            else:
+                # Обнуление найденого ответа
+                core_answer.answer = None
+
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный ответ по Минфину "
+                    "не прошел порог ({} vs {})".format(
+                        request_id,
+                        answers[0].get_score(),
+                        MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+                    ))
+
+    @staticmethod
+    def _process_more_answers(
+            core_answer: CoreAnswer,
+            more_answers: list,
+            request_id: str
+    ):
+        """Обработка дополнительных ответов"""
+
+        more_cube_answers = []
+        more_minfin_answers = []
+
+        more_answers_order = ''
+
+        for ind, answer in enumerate(more_answers):
+            answer.order = ind
+
+        for answer in more_answers:
+            if isinstance(answer, CubeAnswer):
+                more_cube_answers.append(answer)
+                more_answers_order += '0'
+            else:
+                more_minfin_answers.append(answer)
+                more_answers_order += '1'
+
+        if more_cube_answers:
+            core_answer.more_cube_answers = more_cube_answers
+
+        if more_minfin_answers:
+            core_answer.more_minfin_answers = more_minfin_answers
+
+        if more_answers_order:
+            core_answer.more_answers_order = more_answers_order
+
+        logging.info(
+            "Query_ID: {}\tMessage: В смотри также {} "
+            "ответ(а, ов) по кубам и {} по Минфину".format(
+                request_id,
+                len(more_cube_answers),
+                len(more_minfin_answers)
+            ))

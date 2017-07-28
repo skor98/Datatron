@@ -108,9 +108,9 @@ class CubeDocsGeneration:
         for cube in dbc.Cube.select():
             for dim_cub in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
-                    if dimension.cube_value not in ('Years', 'Territories'):
+                    if dimension.cube_value not in ('YEARS', 'TERRITORIES'):
                         for dimension_value in dbc.DimensionMember.select().where(
-                            dbc.DimensionMember.dimension_id == dimension.id
+                                        dbc.DimensionMember.dimension_id == dimension.id
                         ):
                             for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
                                 verbal = member.lem_caption
@@ -124,7 +124,7 @@ class CubeDocsGeneration:
                                     'member_caption': member.caption,
                                     'cube_value': member.cube_value,
                                     'hierarchy_level': member.hierarchy_level,
-                                    'connected_value': get_with_member_to_given_member(member.cube_value)
+                                    'connected_value': get_with_member_to_given_member(member.id)
                                 })
 
         return year_values + territory_values + other_values
@@ -150,7 +150,7 @@ class CubeDocsGeneration:
             year_values.append(
                 {
                     'type': 'year_dim_member',
-                    'dimension': 'Years',
+                    'dimension': 'YEARS',
                     'cube_value': year,
                     'member_caption': year
                 }
@@ -169,7 +169,7 @@ class CubeDocsGeneration:
                    .select(fn.Distinct(dbc.Member.lem_caption))
                    .join(dbc.DimensionMember)
                    .join(dbc.Dimension)
-                   .where(dbc.Dimension.cube_value == 'Territories'))
+                   .where(dbc.Dimension.cube_value == 'TERRITORIES'))
 
         # Создание документа определенной структуры
         for item in members:
@@ -182,32 +182,32 @@ class CubeDocsGeneration:
             # создание исходной структур
             d = {
                 'type': 'terr_dim_member',
-                'dimension': 'Territories',
+                'dimension': 'TERRITORIES',
                 'lem_member_caption': verbal,
                 'member_caption': item.caption
             }
 
-            used_cube_with_territory = None
+            some_terr_id = None
 
             # добавление значений по кубам
-            for v in dbc.Member.select().where(dbc.Member.lem_caption == item.lem_caption):
+            for member in dbc.Member.select().where(dbc.Member.lem_caption == item.lem_caption):
                 # находится куб, соответствующий этому значению
                 cube = (dbc.Cube
                         .select()
                         .join(dbc.CubeDimension)
                         .join(dbc.Dimension)
                         .join(dbc.DimensionMember)
-                        .where(dbc.DimensionMember.member_id == v.id)
+                        .where(dbc.DimensionMember.member_id == member.id)
                         )[0]
 
                 # добавление в словарь новой пары
-                d[cube.name] = v.cube_value
+                d[cube.name] = member.cube_value
 
-                if not used_cube_with_territory:
-                    used_cube_with_territory = cube.name
+                if not some_terr_id:
+                    some_terr_id = member.id
 
             d['connected_value'] = get_with_member_to_given_member(
-                d[used_cube_with_territory]
+                some_terr_id
             )
 
             territory_caption.append(d)

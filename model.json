@@ -1,6 +1,18 @@
 {
-    "normalization_delete_digits_default":false,
-    "normalization_delete_question_words_default":true,
-    "normalization_delete_repeatings_default":false,
-    "solr_documents_to_return":50
+  "normalization_delete_digits_default": false,
+  "normalization_delete_question_words_default": true,
+  "normalization_delete_repeatings_default": false,
+  "solr_documents_to_return": 100,
+  "tree_k_path_threshold": 10,
+  "best_cube_data_threshold": 5,
+  "relevant_minfin_main_answer_threshold": 20,
+  "cube_answers_scoring_model": "sum",
+  "short_request_threshold": 3,
+  "repetition_num_for_short_request": 2,
+  "enable_repetition_for_short_request": true,
+  "delete_repeating_words_in_request": true,
+  "minfin_manual_key_words_repetition": 5,
+  "minfin_tf_idf_key_words_repetition": 1,
+  "enable_minfin_tf_idf_key_words_calculation": false,
+  "enable_idea_command_from_db": false
 }

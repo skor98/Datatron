@@ -6,18 +6,20 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
-from os import listdir, path, makedirs
+from os import path, makedirs
 import logging
 from uuid import uuid4
+import json
 
 import pandas as pd
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
 
 from messenger_manager import MessengerManager
+from kb.kb_support_library import read_minfin_data
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
-from config import SETTINGS, API_PORT
+from config import SETTINGS
 
 
 # pylint: disable=no-self-use
@@ -32,6 +34,13 @@ def get_minfin_data():
     """
     if get_minfin_data.data is None:
         get_minfin_data.data = _read_minfin_data()
+
+        # Можно сразу привести к байтам, чтобы не делать это каждый раз
+        get_minfin_data.data = json.dumps(
+            get_minfin_data.data,
+            ensure_ascii=False,
+            indent=4
+        ).encode("utf-8")
     return get_minfin_data.data
 
 
@@ -45,40 +54,22 @@ def _read_minfin_data():
     Возвращает массив из словарей с вопросами
     Почти повторяет _read_data из kb/minfin_docs_generation.py
     """
-    files = []
-    file_paths = []
 
-    files_dir = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS  # pylint: disable=no-member
-    # Сохранение имеющихся в дериктории xlsx файлов
-    for file_name in listdir(files_dir):
-        if file_name.endswith(".xlsx"):
-            file_paths.append(path.join(files_dir, file_name))
-            files.append(file_name)
-
-    # Создания листа dataframe по документам
-    dfs = []
-    for file_path in file_paths:
-        # id документа имеет структуру {партия}.{порядковый номер}
-        # если не переводить id к строке, то pandas воспринимает их как float и 3.10 становится 3.1
-        # что приводит к ошибкам в тестировании
-        cur_df = pd.read_excel(
-            open(file_path, 'rb'),
-            sheetname='questions',
-            converters={'id': str}
-        )
-        cur_df = cur_df.fillna(0)
-        dfs.append(cur_df)
+    # чтение данные по минфину
+    _, dfs = read_minfin_data()
 
     # Объединение все датафреймов в один
     data = pd.concat(dfs)
     logging.info("Прочитано {} записей минфина".format(data.shape[0]))
-    return tuple({
-                     "id": item[0],
-                     "question": item[1]
-                 } for item in zip(
-        data["id"].tolist(),
-        data["question"].tolist()
-    ))
+    return tuple(
+        {
+            "id": item[0],
+            "question": item[1]
+        } for item in zip(
+            data["id"].tolist(),
+            data["question"].tolist()
+        )
+    )
 
 
 def is_valid_api_key(api_key):
@@ -169,27 +160,32 @@ class MinfinList(Resource):
 
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
-api_version = SETTINGS.WEB_SERVER.VERSION
+API_VERSION = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
 parser.add_argument('query', type=str)
 
-api.add_resource(VoiceQuery, '/{}/voice'.format(api_version))
-api.add_resource(TextQuery, '/{}/text'.format(api_version))
-api.add_resource(MinfinList, '/{}/minfin_docs'.format(api_version))
+
+@api.representation('application/json')
+def output_json(data, code, headers=None):
+    """
+    Переопределим кодирование, чтобы не кодировать уже закодированное
+    И отправлять юникод
+    """
+    if isinstance(data, bytes):
+        resp = make_response(data, code)
+    else:
+        resp = make_response(json.dumps(data).encode("utf-8"), code)
+    resp.headers.extend(headers or {})
+    return resp
+
+api.add_resource(VoiceQuery, '/{}/voice'.format(API_VERSION))
+api.add_resource(TextQuery, '/{}/text'.format(API_VERSION))
+api.add_resource(MinfinList, '/{}/minfin_docs'.format(API_VERSION))
 
 
 @app.route('/')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
-
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
-
-
-if __name__ == '__main__':
-    app.run(
-        host=SETTINGS.HOST,
-        port=API_PORT,
-        debug=False
-    )
