@@ -9,6 +9,7 @@
 Запрос1:Результат1
 Запрос2:Результат2
 для кубов Результат -- MDX запрос, а для минфина -- номер документа
+Если Результат = idk, то считается, что система не должна что-либо возвращать
 """
 
 import argparse
@@ -27,12 +28,15 @@ from config import DATETIME_FORMAT, LOG_LEVEL
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
 import logs_helper
 from logs_helper import string_to_log_level
-from model_manager import MODEL_CONFIG
+from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
 
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+
+# Если система не должна выдавать ответа, "я не знаю"
+IDK_STRING = "idk"
 
 
 def safe_mean(values):
@@ -54,7 +58,6 @@ class QualityTester:
 
     def __init__(
             self,
-            minimal_score=20,
             is_need_cube=True,
             is_need_minfin=True,
             is_need_logging=False
@@ -64,9 +67,9 @@ class QualityTester:
 
         self._testers = {}
         if is_need_cube:
-            self._testers["cube"] = CubeTester(minimal_score, is_need_logging=is_need_logging)
+            self._testers["cube"] = CubeTester(is_need_logging=is_need_logging)
         if is_need_minfin:
-            self._testers["minfin"] = MinfinTester(minimal_score, is_need_logging=is_need_logging)
+            self._testers["minfin"] = MinfinTester(is_need_logging=is_need_logging)
         self._is_need_logging = is_need_logging
 
     def run(self):
@@ -116,11 +119,9 @@ class BaseTester:
 
     def __init__(
             self,
-            minimal_score,
             percentiles=tuple([25, 50, 75, 90, 95]),
             is_need_logging=False
     ):
-        self._minimal_score = minimal_score
         self._percentiles = percentiles
         self._is_need_logging = is_need_logging
 
@@ -132,9 +133,7 @@ class BaseTester:
         self._text_results = []
         self._abs_confidences = []
 
-    def get_minimal_score(self):
-        """Возвращает пороговый score"""
-        return self._minimal_score
+        self._threshold = MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
 
     def _add_true(self):
         """Добавляет ещё один истинный результат"""
@@ -250,6 +249,7 @@ class BaseTester:
     def _check_result(self, idx, req, question_id, system_answer):
         """
         Проверяет результат теста.
+        system_answer = None соответствует idk результату
         Должен быть переопределён
         """
         raise NotImplementedError
@@ -311,8 +311,13 @@ class BaseTester:
         Запускает тестирование. Метод общий, но вызывает специфические
         для каждого тестирования методы, что позволяет реализовывать
         разное поведение.
+        Переорпределяет MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+        на время тестирования в 0
         Переопределение не нужно
         """
+        MODEL_CONFIG["relevant_minfin_main_answer_threshold"] = 0
+        set_default_model(MODEL_CONFIG)
+
         self.before_test_run()
         start_time = time.time()
 
@@ -331,6 +336,10 @@ class BaseTester:
                     logging.info(line)
                     req, answer = line.split(':')
 
+                    if answer.lower() == IDK_STRING:
+                        # если это idk строка, то дальше передаём None
+                        answer = None
+
                     # Посчитаем время
                     dt_now = datetime.datetime.now()
                     system_answer = json.loads(DataRetrieving.get_data(
@@ -348,6 +357,9 @@ class BaseTester:
                     self.add_time(time_for_request.total_seconds())
 
         self.write_log(int(time.time() - start_time))
+
+        restore_default_model()  # Возвращаем данные модели
+
         return self.get_results()
 
 
@@ -357,11 +369,10 @@ class CubeTester(BaseTester):
     """
     def __init__(
             self,
-            minimal_score,
             percentiles=tuple([25, 50, 75, 90, 95]),
             is_need_logging=False
     ):
-        super().__init__(minimal_score, percentiles, is_need_logging)
+        super().__init__(percentiles, is_need_logging)
 
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
@@ -469,12 +480,54 @@ class MinfinTester(BaseTester):
 
     def __init__(
             self,
-            minimal_score,
             percentiles=tuple([25, 50, 75, 90, 95]),
             is_need_logging=False
     ):
-        super().__init__(minimal_score, percentiles, is_need_logging)
+        super().__init__(percentiles, is_need_logging)
+
+        # Только для не idk запросов, т.е. тех, которые возвращают что-то
+        # для них порог не учитывается, т.к. не имеет смысла
+        self._trues_known = 0
+        self._wrongs_known = 0
+
+        # Результаты, в которых не учитывается скор, что позволит
+        # отложить его выбор
+        self._trues_no_score = 0
+        self._wrongs_no_score = 0
+
         self._threshold_confidences = []
+
+    def _add_true_known(self):
+        """Добавляет ещё один истинный не idk результат"""
+        self._trues_known += 1
+
+    def get_trues_known(self):
+        """Возвращает число истинных не idk результатов"""
+        return self._trues_known
+
+    def _add_wrong_known(self):
+        """Добавляет результат, ответ которого был неправильный не idk"""
+        self._wrongs_known += 1
+
+    def get_wrongs_known(self):
+        """Возвращает число ошибочных не idk результатов"""
+        return self._wrongs_known
+
+    def _add_true_no_score(self):
+        """Добавляет ещё один истинный результат без учёта скора"""
+        self._trues_no_score += 1
+
+    def get_trues_no_score(self):
+        """Возвращает число истинных результатов без учёта скора"""
+        return self._trues_no_score
+
+    def _add_wrong_no_score(self):
+        """Добавляет результат, ответ которого был неправильный без учёта скора"""
+        self._wrongs_no_score += 1
+
+    def get_wrongs_no_score(self):
+        """Возвращает число ошибочных результатов без учёта скора"""
+        return self._wrongs_no_score
 
     def _add_threshold_confidence(self, val: float):
         self._threshold_confidences.append(val)
@@ -484,9 +537,6 @@ class MinfinTester(BaseTester):
 
         Гарантируются, что результирующий tuple не пуст
         """
-        if not self._threshold_confidences:
-            # Вернём хоть что-то, иначе среднее не посчитать
-            return tuple([0])
         return tuple(self._threshold_confidences)
 
     def get_test_files_paths(self):
@@ -507,7 +557,32 @@ class MinfinTester(BaseTester):
         # Mean Threshold Confidence
         res["MTC"] = safe_mean(self.get_threshold_confidences())
 
+        # Точность без учёта скора
+        total_no_score = self.get_trues_no_score() + self.get_wrongs_no_score()
+        res["noscoreAcc"] = self.get_trues_no_score() / total_no_score
+        res["noscoreTotal"] = total_no_score  # для проверки значимости
+
+        # Точность без учёта idk тестов
+        total_no_idk = self.get_trues_known() + self.get_wrongs_known()
+        res["noIdkAcc"] = self.get_trues_known() / total_no_idk
+        res["noIdkTotal"] = total_no_idk  # для проверки значимости
+
         return res
+
+    def process_error(self, idx, req, question_id, system_answer):
+        super().process_error(idx, req, question_id, system_answer)
+
+        if question_id:
+            # не idk запрос
+            self._add_wrong_known()
+
+    def process_wrong(self, idx, req, question_id, system_answer):
+
+        super().process_wrong(idx, req, question_id, system_answer)
+
+        if question_id:
+            # не idk запрос
+            self._add_wrong_known()
 
     def process_true(self, idx, req, question_id, system_answer):
         """
@@ -516,31 +591,37 @@ class MinfinTester(BaseTester):
         """
         super().process_true(idx, req, question_id, system_answer)
 
-        nearest_result = self._get_nearest_result(system_answer)
-        absolute_confidence = system_answer['answer']['score'] - nearest_result
-        self._add_absolute_confidence(absolute_confidence)
+        try:
+            nearest_result = self._get_nearest_result(system_answer)
+            absolute_confidence = system_answer['answer']['score'] - nearest_result
+            self._add_absolute_confidence(absolute_confidence)
 
-        self._add_threshold_confidence(system_answer['answer']['score'] - self._minimal_score)
+            self._add_threshold_confidence(
+                system_answer['answer']['score'] - MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+            )
+        except:
+            # Для Idk запросов это абсолютно нормально, что у них нет скора
+            pass
+
+        if question_id:
+            # не idk запрос
+            self._add_true_known()
 
     def _check_result(self, idx, req, question_id, system_answer):
         response = system_answer['answer']
-        if not response:
+        if not response and not question_id:
+            # idk-запрос
+            ars = 'IDK Запрос "{req}" отрабатывает корректно'.format(req=req)
+            self.add_text_result(ars)
+            self.process_true(idx, req, question_id, system_answer)
+            return
+        elif not response:
             ars = '{q_id} - Запрос "{req}" вызвал ошибку: {msg}'.format(
                 q_id=question_id,
                 req=req,
                 msg='Не определена'
             )
 
-            self.add_text_result(ars)
-            self.process_error(idx, req, question_id, system_answer)
-            return
-
-        if not response:
-            ars = (
-                '{q_id} - На запрос "{req}" ответ не был найден ' +
-                'или, он не прошел по порогу'
-            )
-            ars = ars.format(q_id=question_id, req=req)
             self.add_text_result(ars)
             self.process_error(idx, req, question_id, system_answer)
             return
@@ -556,14 +637,38 @@ class MinfinTester(BaseTester):
             self.process_error(idx, req, question_id, system_answer)
             return
 
-        if question_id == str(response) and self._minimal_score < system_answer['answer']['score']:
-            ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
-            ars = ars.format(q_id=question_id,
-                             score=system_answer['answer']['score'],
-                             req=req)
+        if not question_id:
+            ars = (
+                '{score} Запрос "{req}" отрабатывает некорректно, ' +
+                'должны получать IDK'
+            )
+            ars = ars.format(score=system_answer['answer']['score'], req=req)
             self.add_text_result(ars)
-            self.process_true(idx, req, question_id, system_answer)
+            self.process_wrong(idx, req, question_id, system_answer)
+            return
+
+        if question_id == str(response):
+            # получили совпадение, при этом
+            # в таком случае, мы не могли получить idk,
+            # значит варианты, когда должны были вернуть idk не учитываются
+            self._add_true_no_score()
+
+            if self._threshold < system_answer['answer']['score']:
+                ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req)
+                self.add_text_result(ars)
+                self.process_true(idx, req, question_id, system_answer)
+            else:
+                ars = '{q_id} + {score} Запрос "{req}" не проходит по порогу'
+                ars = ars.format(q_id=question_id,
+                                 score=system_answer['answer']['score'],
+                                 req=req)
+                self.add_text_result(ars)
+                self.process_wrong(idx, req, question_id, system_answer)
         else:
+            self._add_wrong_no_score()
             ars = (
                 '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
                 '(должны получать:{q_id}, получаем:{fl})'
@@ -586,7 +691,6 @@ def get_test_files(test_path, prefix):
 
 @logs_helper.time_with_message("get_results")
 def get_results(
-        minimal_score=20,
         need_cube=True,
         need_minfin=True,
         write_logs=False
@@ -600,7 +704,6 @@ def get_results(
     """
 
     tester = QualityTester(
-        minimal_score=minimal_score,
         is_need_cube=need_cube,
         is_need_minfin=need_minfin,
         is_need_logging=write_logs
@@ -635,11 +738,6 @@ def _main():
         help='Отключает логгирование во время тестирования',
     )
 
-    parser.add_argument(
-        "--threshold", help='Score для отсева ответов.',
-        default=20., type=float
-    )
-
     args = parser.parse_args()
 
     # Если аргументов не было, то тестируем как обычно
@@ -648,7 +746,6 @@ def _main():
         args.minfin = True
 
     score, results = get_results(
-        minimal_score=args.threshold,
         need_cube=args.cube,
         need_minfin=args.minfin,
         write_logs=not args.no_logs
