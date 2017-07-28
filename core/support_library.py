@@ -20,6 +20,7 @@ from kb.kb_support_library import get_default_member_for_dimension
 from core.ling_parser import Phrase
 
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from constants import CUBE_FEEDBACK_MASKS
 
 from model_manager import MODEL_CONFIG
 import logs_helper  # pylint: disable=unused-import
@@ -107,6 +108,12 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         },
         'user_request': user_request
     }
+
+    feedback['pretty_feedback'] = get_pretty_feedback(
+        cube,
+        feedback['verbal']
+    )
+
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
     return feedback
@@ -513,11 +520,13 @@ def feedback_preprocessing(verbal_feedback):
     return {key: Phrase(res[key]) for key in res if res[key] is not None}
 
 
-def make_pretty_feedback(mask, verbal_feedback):
+def get_pretty_feedback(cube_name, verbal_feedback):
     """
     Создание человекочитаемого фидбека из словаря по маске.
     """
+
     prepr_feedback = feedback_preprocessing(verbal_feedback)
+    mask = CUBE_FEEDBACK_MASKS.get(cube_name)
 
     res = []
     for word in mask.split('{'):

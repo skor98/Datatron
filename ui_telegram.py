@@ -557,19 +557,29 @@ def process_minfin_questions(message, minfin_result):
 
 
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
-    feedback_str = '{user_req}{expert_fb}{separator}{verbal_fb}\n*Ответ: {answer}*\nQuery\_ID: {query_id}'
+    feedback_str = (
+        '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
+        '{pretty_feed}\n*Ответ: {answer}*\nQuery\_ID: {query_id}'
+    )
     separator = ''
     expert_str = ''
+    pretty_feed = ''
     verbal_str = verbal_feedback(cube_result)
 
     user_request = ''
     if user_request_notification:
-        user_request = '**Ваш запрос**\nДататрон решил, что Вы его спросили: "{}"\n\n'
+        user_request = '*Ваш запрос*\nДататрон решил, что Вы его спросили: "{}"\n\n'
         user_request = user_request.format(cube_result.feedback['user_request'])
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
         expert_str = expert_feedback(cube_result)
         separator = '\n'
+
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        pretty_feed = '*Красивая обратная связь:*\n' \
+                      'Datatron понял ваш запрос как "`{}`"\n'.format(
+            cube_result.feedback['pretty_feedback']
+        )
 
     feedback = feedback_str.format(
         user_req=user_request,
@@ -577,7 +587,9 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator=separator,
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
-        query_id=request_id)
+        query_id=request_id,
+        pretty_feed=pretty_feed
+    )
 
     bot.send_message(
         message.chat.id,
@@ -590,7 +602,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 def expert_feedback(cube_result):
     expert_fb = cube_result.feedback['formal']
 
-    expert_str = '**Экспертная обратная связь**\n' \
+    expert_str = '*Экспертная обратная связь*\n' \
                  '`- Куб: {}\n- Мера: {}\n- Измерения: {}\n`'
 
     expert_str = expert_str.format(
@@ -619,7 +631,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
-    return '**{}**\n`{}`'.format(title, verbal_str)
+    return '*{}*\n`{}`'.format(title, verbal_str)
 
 
 def loof_also_for_cube(cube_result):
