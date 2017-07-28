@@ -30,6 +30,17 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
 
+def safe_mean(values):
+    """
+    Аналогичен statistics.mean, но возвращает NaN в случае пустого входа
+    """
+    try:
+        return mean(values)
+    except StatisticsError:
+        logging.warning("подсчёт среднего ПУСТОГО массива")
+        return float("NaN")
+
+
 class QualityTester:
     """
     Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик.
@@ -179,20 +190,12 @@ class BaseTester:
         """
         Считает все базовые статистики. Может быть переопределён для добавления новых
         """
-        
-        try:
-            mac = mean(self.get_absolute_confidences())
-        except StatisticsError:
-            # массив может быть пустым
-            logging.warning("absolute_confidences ПУСТ")
-            mac = float("NaN")
-        
         self._seconds.sort()
         return {
             "true": self.get_trues(),
             "wrong": self.get_wrongs(),
             "error": self.get_errors(),
-            "MAC": mac,
+            "MAC": safe_mean(self.get_absolute_confidences()),
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
             }
@@ -497,7 +500,7 @@ class MinfinTester(BaseTester):
         res = super().get_results()
 
         # Mean Threshold Confidence
-        res["MTC"] = mean(self.get_threshold_confidences())
+        res["MTC"] = safe_mean(self.get_threshold_confidences())
 
         return res
 
