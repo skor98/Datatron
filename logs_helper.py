@@ -165,7 +165,7 @@ class LogsRetriever:
             return self._get_queries_logs(user_id, time_delta)
         # Логи последнего запроса
         else:
-            return self._get_request_logs(user_id)
+            raise Exception("Неизвестный тип лога {}".format(kind))
 
     def _get_all_logs(self):
         """Возвращает весь файл с логами"""
@@ -210,31 +210,6 @@ class LogsRetriever:
         for log in list(logs):
             try:
                 if LogsRetriever._get_value_from_log_part(log.split('\t')[2]) not in queries_id:
-                    logs.remove(log)
-            except IndexError:
-                pass
-
-        return '\n'.join(list(reversed(logs)))
-
-    def _get_request_logs(self, user_id):
-        logs = []
-        query_id = None
-
-        for line in reversed(list(open(self.path_to_log_file, encoding='utf-8'))):
-            line = line.split('\t')
-
-            try:
-                if line[1] not in ('DEBUG', 'ERROR'):
-                    logs.append('\t'.join(line))
-                    if str(user_id) == LogsRetriever._get_value_from_log_part(line[4]):
-                        query_id = LogsRetriever._get_value_from_log_part(line[2])
-                        break
-            except IndexError:
-                pass
-
-        for log in list(logs):
-            try:
-                if LogsRetriever._get_value_from_log_part(log.split('\t')[2]) != query_id:
                     logs.remove(log)
             except IndexError:
                 pass
