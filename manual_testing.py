@@ -399,26 +399,25 @@ class CubeTester(BaseTester):
         response = system_answer['answer']
 
         if not response:
-            ars = '{}. - Ответ на запрос "{}" не был найден'
+            ars = '{}.\t-\t{}\tОтвет не был найден'
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         response = response.get('mdx_query')
         if not response:
-            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
+            ars = '{}\t-\t{}\t\tГлавный ответ по Минфину'.format(idx, req)
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         if self._mdx_queries_equality(answer, response):
-            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
+            ars = '{}.\t+\t{}'.format(idx, req)
             self.add_text_result(ars)
             self.process_true(idx, req, answer, system_answer)
         else:
             ars = (
-                '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {})'
+                '{}.\t-\t{}\tВместо {} получаем: {}'
             )
             ars = ars.format(
                 idx,

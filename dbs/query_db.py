@@ -7,10 +7,11 @@
 
 import datetime
 import pandas as pd
+import os
 
 from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
-from config import QUERY_DB_PATH
+from config import QUERY_DB_PATH, TEST_PATH_RESULTS
 from model_manager import MODEL_CONFIG
 from kb.kb_support_library import read_minfin_data
 
@@ -110,20 +111,32 @@ def get_random_requests(num=5):
 
         # чтение данных по минфину
         _, dfs = read_minfin_data()
+        minfin_data = pd.concat(dfs)
+        data = minfin_data['question'].tolist()
 
-        data = pd.concat(dfs)
-        data = data['question']
+        # чтение данных по минфину
+        files = [elem for elem in os.listdir(TEST_PATH_RESULTS) if
+            (
+                elem.endswith('.txt') and elem.startswith('cube')
+            )]
 
-        return data
+        with open(os.path.join(TEST_PATH_RESULTS, max(files)), 'r', encoding='utf-8') as file:
+            for line in file:
+                line = line.split('\t')
+                if len(line) > 1:
+                    if line[1] == '+':
+                        data.append(line[2].strip()+'?')
+
+        return pd.DataFrame(data)
 
     if get_random_requests.data is None:
         if MODEL_CONFIG["enable_idea_command_from_db"]:
             return get_queries_from_db()
         else:
             get_random_requests.data = get_queries_from_files()
-            return get_random_requests.data.sample(num).tolist()
+            return get_random_requests.data[0].sample(num).tolist()
 
-    return get_random_requests.data.sample(num).tolist()
+    return get_random_requests.data[0].sample(num).tolist()
 
 
 get_random_requests.data = None
