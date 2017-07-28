@@ -189,7 +189,7 @@ class LogsRetriever:
         user_re = re.compile(
             r"Query_ID:\s*([\d\w-]+)\s*ID-пользователя:\s*{}.*Запрос:\s*(.+)\s*Формат".format(user_id)
         )
-        query_pattern = ".*Query_ID:\s*{}.*"
+        query_pattern = r".*Query_ID:\s*{}.*"
         logs = []
 
         dt_now = datetime.datetime.now()
@@ -201,11 +201,11 @@ class LogsRetriever:
                 for query_re in possible_querie_res:
                     if query_re.match(line):
                         logs.append(line)
-                        is_found = True
+                        is_found_in_query = True
                         break
                 if is_found_in_query:
                     continue
-                        
+
                 # Этот блок кода должен быть в начале, так быстрее
                 query_id, query_text = user_re.findall(line)[0]
                 query_id = query_id.strip()
@@ -221,7 +221,7 @@ class LogsRetriever:
                     continue
                 possible_querie_res.append(re.compile(query_pattern.format(query_id)))
 
-                logs.append("{} {}".format(query_id,query_text))
+                logs.append("{} {}".format(query_id, query_text))
             except:
                 # Если возникла ошибка, то RegExp не подходит или это стек трейс
                 pass
