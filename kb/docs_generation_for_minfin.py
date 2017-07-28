@@ -180,8 +180,10 @@ def _get_manual_synonym_questions(question_number):
     with open(path.join(TEST_PATH_MINFIN, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
             line = line.split(':')
-            if line[1].strip() == question_number:
-                extra_requests.append(line[0])
+            
+            if len(line) == 2:
+                if line[1].strip() == question_number:
+                    extra_requests.append(line[0])
 
     return extra_requests
 
