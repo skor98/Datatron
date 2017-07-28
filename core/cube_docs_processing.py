@@ -72,6 +72,8 @@ class CubeProcessor:
 
         tree = Graph.inst(MODEL_CONFIG['tree_k_path_threshold'])
 
+        good_paths = 0
+
         for path in tree.tree_paths:
 
             # копия для каждого прогона
@@ -87,6 +89,7 @@ class CubeProcessor:
 
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
+                good_paths += 1
             except FunctionExecutionError as error:
                 msg = error.args[0]
                 logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(
@@ -94,6 +97,9 @@ class CubeProcessor:
                     path,
                     msg['function'],
                     msg['message']))
+
+        with open('bets_paths.txt', 'a', encoding='utf-8') as file:
+            file.write(str(good_paths) + '\n')
 
         return cube_data_list
 
