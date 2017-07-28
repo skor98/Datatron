@@ -15,7 +15,7 @@ import logging
 import re
 from os import path, listdir, makedirs
 from math import isnan
-from statistics import mean
+from statistics import mean, StatisticsError
 
 from data_retrieving import DataRetrieving
 from config import DATETIME_FORMAT, LOG_LEVEL
@@ -157,11 +157,7 @@ class BaseTester:
         """
         Возвращает разницы между правильным ответом и ближайшим к нему.
         Разница абсолютная!
-        Гарантируются, что результирующий tuple не пуст
         """
-        if not self._abs_confidences:
-            # Вернём хоть что-то, иначе среднее не посчитать
-            return tuple([0])
         return tuple(self._abs_confidences)
 
     def add_time(self, seconds: float):
@@ -183,12 +179,20 @@ class BaseTester:
         """
         Считает все базовые статистики. Может быть переопределён для добавления новых
         """
+        
+        try:
+            mac = mean(self.get_absolute_confidences())
+        except StatisticsError:
+            # массив может быть пустым
+            logging.warning("absolute_confidences ПУСТ")
+            mac = float("NaN")
+        
         self._seconds.sort()
         return {
             "true": self.get_trues(),
             "wrong": self.get_wrongs(),
             "error": self.get_errors(),
-            "MAC": mean(self.get_absolute_confidences()),
+            "MAC": mac,
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
             }
