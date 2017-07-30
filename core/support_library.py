@@ -484,14 +484,11 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
                 logging.info(
                     "Query_ID: {}\tMessage: {}".format(
                         cube_data.request_id,
-                        (
-                            'Лучший ответ был сменен.'
-                            'Был куб {}, стал {}, '
-                            'лучший путь {}'.format(
-                                used_cube,
-                                cube_name,
-                                cube_data.tree_path
-                            )
+                        'Лучший ответ был сменен. Был куб {}, '
+                        'стал {}, лучший путь {}'.format(
+                            used_cube,
+                            cube_name,
+                            cube_data.tree_path
                         )
                     )
                 )
@@ -500,12 +497,19 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
         logging.info(
             "Query_ID: {}\tMessage: {}".format(
                 cube_data_list[0].request_id,
-                (
-                    'Куб алгоритмически лучшего ответа'
-                    'совпадает с кубом из классификатора'
-                )
+                'Куб алгоритмически лучшего ответа'
+                'совпадает с кубом из классификатора'
             )
         )
+        return
+
+    logging.info(
+        "Query_ID: {}\tMessage: {}".format(
+            cube_data_list[0].request_id,
+            "Выбор лучшим запроса на основе куба из "
+            "классификатора не возможен, нет подходящих путей"
+        )
+    )
 
 
 def delete_repetitions(cube_data_list: list):
