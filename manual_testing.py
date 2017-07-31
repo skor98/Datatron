@@ -595,7 +595,6 @@ class MinfinTester(BaseTester):
         # Точность без учёта скора
         total_no_score = self.get_trues_no_score() + self.get_wrongs_no_score()
         res["noscoreAcc"] = self.get_trues_no_score() / total_no_score
-        res["noscoreTotal"] = total_no_score  # для проверки значимости
 
         # Точность без учёта idk тестов
         total_no_idk = self.get_trues_known() + self.get_wrongs_known()
