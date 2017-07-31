@@ -34,8 +34,6 @@ class DataRetrieving:
     def get_data(user_request: str, request_id: str):
         """API метод к ядру системы"""
 
-        # Просто хочу 1000-ый коммит
-
         core_answer = CoreAnswer()
 
         norm_user_request = DataRetrieving._preprocess_user_request(
