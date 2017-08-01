@@ -18,7 +18,7 @@
 Изменение остатков средств финансирования дефицита бюджета в 2013:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153785], [MARKS].[03-6])
 Кредиты иностранных государств выплаты по источникам финансирования дефицита бюджета в 2013 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153976], [MARKS].[03-6])
 Сколько денег от взятия кредитов у иностранных государств пошло на финансирование дефицита госбюджета в 2013 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153976], [MARKS].[03-6])
-
+Источники финансирования дефицита бюджета по Амурской области в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67708], [BGLEVELS].[09-3], [KIF].[10-154091], [MARKS].[03-6])
 
 
 
