@@ -6,3 +6,22 @@
 Бюджетные кредиты Ставропольскому краю от других бюджетов бюджетной системы Российской Федерации:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67654], [BGLEVELS].[09-2], [KIF].[10-153808], [MARKS].[03-6])
 Изменение остатков средств на 01.01.2017 год по источникам финансирования дефицита бюджета Чеченской республики:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67650], [BGLEVELS].[09-2], [KIF].[10-153785], [MARKS].[03-6])
 Бюджетные кредиты от других бюджетов бюджетной системы Российской Федерации на 01.01.2017 год по Чеченской республике:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67650], [BGLEVELS].[09-2], [KIF].[10-153808], [MARKS].[03-6])
+Выплаты по источникам внутреннего финансирования дефицита бюджета в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KIF].[10-153784], [MARKS].[03-6])
+Сколько денег было выплачено на внутреннее финансирование дефицита бюджета 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KIF].[10-153784], [MARKS].[03-6])
+Внутреннее финансирование дефицита бюджета в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KIF].[10-153784], [MARKS].[03-6])
+Сколько всего денег было выделено на финансирование дефицита бюджета в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KIF].[10-154091], [MARKS].[03-6])
+Финансирование дефицита в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KIF].[10-154091], [MARKS].[03-6])
+Внешнее финансирование дефицита бюджета в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2015], [BGLEVELS].[09-0], [KIF].[10-153972], [MARKS].[03-6])
+Сколько денег было выделено на внешнее финансирование дефицита бюджета:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2015], [BGLEVELS].[09-0], [KIF].[10-153972], [MARKS].[03-6])
+Изменение остатков средств финансирования дефицита бюджета в 2014 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2014], [BGLEVELS].[09-0], [KIF].[10-153785], [MARKS].[03-6])
+Как изменились остатки средств финансирования дефицита в 2014:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2014], [BGLEVELS].[09-0], [KIF].[10-153785], [MARKS].[03-6])
+Изменение остатков средств финансирования дефицита бюджета в 2013:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153785], [MARKS].[03-6])
+Кредиты иностранных государств выплаты по источникам финансирования дефицита бюджета в 2013 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153976], [MARKS].[03-6])
+Сколько денег от взятия кредитов у иностранных государств пошло на финансирование дефицита госбюджета в 2013 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2013], [BGLEVELS].[09-0], [KIF].[10-153976], [MARKS].[03-6])
+
+
+
+
+
+
+
