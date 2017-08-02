@@ -187,7 +187,7 @@ def _get_manual_synonym_questions(question_number):
 
             if len(line_splitted) == 1:
                 # Нет ответа, это плохо!!
-                logging.error("На вопрос {} в файле нет ответа!".format(
+                logging.error("На вопрос {} в файле {} нет ответа!".format(
                     line_splitted[0],
                     path.join(TEST_PATH_MINFIN, file_with_portion[0])
                 ))
