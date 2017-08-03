@@ -21,7 +21,3 @@
 Источники финансирования дефицита бюджета по Амурской области в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [FSYR01.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67708], [BGLEVELS].[09-3], [KIF].[10-154091], [MARKS].[03-6])
 
 
-
-
-
-
