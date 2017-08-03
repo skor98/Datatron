@@ -623,6 +623,8 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
 
 def loof_also_for_cube(cube_result):
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        return cube_result.feedback.get('pretty_feedback', 'БАЗА ЗНАНИЙ')
     verbal_fb_list = []
     verbal_fb = cube_result.feedback['verbal']
 
