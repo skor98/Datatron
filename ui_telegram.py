@@ -657,7 +657,7 @@ def loof_also_for_cube(cube_result):
 #        verbal_fb_list.append('({})'.format("*База знаний*"))
 #
 #    return ' '.join(verbal_fb_list)
-    return cube_result.feedback.get('pretty_feedback', 'БАЗА ЗНАНИЙ')
+    return cube_result.feedback.get('pretty_feedback', '...')
 
 
 def answer_to_look_also_format(answer):
