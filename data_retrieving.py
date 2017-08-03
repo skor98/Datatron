@@ -57,6 +57,10 @@ class DataRetrieving:
             )
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
+
+            # TODO: добавить 2ой параметр в метод
+            # А именно, имя корректного куба из классификатора,
+            # например, CLMR02
             cube_answers = CubeProcessor.get_data(cube_data)
 
             logging.info(

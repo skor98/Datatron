@@ -20,6 +20,7 @@ from kb.kb_support_library import get_default_member_for_dimension
 from core.ling_parser import Phrase
 
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from constants import CUBE_FEEDBACK_MASKS
 
 from model_manager import MODEL_CONFIG
 import logs_helper  # pylint: disable=unused-import
@@ -107,6 +108,12 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         },
         'user_request': user_request
     }
+
+    feedback['pretty_feedback'] = get_pretty_feedback(
+        cube,
+        feedback['verbal']
+    )
+
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
     return feedback
@@ -457,6 +464,54 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         create_basic_mdx_query()
 
 
+def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
+    """
+    Выбор лучшего ответа по заданному кубу, если это возможно
+    """
+
+    # Для работы системы до появления классификатора
+    if not cube_name:
+        return
+
+    used_cube = cube_data_list[0].selected_cube['cube']
+
+    if used_cube != cube_name:
+        for cube_data in list(cube_data_list):
+            if cube_data.selected_cube['cube'] == cube_name:
+                cube_data_list.remove(cube_data)
+                cube_data_list.insert(0, cube_data)
+
+                logging.info(
+                    "Query_ID: {}\tMessage: {}".format(
+                        cube_data.request_id,
+                        'Лучший ответ был сменен. Был куб {}, '
+                        'стал {}, лучший путь {}'.format(
+                            used_cube,
+                            cube_name,
+                            cube_data.tree_path
+                        )
+                    )
+                )
+                return
+    else:
+        logging.info(
+            "Query_ID: {}\tMessage: {}".format(
+                cube_data_list[0].request_id,
+                'Куб алгоритмически лучшего ответа'
+                'совпадает с кубом из классификатора'
+            )
+        )
+        return
+
+    logging.info(
+        "Query_ID: {}\tMessage: {}".format(
+            cube_data_list[0].request_id,
+            "Выбор лучшим запроса на основе куба из "
+            "классификатора не возможен, нет подходящих путей"
+        )
+    )
+
+
 def delete_repetitions(cube_data_list: list):
     """
     Удаление из результата после прогона дерева
@@ -520,11 +575,13 @@ def feedback_preprocessing(verbal_feedback):
     return {key: Phrase(res[key]) for key in res if res[key] is not None}
 
 
-def make_pretty_feedback(mask, verbal_feedback):
+def get_pretty_feedback(cube_name, verbal_feedback):
     """
     Создание человекочитаемого фидбека из словаря по маске.
     """
+
     prepr_feedback = feedback_preprocessing(verbal_feedback)
+    mask = CUBE_FEEDBACK_MASKS.get(cube_name)
 
     res = []
     for word in mask.split('{'):
