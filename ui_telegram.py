@@ -565,8 +565,11 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     )
     separator = ''
     expert_str = ''
-    pretty_feed = ''
-    verbal_str = verbal_feedback(cube_result)
+    verbal_str = ''
+    
+    pretty_feed = 'Datatron понял ваш запрос как "`{}`"\n'.format(
+        cube_result.feedback['pretty_feedback']
+    )
 
     user_request = ''
     if user_request_notification:
@@ -576,12 +579,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
         expert_str = expert_feedback(cube_result)
         separator = '\n'
-
-    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-        pretty_feed = '*Красивая обратная связь:*\n' \
-                      'Datatron понял ваш запрос как "`{}`"\n'.format(
-            cube_result.feedback['pretty_feedback']
-        )
+        verbal_str = verbal_feedback(cube_result)
 
     feedback = feedback_str.format(
         user_req=user_request,
@@ -637,28 +635,29 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
 
 def loof_also_for_cube(cube_result):
-    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-        return cube_result.feedback.get('pretty_feedback', 'БАЗА ЗНАНИЙ')
-    verbal_fb_list = []
-    verbal_fb = cube_result.feedback['verbal']
-
-    verbal_fb_list.append(verbal_fb['domain'])
-
-    if verbal_fb['measure'] != 'Значение':
-        verbal_fb_list.append(verbal_fb['measure'].lower())
-
-    verbal_fb_list.extend(
-        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
-
-    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-        verbal_fb_list.append('({}: {})'.format(
-            "*База знаний*",
-            cube_result.get_score()
-        ))
-    else:
-        verbal_fb_list.append('({})'.format("*База знаний*"))
-
-    return ' '.join(verbal_fb_list)
+#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+#        
+#    verbal_fb_list = []
+#    verbal_fb = cube_result.feedback['verbal']
+#
+#    verbal_fb_list.append(verbal_fb['domain'])
+#
+#    if verbal_fb['measure'] != 'Значение':
+#        verbal_fb_list.append(verbal_fb['measure'].lower())
+#
+#    verbal_fb_list.extend(
+#        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
+#
+#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+#        verbal_fb_list.append('({}: {})'.format(
+#            "*База знаний*",
+#            cube_result.get_score()
+#        ))
+#    else:
+#        verbal_fb_list.append('({})'.format("*База знаний*"))
+#
+#    return ' '.join(verbal_fb_list)
+    return cube_result.feedback.get('pretty_feedback', 'БАЗА ЗНАНИЙ')
 
 
 def answer_to_look_also_format(answer):
