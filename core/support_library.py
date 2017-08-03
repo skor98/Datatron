@@ -510,6 +510,13 @@ def feedback_preprocessing(verbal_feedback):
     else:
         res['мера'] = verbal_feedback.get('measure')
 
+    if 'месяц' in res and 'год' in res:
+        res['месгод'] = '{} {} года'.format(res.get('месяц'), res.get('год'))
+    elif 'год' in res:
+        res['месгод'] = '{} год'.format(res.get('год'))
+    elif 'месяц' in res:
+        res['месгод'] = res.get('месяц')
+
     return {key: Phrase(res[key]) for key in res if res[key] is not None}
 
 
