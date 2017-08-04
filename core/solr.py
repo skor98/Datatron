@@ -35,22 +35,22 @@ class Solr:
             'rows': MODEL_CONFIG["solr_documents_to_return"],
             'wt': 'json',
             'fl': '*,score',
-            'bf':"recip(max(1,lem_member_caption_len),1.5,5,0)",
-            'defType':"edismax"  # тип парсера, этот самый мощный
+            'bf': "recip(max(1,lem_member_caption_len),1.5,5,0)",
+            'defType': "edismax"  # тип парсера, этот самый мощный
         }
-        
+
         # recip(x,m,a,b) implementing a/(m*x+b)
         # пробела запрщенеы
         # max нужен, чтобы поправить минфин, у которых этого поля вовсе пока нет
-        
+
         # Свободный 0 и 1.5 коэфф.
         # 5(0.75,0.29) -> 10 (0.76,0.286) -> 2(0.77,0.294) -> 0(0.78, 0.30)
         # Свободный 1
         # 2(0.767, 0.30)
-        
-        #1.5,5,0 -> 0.89,0.92 по минфину
+
+        # 1.5,5,0 -> 0.89,0.92 по минфину
         # 2.5, 8, 0 -> 0.89,0.92 по минфину
-        
+
         docs = requests.get(request, params=params).json()
 
         logging.info(
