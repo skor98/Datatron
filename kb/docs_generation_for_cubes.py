@@ -121,6 +121,7 @@ class CubeDocsGeneration:
                                     'cube': cube.name,
                                     'dimension': dimension.cube_value,
                                     'lem_member_caption': verbal,
+                                    'lem_member_caption_len': len(verbal.split()),
                                     'member_caption': member.caption,
                                     'cube_value': member.cube_value,
                                     'hierarchy_level': member.hierarchy_level,
@@ -184,6 +185,7 @@ class CubeDocsGeneration:
                 'type': 'terr_dim_member',
                 'dimension': 'TERRITORIES',
                 'lem_member_caption': verbal,
+                'lem_member_caption_len': len(verbal.split()),
                 'member_caption': item.caption
             }
 
@@ -263,6 +265,7 @@ class CubeDocsGeneration:
                 'cube': item.cube.name,
                 'lem_member_caption': item.measure.lem_caption,
                 'member_caption': item.measure.caption,
+                'lem_member_caption_len': len(item.measure.lem_caption.split()),
                 'lem_key_words': get_measure_lem_key_words(
                     item.measure.cube_value,
                     item.cube.name
