@@ -7,6 +7,7 @@
 
 import logging
 import re
+from functools import lru_cache
 
 from nltk.corpus import stopwords
 from nltk import FreqDist
@@ -18,6 +19,12 @@ from model_manager import MODEL_CONFIG
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
+
+@lru_cache(maxsize=8192)
+def get_normal_form(s):
+    return get_normal_form.morph.parse(s)[0].normal_form
+
+get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
 class TextPreprocessing:
     """
@@ -45,7 +52,6 @@ class TextPreprocessing:
         """Метод для нормализации текста"""
 
         # TODO: обработка направильного спеллинга
-        morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
@@ -62,7 +68,7 @@ class TextPreprocessing:
             tokens = [t for t in tokens if not t.isdigit()]
 
         # Лемматизация
-        tokens = [morph.parse(t)[0].normal_form for t in tokens]
+        tokens = [get_normal_form(t) for t in tokens]
 
         # Убираем повторяющиеся слова
         if delete_repeatings:
