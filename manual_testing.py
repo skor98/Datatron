@@ -358,7 +358,9 @@ class BaseTester:
                     time_for_request = datetime.datetime.now() - dt_now
                     self.add_time(time_for_request.total_seconds())
 
-        self.write_log(int(time.time() - start_time))
+        time_delta = time.time() - start_time
+        self.write_log(int(time_delta))
+        logging.info("{} takes {} seconds".format(self.__class__.name, time_delta))
 
         restore_default_model()  # Возвращаем данные модели
 
