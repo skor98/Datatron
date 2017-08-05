@@ -360,7 +360,7 @@ class BaseTester:
 
         time_delta = time.time() - start_time
         self.write_log(int(time_delta))
-        logging.info("{} takes {} seconds".format(self.__class__.name, time_delta))
+        logging.info("{} takes {} seconds".format(self.__class__.__name__, time_delta))
 
         restore_default_model()  # Возвращаем данные модели
 
