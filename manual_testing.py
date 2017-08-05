@@ -381,6 +381,16 @@ class CubeTester(BaseTester):
         self._only_cube_wrongs = 0
         self._only_cube_trues = 0
 
+        self._wrong_minfins = 0
+
+    def _add_wrong_minfin(self):
+        """Добавляет результат, когда мы нашли минфин вместо куба"""
+        self._wrong_minfins += 1
+
+    def get_wrong_minfins(self):
+        """Возвращает число результатов, когда мы нашли минфин вместо куба"""
+        return self._wrong_minfins
+
     def _add_true_only_cube(self):
         """Добавляет ещё один ложный не результат определения ТОЛЬКО куба"""
         self._only_cube_trues += 1
@@ -406,6 +416,21 @@ class CubeTester(BaseTester):
     def before_test_run(self):
         logging.info('Идет тестирование по вопросам к кубам')
 
+    def process_wrong(self, idx, req, question_id, system_answer):
+        """
+        Добавляет число неверных результатов, когда минфин вместо куба
+        """
+        super().process_wrong(idx, req, question_id, system_answer)
+
+        try:
+            if system_answer["answer"]["type"] == "minfin":
+                self._add_wrong_minfin()
+        except KeyError:
+            # результата может не быть вовсе
+            pass
+        except TypeError:
+            pass
+
     def process_true(self, idx, req, question_id, system_answer):
         """
         Добавляет Absolute Confidence, т.к. скор специфичен для минфина и кубов
@@ -427,6 +452,9 @@ class CubeTester(BaseTester):
         # Точность ТОЛЬКО по определению куба
         total_only_cube = self.get_trues_only_cube() + self.get_wrongs_only_cube()
         res["onlycubeAcc"] = self.get_trues_only_cube() / total_only_cube
+
+        # Какая часть неверных результатов из-за того, что ответ по минфину
+        res["wrongMinfin"] = self.get_wrong_minfins() / self.get_wrongs()
 
         return res
 
@@ -536,6 +564,16 @@ class MinfinTester(BaseTester):
 
         self._threshold_confidences = []
 
+        self._wrong_cubes = 0
+
+    def _add_wrong_cube(self):
+        """Добавляет результат, когда мы нашли куб вместо минфина"""
+        self._wrong_cubes += 1
+
+    def get_wrong_cubes(self):
+        """Возвращает число результатов, когда мы нашли куб вместо минфина"""
+        return self._wrong_cubes
+
     def _add_true_known(self):
         """Добавляет ещё один истинный не idk результат"""
         self._trues_known += 1
@@ -573,7 +611,6 @@ class MinfinTester(BaseTester):
 
     def get_threshold_confidences(self):
         """
-
         Гарантируются, что результирующий tuple не пуст
         """
         return tuple(self._threshold_confidences)
@@ -605,6 +642,9 @@ class MinfinTester(BaseTester):
         res["noIdkAcc"] = self.get_trues_known() / total_no_idk
         res["noIdkTotal"] = total_no_idk  # для проверки значимости
 
+        # Какая часть неверных результатов из-за того, что ответ по кубу
+        res["wrongCube"] = self.get_wrong_cubes() / self.get_wrongs()
+
         return res
 
     def process_error(self, idx, req, question_id, system_answer):
@@ -621,6 +661,15 @@ class MinfinTester(BaseTester):
         if question_id:
             # не idk запрос
             self._add_wrong_known()
+
+        try:
+            if system_answer["answer"]["type"] == "cube":
+                self._add_wrong_cube()
+        except KeyError:
+            # результата может не быть вовсе
+            pass
+        except TypeError:
+            pass
 
     def process_true(self, idx, req, question_id, system_answer):
         """
