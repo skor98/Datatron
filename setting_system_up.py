@@ -17,16 +17,17 @@ from math import isnan
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
-from config import SETTINGS
+from config import SETTINGS, TEST_PATH_RESULTS, DATETIME_FORMAT
 from manual_testing import get_results
-from config import TEST_PATH_RESULTS, DATETIME_FORMAT
-
-CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
 # не убирайте эту строчку, иначе логгирование не будет работать
 import logs_helper  # pylint: disable=unused-import
+from logs_helper import time_with_message
+
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
 
+@time_with_message("set_up_db", "info")
 def set_up_db():
     """Создание и заполнение БД"""
 
@@ -39,6 +40,7 @@ def set_up_db():
     kbs.set_up_db()
 
 
+@time_with_message("set_up_cube_data", "info")
 def set_up_cube_data(index_way='curl'):
     """
     Создание и индексирование документов по кубам. Если

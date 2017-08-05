@@ -17,6 +17,7 @@ from model_manager import MODEL_CONFIG
 from kb.kb_support_library import read_minfin_data
 
 import logs_helper  # pylint: disable=unused-import
+from logs_helper import time_with_message
 
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr
@@ -26,6 +27,7 @@ output_file = 'minfin_data_for_indexing.json'
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
 
 
+@time_with_message("set_up_minfin_data", "info")
 def set_up_minfin_data(index_way='curl'):
     """
     Метод для создания и индексации в Apache Solr
