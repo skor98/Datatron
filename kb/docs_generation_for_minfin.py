@@ -79,6 +79,9 @@ def _refactor_data(data):
         )
         doc.lem_question = lem_question
 
+        # Делаем длину
+        doc.lem_question_len = len(lem_question.split())
+
         synonym_questions = _get_manual_synonym_questions(doc.number)
 
         if synonym_questions:
@@ -372,6 +375,11 @@ class MinfinDocument:
         self.short_answer = ''
         self.full_answer = None
         self.lem_question = ''
+
+        # Давайте считать, что длина хорошо описывается
+        # длиной основного вопроса
+        self.lem_question_len = ''
+
         self.lem_synonym_questions = None
         self.lem_short_answer = ''
         self.lem_full_answer = None
