@@ -41,7 +41,7 @@ class TextPreprocessing:
         # Базовый набор стоп-слов
         self.stop_words = set(stopwords.words(self.language))
         self.stop_words.remove('не')
-        self.stop_words += set("также иной да нет -".split())
+        self.stop_words.update(set("также иной да нет -".split()))
 
     def normalization(
             self,
