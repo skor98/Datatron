@@ -212,10 +212,7 @@ class LogsRetriever:
                 query_text = query_text.strip()
 
                 line_splitted = line.split()
-                line_dt = datetime.datetime.strptime(
-                    line_splitted[0] + " " + line_splitted[1],
-                    DATETIME_FORMAT
-                )
+                line_dt = LogsRetriever._get_dt_from_line(line_splitted[0] + " " + line_splitted[1])
                 if line_dt + time_delta < dt_now:
                     # слишком старое
                     continue
@@ -243,10 +240,7 @@ class LogsRetriever:
         for line in open(self.path_to_log_file, encoding='utf-8'):
             try:
                 line_splitted = line.split()
-                line_dt = datetime.datetime.strptime(
-                    line_splitted[0] + " " + line_splitted[1],
-                    DATETIME_FORMAT
-                )
+                line_dt = LogsRetriever._get_dt_from_line(line_splitted[0] + " " + line_splitted[1])
                 if line_dt + time_delta < dt_now:
                     # слишком старое
                     continue
@@ -265,10 +259,6 @@ class LogsRetriever:
     @staticmethod
     def _get_dt_from_line(data_log_part):
         return datetime.datetime.strptime(data_log_part, DATETIME_FORMAT)
-
-    @staticmethod
-    def _get_value_from_log_part(user_log_part):
-        return user_log_part.split(':')[1].strip()
 
 
 init_logging.is_inited = False  # Инициализация должна пройти ровно один раз
