@@ -115,7 +115,7 @@ class CubeProcessor:
             reverse=True)
 
         logging.info(
-            "Query_ID: {}\tMessage: Алгоритмически лучший"
+            "Query_ID: {}\tMessage: Алгоритмически лучший "
             "ответ создан на пути {}".format(
                 cube_data_list[0].request_id,
                 cube_data_list[0].tree_path
