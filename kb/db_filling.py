@@ -8,8 +8,6 @@ import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
 
-sep1 = ';'
-
 
 class KnowledgeBaseSupport:
     def __init__(self, data_source_file, db_file):
@@ -18,6 +16,8 @@ class KnowledgeBaseSupport:
 
     def set_up_db(self):
         """Метод для настройки базы данных извне"""
+
+        CUBE_SEP = ';'
 
         self._create_db()
 
@@ -28,7 +28,7 @@ class KnowledgeBaseSupport:
 
             # Чтение данных из файла
             with open(data_source_file_path, 'r', encoding="utf-8") as file:
-                inserts = file.read().split(';')[1:-2]
+                inserts = file.read().split(CUBE_SEP)[1:-2]
 
             # Построчное исполнение команд
             for i in inserts:
