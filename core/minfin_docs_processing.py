@@ -103,3 +103,50 @@ class MinfinAnswer:
             'message'
         )
         return {key: getattr(self, key, None) for key in keys_to_return}
+
+    def to_reduced_api_object(self):
+        """
+        Нужно сделать препроцессинг, перед тем, как возращать в API
+        """
+        res = self.to_reduced_object()
+
+        if res["link"] or res["document"] or res["picture"]:
+            res["attachments"] = []
+            if res["link"]:
+                for link,  link_name in zip(res["link"], res["link_name"]):
+                    res["attachments"].append({
+                        "type": "url",
+                        "path": link,
+                        "description": link_name
+                    })
+
+            if res["document"]:
+                for doc_name,  doc_caption in zip(res["document"], res["document_caption"]):
+                    res["attachments"].append({
+                        "type": "document",
+                        "path": doc_name,
+                        "description": doc_caption
+                    })
+
+            if res["picture"]:
+                for pic_name, pic_caption in zip(res["picture"], res["picture_caption"]):
+                    res["attachments"].append({
+                        "type": "image",
+                        "path": pic_name,
+                        "description": pic_caption
+                    })
+        else:
+            res["attachments"] = None
+
+        del res["link"]
+        del res["link_name"]
+
+        del res["document"]
+        del res["document_caption"]
+
+        del res["picture"]
+        del res["picture_caption"]
+
+        return res
+
+
