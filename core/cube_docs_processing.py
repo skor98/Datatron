@@ -197,3 +197,11 @@ class CubeAnswer:
             'feedback'
         )
         return {key: getattr(self, key, None) for key in keys_to_return}
+
+    def to_reduced_api_object(self):
+        """
+        Нужно сделать препроцессинг, перед тем, как возращать в API
+        """
+        res = self.to_reduced_object()
+
+        return res
