@@ -82,6 +82,3 @@ _default_settings_dict = _settings_json['settings']['_default']
 LOG_LEVEL = _settings_json.get("log_level", 'INFO')
 
 SETTINGS = SettingsStorer(_cur_settings_dict, _default_settings_dict)
-
-# Ещё немного обратной совместимости
-API_PORT = getattr(SETTINGS.WEB_SERVER, 'API_PORT', None)
