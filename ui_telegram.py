@@ -5,31 +5,28 @@
 Бот телеграма для Datatron
 """
 
-import uuid
 import datetime
+import logging
+import os
 import random
 import string
-import os
-import logging
+import uuid
 
-import telebot
 import requests
+import telebot
 from flask import Flask, request, abort
 
-from dbs.user_support_library import check_user_existence
-from dbs.user_support_library import create_user
-from dbs.user_support_library import create_feedback
-from dbs.user_support_library import get_feedbacks
-from dbs.query_db import get_random_requests
-from speechkit import text_to_speech
-from messenger_manager import MessengerManager
-from logs_helper import LogsRetriever
-import logs_helper  # pylint: disable=unused-import
-
+import constants
 from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
-
-import constants
+from dbs.query_db import get_random_requests
+from dbs.user_support_library import check_user_existence
+from dbs.user_support_library import create_feedback
+from dbs.user_support_library import create_user
+from dbs.user_support_library import get_feedbacks
+from logs_helper import LogsRetriever
+from messenger_manager import MessengerManager
+from speechkit import text_to_speech
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)

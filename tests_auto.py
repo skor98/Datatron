@@ -32,10 +32,13 @@ for i in tests_array:
             dims_with_formal_names.append('[MARKS].' + new_dim)
         if dim_digits == '14':
             dims_with_formal_names.append('[RZPR].' + new_dim)
+        if dim_digits == '25':
+            dims_with_formal_names.append('[BIFB].' + new_dim)
+
         updated_dims = ''
     for j in dims_with_formal_names:
         updated_dims = updated_dims + j + ', '
-        
+
     updated_dims = updated_dims[0:len(updated_dims) - 2:1]
     test_text_mdx[1] = test_text_mdx[1][1:n:1] + '(' + updated_dims + ')'
     new_test = test_text_mdx[0] + ':' + test_text_mdx[1]
