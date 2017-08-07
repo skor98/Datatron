@@ -23,7 +23,7 @@ class CubeProcessor:
     """
 
     @staticmethod
-    def get_data(cube_data: CubeData):
+    def get_data(cube_data: CubeData, correct_cube: str = None):
         """API метод к работе с документами по кубам в ядре"""
 
         cube_data_list = []
@@ -40,7 +40,10 @@ class CubeProcessor:
                     csl.filter_measures_by_selected_cube(item)
                     csl.score_cube_question(item)
 
-                cube_data_list = CubeProcessor._take_best_cube_data(cube_data_list)
+                cube_data_list = CubeProcessor._take_best_cube_data(
+                    cube_data_list,
+                    correct_cube
+                )
 
                 for item in cube_data_list:
                     # обработка связанных значений
@@ -98,7 +101,7 @@ class CubeProcessor:
         return cube_data_list
 
     @staticmethod
-    def _take_best_cube_data(cube_data_list: list):
+    def _take_best_cube_data(cube_data_list: list, correct_cube: str):
         """Выбор нескольких лучших ответов по кубам"""
 
         threshold = MODEL_CONFIG['best_cube_data_threshold']
@@ -111,14 +114,16 @@ class CubeProcessor:
             key=lambda cube_data: cube_data.score[scoring_model],
             reverse=True)
 
-        # TODO: вот тут при обходимости можно применять фильтры по кубу
-
         logging.info(
-            "Query_ID: {}\tMessage: Лучший ответ создан на пути {}".format(
+            "Query_ID: {}\tMessage: Алгоритмически лучший"
+            "ответ создан на пути {}".format(
                 cube_data_list[0].request_id,
                 cube_data_list[0].tree_path
             )
         )
+
+        # Выбор первого ответа по корректному кубу, если возможно
+        csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
 
         return cube_data_list[:threshold + 1]
 

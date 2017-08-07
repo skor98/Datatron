@@ -328,9 +328,7 @@ class BaseTester:
                 logging.info(doc_name_output_str)
 
                 for idx, line in enumerate(file_in):
-                    line = line.strip()
-                    if not line:
-                        continue
+                    line = ' '.join(line.split())
 
                     if line.startswith('*'):
                         continue
@@ -432,26 +430,25 @@ class CubeTester(BaseTester):
         response = system_answer['answer']
 
         if not response:
-            ars = '{}. - Ответ на запрос "{}" не был найден'
+            ars = '{}.\t-\t{}\tОтвет не был найден'
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         response = response.get('mdx_query')
         if not response:
-            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
+            ars = '{}\t-\t{}\t\tГлавный ответ по Минфину'.format(idx, req)
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         if self._mdx_queries_equality(answer, response):
-            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
+            ars = '{}.\t+\t{}'.format(idx, req)
             self.add_text_result(ars)
             self.process_true(idx, req, answer, system_answer)
         else:
             ars = (
-                '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {})'
+                '{}.\t-\t{}\tВместо {} получаем: {}'
             )
             ars = ars.format(
                 idx,
@@ -598,7 +595,6 @@ class MinfinTester(BaseTester):
         # Точность без учёта скора
         total_no_score = self.get_trues_no_score() + self.get_wrongs_no_score()
         res["noscoreAcc"] = self.get_trues_no_score() / total_no_score
-        res["noscoreTotal"] = total_no_score  # для проверки значимости
 
         # Точность без учёта idk тестов
         total_no_idk = self.get_trues_known() + self.get_wrongs_known()
