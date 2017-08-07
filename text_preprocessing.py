@@ -34,7 +34,6 @@ class TextPreprocessing:
 
     def __init__(self, request_id=None):
         self.request_id = request_id
-        self.norming_style = 'lem'
         self.language = 'russian'
 
         # TODO: что делать с вопросительными словами?
