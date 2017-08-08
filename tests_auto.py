@@ -40,7 +40,7 @@ for i in tests_array:
         updated_dims = updated_dims + j + ', '
 
     updated_dims = updated_dims[0:len(updated_dims) - 2:1]
-    test_text_mdx[1] = test_text_mdx[1][1:n:1] + '(' + updated_dims + ')'
+    test_text_mdx[1] = test_text_mdx[1][0:n:1] + '(' + updated_dims + ')'
     new_test = test_text_mdx[0] + ':' + test_text_mdx[1]
     correct_tests_array.append(new_test)
 
