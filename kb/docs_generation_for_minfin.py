@@ -7,14 +7,19 @@ import math
 import uuid
 import subprocess
 import logging
+import math
 import pycurl
-import pandas as pd
+import subprocess
+import sys
+import uuid
 from os import listdir, path
 
-from text_preprocessing import TextPreprocessing
+import pandas as pd
+
 from config import SETTINGS, TEST_PATH_MINFIN
-from model_manager import MODEL_CONFIG
 from kb.kb_support_library import read_minfin_data
+from model_manager import MODEL_CONFIG
+from text_preprocessing import TextPreprocessing
 
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
@@ -27,7 +32,6 @@ output_file = 'minfin_data_for_indexing.json'
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
 
 
-@time_with_message("set_up_minfin_data", "info")
 def set_up_minfin_data(index_way='curl'):
     """
     Метод для создания и индексации в Apache Solr
@@ -78,9 +82,6 @@ def _refactor_data(data):
             delete_question_words=False
         )
         doc.lem_question = lem_question
-
-        # Делаем длину
-        doc.lem_question_len = len(lem_question.split())
 
         synonym_questions = _get_manual_synonym_questions(doc.number)
 
@@ -375,11 +376,6 @@ class MinfinDocument:
         self.short_answer = ''
         self.full_answer = None
         self.lem_question = ''
-
-        # Давайте считать, что длина хорошо описывается
-        # длиной основного вопроса
-        self.lem_question_len = ''
-
         self.lem_synonym_questions = None
         self.lem_short_answer = ''
         self.lem_full_answer = None

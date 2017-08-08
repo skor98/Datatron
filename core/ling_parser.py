@@ -9,16 +9,14 @@ Created on Mon Jul 24 13:13:08 2017
 # pylint: disable=missing-docstring
 
 from pymorphy2 import MorphAnalyzer
+import re
 
-'''
-SYNONYMS = [
-    ('субъект', 'территория', 'регион', 'область', 'край', 'республика',
-     'место', 'москва', 'санкт-петербург', 'севастополь', 'байконур',
-     'Россия', 'РФ'),
-    ('период', 'год', 'срок', 'время'),
-]
-'''
-
+#SYNONYMS = [
+#    ('субъект', 'территория', 'регион', 'область', 'край', 'республика',
+#     'место', 'москва', 'санкт-петербург', 'севастополь', 'байконур',
+#     'Россия', 'РФ'),
+#    ('период', 'год', 'срок', 'время'),
+#]
 
 class Word(object):
 
@@ -51,6 +49,7 @@ class Word(object):
     def all_tags(self):
         return self.deriv_tags.union(self.infl_tags)
 
+
     def inflect(self, grammemes):
         if isinstance(grammemes, (list, tuple)):
             return self.inflect(set(grammemes))
@@ -60,6 +59,7 @@ class Word(object):
         if not grammemes:
             return self.clone()
         return Word(self.original.inflect(grammemes))
+
 
     def agrees(self, other):
         if isinstance(other, Phrase):
@@ -100,9 +100,9 @@ class Word(object):
 
     @property
     def accepts_accs(self):
-        return (self.transitivity == 'tran' or
-                self.POS == 'PREP' or
-                self.case == 'accs')
+        return (self.transitivity == 'tran'
+                or self.POS == 'PREP'
+                or self.case == 'accs')
 
     def clone(self):
         return Word(self.original)
@@ -135,12 +135,12 @@ class Word(object):
     def __repr__(self):
         if not self.infl_tags:
             return '<Word {}: {}>'.format(self.verbal, ', '.join(self.deriv_tags))
-
-        return '<Word {}: {} ({}) in form {}>'.format(
-            self.verbal, self.normal,
-            ', '.join(self.deriv_tags),
-            '/'.join(self.infl_tags),
-        )
+        else:
+            return '<Word {}: {} ({}) in form {}>'.format(
+                    self.verbal, self.normal,
+                    ', '.join(self.deriv_tags),
+                    '/'.join(self.infl_tags),
+            )
 
 
 class Phrase(object):
@@ -260,12 +260,12 @@ class Phrase(object):
 
     def __str__(self):
         return self.verbal
-
+    
     def __repr__(self):
         return '<Phrase {}: [{}]>'.format(
-            self.verbal,
-            '; '.join([repr(w) if n != self.mainpos else repr(w) + '(MAIN)'
-                       for n, w in enumerate(self.structure)])
+                self.verbal,
+                '; '.join([repr(w) if n != self.mainpos else repr(w)+'(MAIN)'
+                           for n, w in enumerate(self.structure)])
         )
 
     def __bool__(self):
