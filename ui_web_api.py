@@ -11,6 +11,8 @@ import logging
 from uuid import uuid4
 import json
 
+
+from flask import send_file
 import pandas as pd
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
@@ -158,6 +160,85 @@ class MinfinList(Resource):
         return get_minfin_data()
 
 
+# API v2
+class VoiceQueryV2(Resource):
+    """Обрабатывает отправку файлов голосом"""
+
+    @time_with_message("VoiceQuery API Get", "info", 7)
+    def post(self):
+        args = parser.parse_args()
+
+        if not is_valid_api_key(args["apikey"]):
+            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+
+        if 'file' not in request.files:
+            abort(400, message='You need "file" parameter"')
+
+        # Получение файла
+        voice_file = request.files['file']
+
+        # Определение его формата
+        file_extension = voice_file.filename.rsplit('.', 1)[-1]
+
+        # Определение дериктории для сохранения файла
+        save_path = 'tmp'
+        if not path.exists(save_path):
+            makedirs(save_path)
+
+        # Генерация случайного имени файла
+        new_file_name = uuid4().hex[:10]
+
+        # Сохранения полученного файла под новым именем в папку для хранения временных файлов
+        file_path = path.join(save_path, '{}.{}'.format(new_file_name, file_extension))
+
+        logging.debug("Создали новый временный файл {}".format(file_path))
+        voice_file.save(file_path)
+
+        request_id = uuid4().hex
+
+        return MessengerManager.make_voice_request(
+            "API v1",
+            args["apikey"],
+            "",
+            request_id,
+            filename=file_path
+        ).toJSON_API()
+
+
+class TextQueryV2(Resource):
+    """Обрабатывает простой текстовой зарос"""
+
+    @time_with_message("TextQuery API Get", "info", 4)
+    def get(self):
+        args = parser.parse_args()
+        logging.info(args)
+
+        if not is_valid_api_key(args["apikey"]):
+            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+
+        request_text = args['query']
+        request_id = uuid4().hex
+
+        if len(args['query']) < 4:
+            abort(400, message='You need "query" parameter"')
+
+        return MessengerManager.make_request(
+            request_text,
+            "API v1",
+            args["apikey"],
+            "",
+            request_id
+        ).toJSON_API()
+
+
+class MinfinListV2(Resource):
+    """Возвращает весь список минфин вопросов. Актуально, пока их мало"""
+
+    @time_with_message("MinfinList API Get", "info", 1)
+    def get(self):
+        return get_minfin_data()
+
+
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
 API_VERSION = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
@@ -180,12 +261,48 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
+
 api.add_resource(VoiceQuery, '/{}/voice'.format(API_VERSION))
 api.add_resource(TextQuery, '/{}/text'.format(API_VERSION))
 api.add_resource(MinfinList, '/{}/minfin_docs'.format(API_VERSION))
+
+# Реализуем API v2
+api.add_resource(VoiceQueryV2, '/v2/voice')
+api.add_resource(TextQueryV2, '/v2/text')
+api.add_resource(MinfinListV2, '/v2/minfin_docs')
 
 
 @app.route('/')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
+
+
+@app.route('/v1/resources/image')
+def get_image():
+    """
+    Получение картинки. Пока они все отдаются как jpeg. Это не вечно
+    ToDo: фиксить один тип
+    """
+    img_name = request.args.get('path')
+    if not img_name:
+        abort(404)
+    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "img", img_name)
+    if not path.isfile(img_path):
+        abort(404, message="Resource {} is NOT valid".format(img_name))
+    return send_file(img_path, mimetype='image/jpeg')
+
+
+@app.route('/v1/resources/document')
+def get_document():
+    """
+    Получение документа. Пока они все отдаются как pdf. Это не вечно
+    ToDo: фиксить один тип
+    """
+    img_name = request.args.get('path')
+    if not img_name:
+        abort(404)
+    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "doc", img_name)
+    if not path.isfile(img_path):
+        abort(404, message="Resource {} is NOT valid".format(img_name))
+    return send_file(img_path, mimetype='application/pdf')

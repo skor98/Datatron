@@ -67,6 +67,8 @@ TEST_PATH_CUBE = fixed_path(path.join("tests", "cube"))
 TEST_PATH_MINFIN = fixed_path(path.join("tests", "minfin"))
 TEST_PATH_RESULTS = fixed_path(path.join("tests", "results"))
 
+DATA_PATH = fixed_path("data")
+
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
 DATETIME_FORMAT = "{} {}".format(DATE_FORMAT, TIME_FORMAT)

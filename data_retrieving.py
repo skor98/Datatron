@@ -148,13 +148,17 @@ class DataRetrieving:
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
 
         if len(norm_user_request.split()) <= short_question_threshold:
+            # надо добавить пробел в конце, иначе будет слипание
+            norm_user_request = norm_user_request.strip() + " "
             norm_user_request *= multiplier
+            # а потом снова убрать пробел в конце
+            norm_user_request = norm_user_request.strip()
 
             logging.info(
                 "Query_ID: {}\tMessage: Запрос из {} слов был "
                 "удлинен в {} раза".format(
                     request_id,
-                    len(norm_user_request),
+                    len(norm_user_request.split()),
                     multiplier
                 )
             )
