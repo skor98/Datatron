@@ -10,7 +10,7 @@ from os import listdir, path
 
 import kb.kb_db_creation as dbc
 
-from core.text_preprocessing import TextPreprocessing
+from text_preprocessing import TextPreprocessing
 from config import SETTINGS
 
 
