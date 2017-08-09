@@ -19,7 +19,7 @@ import pandas as pd
 from config import SETTINGS, TEST_PATH_MINFIN
 from kb.kb_support_library import read_minfin_data
 from model_manager import MODEL_CONFIG
-from text_preprocessing import TextPreprocessing
+from core.text_preprocessing import TextPreprocessing
 
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message

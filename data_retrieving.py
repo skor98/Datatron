@@ -16,7 +16,7 @@ from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
 
-from text_preprocessing import TextPreprocessing
+from core.text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
