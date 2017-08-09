@@ -328,6 +328,9 @@ class BaseTester:
                 logging.info(doc_name_output_str)
 
                 for idx, line in enumerate(file_in):
+                    line = line.strip()
+                    if not line:
+                        continue
                     line = ' '.join(line.split())
 
                     if line.startswith('*'):
