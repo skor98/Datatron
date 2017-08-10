@@ -27,6 +27,7 @@ from dbs.user_support_library import get_feedbacks
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import text_to_speech
+from core.cube_classifier import CubeClassifier
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -348,6 +349,24 @@ def get_user_feedbacks(message):
         catch_bot_exception(message, "/getfeedback", err)
 
 
+@bot.message_handler(commands=['whatcube'])
+def what_cube_handler(message):
+    """
+    Позволяет протестировать как ведёт себя классификатор на сервере
+    /whatcube Цели разработки бюджетного прогноза РФ
+    """
+    try:
+        clf = CubeClassifier.inst()
+        req = " ".join(message.text.split()[1:])
+        text_to_send = "Бот думаю, что это один из кубов: \n"
+        for ind, elem in tuple(enumerate(clf.predict_proba(req)))[:3]:
+            cube_name, proba = elem
+            text_to_send += "{}. {} -> *{}*\n".format(ind+1, cube_name, round(proba*100,2))
+        bot.send_message(message.chat.id, text_to_send,parse_mode='Markdown')
+    except Exception as err:
+        catch_bot_exception(message, "/whatcube", err)
+
+
 @bot.message_handler(content_types=['text'])
 def salute(message):
     try:
@@ -370,6 +389,8 @@ def voice_processing(message):
         )
     )
     process_response(message, input_format='voice', file_content=file_data.content)
+
+
 
 
 @bot.callback_query_handler(func=lambda call: True)
