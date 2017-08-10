@@ -358,7 +358,7 @@ def what_cube_handler(message):
     try:
         clf = CubeClassifier.inst()
         req = " ".join(message.text.split()[1:])
-        text_to_send = "Бот думаю, что это один из кубов: \n"
+        text_to_send = "Бот думает, что это один из кубов: \n"
         for ind, elem in tuple(enumerate(clf.predict_proba(req)))[:3]:
             cube_name, proba = elem
             text_to_send += "{}. {} -> *{}*\n".format(ind+1, cube_name, round(proba*100,2))
