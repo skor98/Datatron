@@ -361,7 +361,7 @@ def what_cube_handler(message):
         text_to_send = "Бот думает, что это один из кубов: \n"
         for ind, elem in tuple(enumerate(clf.predict_proba(req)))[:3]:
             cube_name, proba = elem
-            text_to_send += "{}. {} -> *{}*\n".format(ind+1, cube_name, round(proba*100,2))
+            text_to_send += "{}. {} -> *{}%*\n".format(ind+1, cube_name, round(proba*100,2))
         bot.send_message(message.chat.id, text_to_send,parse_mode='Markdown')
     except Exception as err:
         catch_bot_exception(message, "/whatcube", err)
