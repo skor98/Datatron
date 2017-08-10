@@ -15,6 +15,7 @@ from core.support_library import format_cube_answer
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
+from core.cube_classifier import CubeClassifier
 
 from text_preprocessing import TextPreprocessing
 
@@ -58,10 +59,8 @@ class DataRetrieving:
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            # TODO: добавить 2ой параметр в метод
-            # А именно, имя корректного куба из классификатора,
-            # например, CLMR02
-            cube_answers = CubeProcessor.get_data(cube_data)
+            clf = CubeClassifier.inst()
+            cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
