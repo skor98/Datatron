@@ -219,3 +219,6 @@ tests/results/
 __init__.py
 
 0_local/
+
+# ignore
+*.pkl
