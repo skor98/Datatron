@@ -92,11 +92,6 @@ class CubeClassifier():
         """
         preprocessed = self._preprocess_query(req)
         res = self._ind_to_cube[self._clf.predict(preprocessed)[0]]
-        logging.info("Запрос {} преобразован в {} и результат {}".format(
-            req,
-            preprocessed,
-            res
-        ))
         return res
 
     def predict_proba(self, req):
