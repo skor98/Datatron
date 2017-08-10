@@ -140,11 +140,9 @@ class CubeClassifier():
         """
         X = np.zeros((1, len(self._words_to_ind)))
         req_words = _preprocess(req)
-        words_to_print = []
         for word in req_words:
             if word not in self._words_to_ind:
                 continue
-            words_to_print.append(word)
             X[0,self._words_to_ind[word]] += 1
         X = self._scaler.transform(X)
         return X
