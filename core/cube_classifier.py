@@ -29,8 +29,7 @@ from manual_testing import get_test_files
 from config import TEST_PATH_CUBE, DATA_PATH
 from model_manager import MODEL_CONFIG
 import logs_helper
-
-logging.getLogger("lib2to3").setLevel(logging.ERROR)
+# pylint: disable=invalid-name
 
 MODEL_PATH = DATA_PATH  # Положим там
 MODEL_PREFIX = "cube_clf_"  # ставится перед началом файлов с моделью
@@ -42,7 +41,7 @@ WORDS_TO_IND_NAME = MODEL_PREFIX + "words_map.json"  # файл с выбран�
 IND_TO_CUBE_NAME = MODEL_PREFIX + "cubes_map.json"  # преобразование индексов в имена кубов
 
 STOP_WORDS = set(stopwords.words("russian"))
-STOP_WORDS.update(set("также иной да нет -".split()))
+STOP_WORDS.update(set("подсказать также иной да нет -".split()))
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
 
@@ -57,6 +56,7 @@ class CubeClassifier():
 
     @staticmethod
     def inst(is_train=False, params=None):
+        """Реализует Синглтон"""
         if CubeClassifier.__instance is None:
             CubeClassifier.__instance = CubeClassifier(is_train, params)
         return CubeClassifier.__instance
@@ -165,6 +165,8 @@ class CubeClassifier():
 
         with open(os.path.join(path, IND_TO_CUBE_NAME), "r") as f:
             self._ind_to_cube = json.load(f)
+        # надо сделать ключи числами:
+        self._ind_to_cube = {int(i): self._ind_to_cube[i] for i in self._ind_to_cube}
 
     @logs_helper.time_with_message("CubeClassifier._save", "info")
     def _save(self, path: str):
@@ -178,7 +180,7 @@ class CubeClassifier():
             pickle.dump(self._scaler, f)
 
         with open(os.path.join(path, WORDS_TO_IND_NAME), "w") as f:
-            json.dump(self._words_to_ind, f, indent=4, ensure_ascii=False)
+            json.dump(self._words_to_ind, f, indent=4, ensure_ascii=False, sort_keys=True)
 
         with open(os.path.join(path, IND_TO_CUBE_NAME), "w") as f:
             json.dump(self._ind_to_cube, f, indent=4, ensure_ascii=False)
@@ -309,7 +311,7 @@ def _get_tests_data():
     CubesMap = {}
     for test_path in get_test_files(TEST_PATH_CUBE, "cubes_test"):
         with open(test_path, 'r', encoding='utf-8') as file_in:
-            for idx, line in enumerate(file_in):
+            for line in file_in:
                 line = line.strip()
                 if not line:
                     continue
@@ -329,12 +331,13 @@ def _get_tests_data():
                 answer = CubesMap[answer]
                 req = _preprocess(req)
                 res.append((req, answer))
-    return tuple(res), CubesMap
+    BackCubesMap = {CubesMap[i]:i for i in CubesMap}
+    return tuple(res), BackCubesMap
 
 def _preprocess(s: str):
     """Возвращает массив токенов по строке"""
     return tuple(map(
-        lambda x: get_normal_form(x),
+        get_normal_form,
         filter(
             lambda x: x not in STOP_WORDS,
             WORDS_RE.findall(s.lower())
