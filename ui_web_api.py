@@ -23,12 +23,9 @@ import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
 from config import SETTINGS
 
-from core.answer_object import CoreAnswer
-from core.cube_docs_processing import CubeAnswer
-from core.minfin_docs_processing import MinfinAnswer
-from models.responses.link_model import LinkModel
-from models.responses.question_model import QuestionModel
 from models.responses.text_response_model import TextResponseModel
+
+from utils.resource_helper import ResourceHelper
 
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
@@ -236,99 +233,9 @@ class TextQueryV2(Resource):
             request_id
         )
 
-        result = TextQueryV2.to_text_response(response)
+        result = TextResponseModel.from_answer(response)
 
         return result.toJSON_API()
-
-    @staticmethod
-    def to_text_response(response: CoreAnswer):
-        text_response = TextResponseModel()
-        text_response.status = response.status
-        if response.answer is None:
-            return text_response
-
-        if isinstance(response.answer, CubeAnswer):
-            logging.info('ответ по кубу')
-            TextQueryV2.from_cube_answer(response, text_response)
-
-        if isinstance(response.answer, MinfinAnswer):
-            logging.info('ответ по минфину')
-            TextQueryV2.from_minfin_answer(response, text_response)
-
-        text_response.see_more = TextQueryV2.get_see_more(
-            response.more_answers_order,
-            response.more_cube_answers,
-            response.more_minfin_answers
-        )
-
-        return text_response
-
-    @staticmethod
-    def from_cube_answer(response: CubeAnswer, text_response: TextResponseModel):
-        text_response.short_answer = response.answer.message
-        text_response.full_answer = response.answer.message
-
-        return text_response
-
-    @staticmethod
-    def from_minfin_answer(response: CubeAnswer, text_response: TextResponseModel):
-        if response.answer is not None:
-            text_response.question = response.answer.question
-            text_response.full_answer = response.answer.full_answer
-            text_response.short_answer = response.answer.short_answer
-            text_response.document_links = TextQueryV2.get_document_links(response)
-            text_response.image_links = TextQueryV2.get_image_links(response)
-            text_response.http_ref_links = TextQueryV2.get_gttp_ref_links(response)
-
-        return text_response
-
-    @staticmethod
-    def get_see_more(answer_order: str, cube_answer_list: list, minfin_answer_list: list):
-        see_more_items = []
-        minfin_answer_counter = 0
-        cube_answer_counter = 0
-        for mask in list(answer_order):
-            if mask == '1':
-                question = minfin_answer_list[minfin_answer_counter].question
-                minfin_answer_counter += 1
-            else:
-                question = cube_answer_list[cube_answer_counter].feedback.get('pretty_feedback')
-                cube_answer_counter += 1
-
-            see_more_items.append(QuestionModel(question))
-
-            for item in see_more_items:
-                logging.info("{}".format(item.question))
-
-        return see_more_items
-
-    @staticmethod
-    def get_document_links(response: CoreAnswer):
-        if response.answer.document is not None:
-            document_links = []
-            document_link = LinkModel('document', response.answer.document_caption, response.answer.document)
-            document_links.append(document_link)
-        else:
-            return None
-
-    @staticmethod
-    def get_image_links(response: CoreAnswer):
-        if response.answer.picture is not None:
-            image_links = []
-            image_link = LinkModel('image', response.answer.picture_caption, response.answer.picture)
-            image_links.append(image_link)
-            return image_links
-        else:
-            return None
-
-    @staticmethod
-    def get_gttp_ref_links(response: CoreAnswer):
-        if response.answer.link is not None:
-            http_ref_links = []
-            http_ref_link = LinkModel('http_ref', response.answer.link_name, response.answer.link)
-            http_ref_links.append(http_ref_link)
-        else:
-            return None
 
 class MinfinListV2(Resource):
     """Возвращает весь список минфин вопросов. Актуально, пока их мало"""
@@ -384,12 +291,8 @@ def get_image():
     ToDo: фиксить один тип
     """
     img_name = request.args.get('path')
-    if not img_name:
-        abort(404)
-    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "img", img_name)
-    if not path.isfile(img_path):
-        abort(404, message="Resource {} is NOT valid".format(img_name))
-    return send_file(img_path, mimetype='image/jpeg')
+
+    return ResourceHelper.get_image(img_name)
 
 
 @app.route('/v1/resources/document')
@@ -398,10 +301,14 @@ def get_document():
     Получение документа. Пока они все отдаются как pdf. Это не вечно
     ToDo: фиксить один тип
     """
-    img_name = request.args.get('path')
-    if not img_name:
-        abort(404)
-    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "doc", img_name)
-    if not path.isfile(img_path):
-        abort(404, message="Resource {} is NOT valid".format(img_name))
-    return send_file(img_path, mimetype='application/pdf')
+    doc_name = request.args.get('path')
+
+    return ResourceHelper.get_document(doc_name)
+
+@app.route('/v2/resources/image/<image_id>')
+def get_image_v2(image_id):
+    return ResourceHelper.get_image(image_id)
+
+@app.route('/v2/resources/document/<document_id>')
+def get_document_v2(document_id):
+    return ResourceHelper.get_document(document_id)
