@@ -7,6 +7,7 @@
 * Запуск модели
 * Обучение модели
 * Выбор оптимальной модели
+
 """
 import os
 import re
@@ -21,13 +22,14 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import accuracy_score, log_loss, classification_report
+from sklearn.model_selection import KFold, ParameterGrid
 
 from nltk.corpus import stopwords
 
 from text_preprocessing import get_normal_form
-from manual_testing import get_test_files
 from config import TEST_PATH_CUBE, DATA_PATH
-from model_manager import MODEL_CONFIG
+from model_manager import MODEL_CONFIG, save_default_model
 import logs_helper
 # pylint: disable=invalid-name
 
@@ -45,7 +47,9 @@ STOP_WORDS.update(set("подсказать также иной да нет -".s
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
 
+
 class CubeClassifier():
+
     """
     Класс, который обеспечивает взаимодействие с ML-trained моделью
     По умолчанию загружается из файлов с моделью
@@ -87,9 +91,7 @@ class CubeClassifier():
             self._words_to_ind = deepcopy(params["words_to_ind"])
 
     def predict(self, req: str):
-        """
-        Возвращает имя куба по запросу-строке
-        """
+        """Возвращает имя куба по запросу-строке"""
         preprocessed = self._preprocess_query(req)
         res = self._ind_to_cube[self._clf.predict(preprocessed)[0]]
         return res
@@ -107,19 +109,16 @@ class CubeClassifier():
         return map(lambda x: (self._ind_to_cube[x[0]], x[1]),
             sorted(
                 list(enumerate(res.tolist())),
-                key = lambda x: x[1],
-                reverse = True
+                key=lambda x: x[1],
+                reverse=True
             )
         )
 
     def train(self):
-        """
-        Полностью инкапсулирует обучение модели
-        """
+        """Полностью инкапсулирует обучение модели"""
         data, self._ind_to_cube = _get_tests_data()
         X, Y, self._words_to_ind, self._scaler = _prepare_test_data(data)
-        self._clf = _trainModel(X, Y)
-
+        self._clf = _train_model(X, Y)
 
     def load(self):
         """Загружает модель из предопределённого пути"""
@@ -130,23 +129,19 @@ class CubeClassifier():
         self._save(MODEL_PATH)
 
     def _preprocess_query(self, req):
-        """
-        Предобрабатывает запрос так, чтобы его уже можно было отправлять в классификатор
-        """
+        """Предобрабатывает запрос так, чтобы его уже можно было отправлять в классификатор"""
         X = np.zeros((1, len(self._words_to_ind)))
         req_words = _preprocess(req)
         for word in req_words:
             if word not in self._words_to_ind:
                 continue
-            X[0,self._words_to_ind[word]] += 1
+            X[0, self._words_to_ind[word]] += 1
         X = self._scaler.transform(X)
         return X
 
     @logs_helper.time_with_message("CubeClassifier._load", "info")
     def _load(self, path: str):
-        """
-        Загружает модель. Не должен вызываться явно.
-        """
+        """Загружает модель. Не должен вызываться явно."""
         with open(os.path.join(path, CLASSIFIER_NAME), "rb") as f:
             self._clf = pickle.load(f)
 
@@ -163,9 +158,7 @@ class CubeClassifier():
 
     @logs_helper.time_with_message("CubeClassifier._save", "info")
     def _save(self, path: str):
-        """
-        Сохраняет модель. Не должен вызываться явно.
-        """
+        """Сохраняет модель. Не должен вызываться явно."""
         with open(os.path.join(path, CLASSIFIER_NAME), "wb") as f:
             pickle.dump(self._clf, f)
 
@@ -180,24 +173,128 @@ class CubeClassifier():
         logging.info("Классификатор кубов сохранён в папке {}".format(path))
 
 
-@logs_helper.time_with_message("selectBestModel", "info", 60*60)
-def selectBestModel():
+@logs_helper.time_with_message("select_best_model", "info", 60 * 60)
+def select_best_model():
     """
-    Выполняет поиск наилучшей модели и возвращает её параметры.
+    Выполняет поиск наилучшей модели и сохраняет её параметры.
     Может долго работать!
     Пока гарантируются, что он не будет работать больше часа
     """
-    pass
+
+    def get_classifier():
+        """
+        Генератор моделей для перебора.
+        Нужен для инкапсуляции выбора моделей и последовательной их генерации
+        """
+        classifiers = {
+            "logistic": (LogisticRegression, ParameterGrid({
+                "C": [1, 4, 10],
+                "n_jobs": [-1]
+            })),
+            "GB": (GradientBoostingClassifier, ParameterGrid({
+                "learning_rate": [0.3, 0.1],
+                "n_estimators":  [100, 240, 400],
+                "max_depth": [1, 2, 3]
+            }))
+        }
+        for clf_name in classifiers:
+            for params in classifiers[clf_name][1]:
+                yield clf_name, params, classifiers[clf_name][0](**params)
+
+    # главный параметр, отвечающий за компромисс между точностью и временем
+    # работы при неизменном наборе классификаторов
+    # время работы ~ KFOLD_PARTS ^ (3/2)
+    KFOLD_PARTS = 40
+
+    data, ind_to_cube = _get_tests_data()
+    X, Y, words_to_ind, scaler = _prepare_test_data(data)
+
+    logging.info("Используется {} Fold'ов".format(KFOLD_PARTS))
+    kfolds_generator = KFold(n_splits=KFOLD_PARTS, shuffle=True, random_state=42)
+
+    best_clf_name = None
+    best_params = None
+    best_log_loss = 100  # маленький хорошо, большой плохо
+    best_y_test_pred = None
+    best_y_test_pred_proba = None
+    best_y_test_real = None
+
+    for clf_name, params, clf in get_classifier():
+        y_train_pred = np.array([])
+        y_train_real = np.array([])
+
+        y_test_pred = np.array([])
+        y_test_pred_proba = np.zeros((0, len(ind_to_cube)))
+        y_test_real = np.array([])
+
+        for train_index, test_index in kfolds_generator.split(X):
+            X_train = X[train_index]
+            Y_train = Y[train_index]
+
+            X_test = X[test_index]
+            Y_test = Y[test_index]
+
+            clf.fit(X_train, Y_train)
+
+            y_train_pred = np.concatenate((y_train_pred, clf.predict(X_train)))
+            y_train_real = np.concatenate((y_train_real, Y_train))
+
+            y_test_pred = np.concatenate((y_test_pred, clf.predict(X_test)))
+            y_test_pred_proba = np.concatenate((y_test_pred_proba, clf.predict_proba(X_test)))
+            y_test_real = np.concatenate((y_test_real, Y_test))
+
+        if log_loss(y_test_real, y_test_pred_proba) < best_log_loss:
+            best_clf_name = clf_name
+            best_params = params
+            best_log_loss = log_loss(y_test_real, y_test_pred_proba)
+            best_y_test_pred = y_test_pred
+            best_y_test_pred_proba = y_test_pred_proba
+            best_y_test_real = y_test_real
+
+        print("{} {} train_acc: {:.3f} test_acc: {:.3f} test_log_loss {:.3f}".format(
+            clf_name,
+            params,
+            accuracy_score(y_train_pred, y_train_real),
+            accuracy_score(y_test_pred, y_test_real),
+            log_loss(y_test_real, y_test_pred_proba)
+        ))
+    print("Лучший {} {} с acc: {:.3f} и log_loss: {:.3f}".format(
+        best_clf_name,
+        best_params,
+        accuracy_score(y_test_real, best_y_test_pred),
+        log_loss(y_test_real, best_y_test_pred_proba)
+    ))
+
+    print(classification_report(
+        best_y_test_real,
+        best_y_test_pred,
+        target_names=tuple(ind_to_cube.values())
+    ))
+
+    logging.info("Сохраняю новые параметры {}-{}".format(best_clf_name, best_params))
+    if best_clf_name == "logistic":
+        MODEL_CONFIG["model_cube_clf_type"] = "LogisticRegression"
+        MODEL_CONFIG["model_cube_clf_lr_reg"] = best_params["C"]
+    elif best_clf_name == "GB":
+        MODEL_CONFIG["model_cube_clf_type"] = "GradientBoosting"
+        MODEL_CONFIG["model_cube_clf_gb_estimators"] = best_params["n_estimators"]
+        MODEL_CONFIG["model_cube_clf_gb_learning_rate"] = best_params["learning_rate"]
+        MODEL_CONFIG["model_cube_clf_gb_max_depth"] = best_params["max_depth"]
+    else:
+        raise Exception("Неизвестная модель {}".format(best_clf_name))
+
+    save_default_model(MODEL_CONFIG)
+
 
 @logs_helper.time_with_message("trainAndSaveModel", "info")
-def trainAndSaveModel():
+def train_and_save_model():
     """Инкапсулирует создание и сохранение модели"""
     clf = CubeClassifier.inst(is_train=True)
     return clf
 
 
-@logs_helper.time_with_message("_trainModel", "info")
-def _trainModel(X, Y):
+@logs_helper.time_with_message("_train_model", "info")
+def _train_model(X, Y):
     """
     Возвращает готовую модель по обучающей выборке.
     Тип модели выбирается из ModelManager'а
@@ -212,7 +309,12 @@ def _trainModel(X, Y):
     elif model_type == "GradientBoosting":
         n_estimators = MODEL_CONFIG["model_cube_clf_gb_estimators"]
         learning_rate = MODEL_CONFIG["model_cube_clf_gb_learning_rate"]
-        clf = GradientBoostingClassifier(n_estimators=n_estimators, learning_rate=learning_rate)
+        max_depth = MODEL_CONFIG["model_cube_clf_gb_max_depth"]
+        clf = GradientBoostingClassifier(
+            n_estimators=n_estimators,
+            learning_rate=learning_rate,
+            max_depth=max_depth
+        )
     else:
         err_msg = "Неизвестный тип модели {}".format(model_type)
         logging.error(err_msg)
@@ -274,7 +376,7 @@ def _prepare_test_data(data):
         len(filtered_data)
     ))
 
-    X = np.zeros((len(filtered_data),len(WordIndex)))
+    X = np.zeros((len(filtered_data), len(WordIndex)))
     Y = np.zeros(len(filtered_data))
 
     for ind, line in enumerate(filtered_data):
@@ -282,7 +384,7 @@ def _prepare_test_data(data):
         for word in req_words:
             if word not in WordIndex:
                 continue
-            X[ind,WordIndex[word]] += 1
+            X[ind, WordIndex[word]] += 1
         Y[ind] = line[1]
 
     # предобраотка данных, полезна в любом случае
@@ -307,7 +409,7 @@ def _get_tests_data():
 
     res = []
     CubesMap = {}
-    for test_path in get_test_files(TEST_PATH_CUBE, "cubes_test"):
+    for test_path in _get_folder_files(TEST_PATH_CUBE):
         with open(test_path, 'r', encoding='utf-8') as file_in:
             for line in file_in:
                 line = line.strip()
@@ -320,7 +422,7 @@ def _get_tests_data():
                 req, answer = line.split(':')
                 answer = CUBE_RE.search(answer).group()
 
-                if not answer in CubesMap:
+                if answer not in CubesMap:
                     if not CubesMap:
                         CubesMap[answer] = 0
                     else:
@@ -329,8 +431,9 @@ def _get_tests_data():
                 answer = CubesMap[answer]
                 req = _preprocess(req)
                 res.append((req, answer))
-    BackCubesMap = {CubesMap[i]:i for i in CubesMap}
+    BackCubesMap = {CubesMap[i]: i for i in CubesMap}
     return tuple(res), BackCubesMap
+
 
 def _preprocess(s: str):
     """Возвращает массив токенов по строке"""
@@ -341,3 +444,9 @@ def _preprocess(s: str):
             WORDS_RE.findall(s.lower())
         )
     ))
+
+
+def _get_folder_files(test_path):
+    """Генератор путей к файлам в указанной папке"""
+    for file_name in os.listdir(test_path):
+        yield os.path.join(test_path, file_name)

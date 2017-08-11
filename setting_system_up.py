@@ -14,7 +14,7 @@ import datetime
 from os import path
 from math import isnan
 
-from core.cube_classifier import trainAndSaveModel
+from core.cube_classifier import train_and_save_model, select_best_model
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
@@ -69,6 +69,12 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        "--cube-clf-select",
+        action='store_true',
+        help='Выбор лучшей модели для классификатора по кубам. Может быть долгим!',
+    )
+
+    parser.add_argument(
         "--cube-clf",
         action='store_true',
         help='Тренировка классификатора по кубам и его сохранение',
@@ -104,6 +110,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
+    if args.cube_clf_select:
+        # Если потратили столько времени на выбор модели, то можно её и обучить
+        select_best_model()
+        args.cube_clf = True
+
     if not args.cube_clf and not args.db and not args.cube and not args.minfin:
         print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
             sys.argv[0]
@@ -111,7 +122,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.cube_clf:
-        trainAndSaveModel()
+        train_and_save_model()
     if args.db:
         set_up_db()
     if args.cube:
