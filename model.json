@@ -17,5 +17,6 @@
   "enable_idea_command_from_db": false,
   "model_cube_clf_type": "GradientBoosting",
   "model_cube_clf_lr_reg": 1.0,
-  "model_cube_clf_gb_estimators": 240
+  "model_cube_clf_gb_estimators": 240,
+  "model_cube_clf_gb_learning_rate": 0.3
 }

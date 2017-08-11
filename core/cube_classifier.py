@@ -180,11 +180,12 @@ class CubeClassifier():
         logging.info("Классификатор кубов сохранён в папке {}".format(path))
 
 
-@logs_helper.time_with_message("selectBestModel", "info")
+@logs_helper.time_with_message("selectBestModel", "info", 60*60)
 def selectBestModel():
     """
     Выполняет поиск наилучшей модели и возвращает её параметры.
     Может долго работать!
+    Пока гарантируются, что он не будет работать больше часа
     """
     pass
 
@@ -210,7 +211,8 @@ def _trainModel(X, Y):
         clf = LogisticRegression(C=clf_reg, n_jobs=-1)
     elif model_type == "GradientBoosting":
         n_estimators = MODEL_CONFIG["model_cube_clf_gb_estimators"]
-        clf = GradientBoostingClassifier(n_estimators=n_estimators, )
+        learning_rate = MODEL_CONFIG["model_cube_clf_gb_learning_rate"]
+        clf = GradientBoostingClassifier(n_estimators=n_estimators, learning_rate=learning_rate)
     else:
         err_msg = "Неизвестный тип модели {}".format(model_type)
         logging.error(err_msg)
@@ -267,7 +269,10 @@ def _prepare_test_data(data):
         used_queries.add(stringed_example)
         filtered_data.append(line)
 
-    logging.info("Отфильтровали {} примеров".format(len(data) - len(filtered_data)))
+    logging.info("Отфильтровали {} примеров, осталось {}".format(
+        len(data) - len(filtered_data),
+        len(filtered_data)
+    ))
 
     X = np.zeros((len(filtered_data),len(WordIndex)))
     Y = np.zeros(len(filtered_data))
