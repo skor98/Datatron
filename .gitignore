@@ -217,5 +217,3 @@ tests/results/
 *.e4p
 .eric6project
 __init__.py
-
-0_local/

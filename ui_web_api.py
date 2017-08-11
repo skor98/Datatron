@@ -11,6 +11,8 @@ import logging
 from uuid import uuid4
 import json
 
+
+from flask import send_file
 import pandas as pd
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
@@ -373,3 +375,33 @@ api.add_resource(MinfinListV2, '/v2/minfin_docs')
 def main():
     """Чтобы что-то выводило при GET запросе - простая проверка рабочего состояния серевера"""
     return '<center><h1>Welcome to Datatron Home API page</h1></center>'
+
+
+@app.route('/v1/resources/image')
+def get_image():
+    """
+    Получение картинки. Пока они все отдаются как jpeg. Это не вечно
+    ToDo: фиксить один тип
+    """
+    img_name = request.args.get('path')
+    if not img_name:
+        abort(404)
+    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "img", img_name)
+    if not path.isfile(img_path):
+        abort(404, message="Resource {} is NOT valid".format(img_name))
+    return send_file(img_path, mimetype='image/jpeg')
+
+
+@app.route('/v1/resources/document')
+def get_document():
+    """
+    Получение документа. Пока они все отдаются как pdf. Это не вечно
+    ToDo: фиксить один тип
+    """
+    img_name = request.args.get('path')
+    if not img_name:
+        abort(404)
+    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "doc", img_name)
+    if not path.isfile(img_path):
+        abort(404, message="Resource {} is NOT valid".format(img_name))
+    return send_file(img_path, mimetype='application/pdf')
