@@ -374,6 +374,25 @@ class CubeTester(BaseTester):
     ):
         super().__init__(percentiles, is_need_logging)
 
+        self._only_cube_wrongs = 0
+        self._only_cube_trues = 0
+
+    def _add_true_only_cube(self):
+        """Добавляет ещё один ложный не результат определения ТОЛЬКО куба"""
+        self._only_cube_trues += 1
+
+    def get_trues_only_cube(self):
+        """Возвращает число ложный результатов ТОЛЬКО по определению куба"""
+        return self._only_cube_trues
+
+    def _add_wrong_only_cube(self):
+        """Добавляет ещё один истинный не результат определения ТОЛЬКО куба"""
+        self._only_cube_wrongs += 1
+
+    def get_wrongs_only_cube(self):
+        """Возвращает число истинных результатов ТОЛЬКО по определению куба"""
+        return self._only_cube_wrongs
+
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
 
@@ -395,30 +414,41 @@ class CubeTester(BaseTester):
         absolute_confidence = system_answer['answer']['score'][score_model] - nearest_result
         self._add_absolute_confidence(absolute_confidence)
 
+    def get_results(self):
+        """
+        Добавляет дополнительно точность ТОЛЬКО по определению куба из запроса
+        """
+        res = super().get_results()
+
+        # Точность ТОЛЬКО по определению куба
+        total_only_cube = self.get_trues_only_cube() + self.get_wrongs_only_cube()
+        res["onlycubeAcc"] = self.get_trues_only_cube() / total_only_cube
+
+        return res
+
     def _check_result(self, idx, req, answer, system_answer):
         response = system_answer['answer']
 
         if not response:
-            ars = '{}. - Ответ на запрос "{}" не был найден'
+            ars = '{}.\t-\t{}\tОтвет не был найден'
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         response = response.get('mdx_query')
         if not response:
-            ars = '{}. - Главный ответ на запрос "{}" - ответ по Минфину'.format(idx, req)
+            ars = '{}\t-\t{}\t\tГлавный ответ по Минфину'.format(idx, req)
             self.add_text_result(ars)
             self.process_wrong(idx, req, answer, system_answer)
             return
 
         if self._mdx_queries_equality(answer, response):
-            ars = '{}. + Запрос "{}" отрабатывает корректно'.format(idx, req)
+            ars = '{}.\t+\t{}'.format(idx, req)
             self.add_text_result(ars)
             self.process_true(idx, req, answer, system_answer)
         else:
             ars = (
-                '{}. - Запрос "{}" отрабатывает некорректно' +
-                '(должны получать: {}, получаем: {})'
+                '{}.\t-\t{}\tВместо {} получаем: {}'
             )
             ars = ars.format(
                 idx,
@@ -466,6 +496,11 @@ class CubeTester(BaseTester):
 
         measure_equal = (q1_measure == q2_measure)
         cube_equal = (q1_cube == q2_cube)
+
+        if cube_equal:
+            self._add_true_only_cube()
+        else:
+            self._add_wrong_only_cube()
 
         # игнорирование порядка элементов измерений
         members_equal = (set(q1_members) == set(q2_members))
@@ -560,7 +595,6 @@ class MinfinTester(BaseTester):
         # Точность без учёта скора
         total_no_score = self.get_trues_no_score() + self.get_wrongs_no_score()
         res["noscoreAcc"] = self.get_trues_no_score() / total_no_score
-        res["noscoreTotal"] = total_no_score  # для проверки значимости
 
         # Точность без учёта idk тестов
         total_no_idk = self.get_trues_known() + self.get_wrongs_known()

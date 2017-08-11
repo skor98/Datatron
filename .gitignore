@@ -212,3 +212,8 @@ tests/results/
 
 # ingonring certificates
 *.pem
+
+# Eric IDE
+*.e4p
+.eric6project
+__init__.py

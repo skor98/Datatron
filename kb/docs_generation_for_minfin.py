@@ -2,20 +2,20 @@
 # -*- coding: utf-8 -*-
 
 import json
-import math
-import uuid
-import subprocess
 import logging
+import math
 import pycurl
-import pandas as pd
+import subprocess
+import sys
+import uuid
 from os import listdir, path
 
-from text_preprocessing import TextPreprocessing
-from config import SETTINGS, TEST_PATH_MINFIN
-from model_manager import MODEL_CONFIG
-from kb.kb_support_library import read_minfin_data
+import pandas as pd
 
-import logs_helper  # pylint: disable=unused-import
+from config import SETTINGS, TEST_PATH_MINFIN
+from kb.kb_support_library import read_minfin_data
+from model_manager import MODEL_CONFIG
+from text_preprocessing import TextPreprocessing
 
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr
@@ -167,8 +167,7 @@ def _get_manual_synonym_questions(question_number):
         для определенной партии вопросов
         """
 
-        return f.endswith(
-            '.txt') and port_num in f and 'manual' in f
+        return f.endswith('.txt') and port_num in f and 'manual' in f
 
     file_with_portion = [f for f in listdir(TEST_PATH_MINFIN) if is_portion_func(f)]
 
@@ -179,9 +178,22 @@ def _get_manual_synonym_questions(question_number):
     # Добавление синонимичных запросов
     with open(path.join(TEST_PATH_MINFIN, file_with_portion[0]), 'r', encoding='utf-8') as file:
         for line in file:
-            line = line.split(':')
-            if line[1].strip() == question_number:
-                extra_requests.append(line[0])
+            line = line.strip()  # очистим от всего, на случай если это пустая строчка
+            if not line:
+                continue
+
+            line_splitted = line.split(':')
+
+            if len(line_splitted) == 1:
+                # Нет ответа, это плохо!!
+                logging.error("На вопрос {} в файле {} нет ответа!".format(
+                    line_splitted[0],
+                    path.join(TEST_PATH_MINFIN, file_with_portion[0])
+                ))
+                sys.exit(0)
+
+            if line_splitted[1].strip() == question_number:
+                extra_requests.append(line_splitted[0])
 
     return extra_requests
 
