@@ -653,29 +653,21 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
 
 def loof_also_for_cube(cube_result):
-#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-#
-#    verbal_fb_list = []
-#    verbal_fb = cube_result.feedback['verbal']
-#
-#    verbal_fb_list.append(verbal_fb['domain'])
-#
-#    if verbal_fb['measure'] != 'Значение':
-#        verbal_fb_list.append(verbal_fb['measure'].lower())
-#
-#    verbal_fb_list.extend(
-#        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
-#
-#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-#        verbal_fb_list.append('({}: {})'.format(
-#            "*База знаний*",
-#            cube_result.get_score()
-#        ))
-#    else:
-#        verbal_fb_list.append('({})'.format("*База знаний*"))
-#
-#    return ' '.join(verbal_fb_list)
-    return cube_result.feedback.get('pretty_feedback', '...')
+    feedback = cube_result.feedback.get('pretty_feedback', '...')
+
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        look_also_str = '{} ({}: {}'.format(
+            feedback,
+            '*База знаний*',
+            cube_result.get_score()
+        )
+    else:
+        look_also_str = '{} ({})'.format(
+            feedback,
+            '*База знаний*',
+        )
+
+    return look_also_str
 
 
 def answer_to_look_also_format(answer):
@@ -693,6 +685,7 @@ def answer_to_look_also_format(answer):
                 answer.question,
                 "*Минфин*"
             )
+
 
 def first_letter_lower(input_str):
     """Первод первой буквы слова в нижний регистр"""

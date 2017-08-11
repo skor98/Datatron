@@ -10,11 +10,14 @@ import subprocess
 import logging
 
 import xml.etree.ElementTree as XmlElementTree
+from urllib.parse import quote
 import httplib2
 import requests
 from ffmpy import FFmpeg
 
 from config import SETTINGS
+
+import logs_helper  # pylint: disable=unused-import
 
 # Yandex URL для API
 YANDEX_ASR_HOST = 'asr.yandex.net'
@@ -103,11 +106,14 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     """Преобразования текста в речь"""
 
     # Если ответ имеет процентный формат, то замени процент
-    if '%' in text:
-        text = text.replace('%', 'процентов')
+    text = text.replace('%', 'процентов')
+
+    # Если используется + (экранированный для Solr)
+    # для указания ударения
+    text = text.replace('\\+', '+')
 
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
-        text, 'mp3', lang, 'oksana', SETTINGS.YANDEX_API_KEY, 'neutral', '1.0')
+        quote(text), 'mp3', lang, 'oksana', SETTINGS.YANDEX_API_KEY, 'neutral', '1.0')
 
     req = requests.get(url)
     if req.status_code == 200:
