@@ -633,7 +633,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
 def loof_also_for_cube(cube_result):
     feedback = cube_result.feedback.get('pretty_feedback', '...')
-    
+
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
         look_also_str = '{} ({}: {}'.format(
             feedback,
