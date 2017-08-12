@@ -96,14 +96,6 @@ class DataRetrieving:
             delete_question_words=False
         )
 
-        # Год необходимо учитовать в нормированных данных по кубам
-        # Но необходимо исключать из запросов, иначе вверх
-        # поисковой выдачи выходят документы по Минфину
-        if 'год' in norm_user_request:
-            norm_user_request = norm_user_request.replace(
-                'год', ''
-            )
-
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
             norm_user_request = DataRetrieving._set_user_request(
                 norm_user_request, request_id

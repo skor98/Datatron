@@ -153,8 +153,8 @@ class CubeDocsGeneration:
                     'type': 'year_dim_member',
                     'dimension': 'YEARS',
                     'cube_value': year,
-                    # 'lem_member_caption': year,
-                    # 'lem_member_caption_len': 1,
+                    'lem_member_caption': year,
+                    'lem_member_caption_len': 1,
                     'member_caption': year
                 }
             )

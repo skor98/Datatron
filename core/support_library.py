@@ -371,30 +371,28 @@ def process_with_member_for_territory(cube_data: CubeData):
     """Обработка связанных значений для ТЕРРИТОРИЙ"""
 
     if cube_data.terr_member:
+        found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+        # если территория уже добавлена, как связанное значение
+        if cube_data.terr_member['dimension'] in found_cube_dimensions:
+            cube_data.terr_member = None
+            return
+
         connected_dim = cube_data.terr_member.get(
             'connected_value.dimension_cube_value',
             None
         )
 
         if connected_dim:
-            # удаление других найденных значений для BGLevels
-            # а также уже указанных элементов измерения ТЕРРИТОРИЯ,
-            # которые могли появиться в cube_data.members
-            # через связанные значений
-            cube_data.members = [
-                member for member in cube_data.members
-                if (
-                    member['dimension'] != connected_dim and
-                    member['dimension'] != cube_data.terr_member['dimension']
-                )]
-
-            # добавление связанного значения
-            cube_data.members.append(
-                {
-                    'dimension': connected_dim,
-                    'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-                }
-            )
+            # если вместо связанного значения уже что-то используется другое
+            if connected_dim not in found_cube_dimensions:
+                # добавление связанного значения
+                cube_data.members.append(
+                    {
+                        'dimension': connected_dim,
+                        'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                    }
+                )
 
 
 def process_default_members(cube_data: CubeData):
