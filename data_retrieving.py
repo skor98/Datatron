@@ -36,6 +36,7 @@ class DataRetrieving:
         """API метод к ядру системы"""
 
         core_answer = CoreAnswer()
+        core_answer.user_request = user_request
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
@@ -74,7 +75,7 @@ class DataRetrieving:
 
             answers = DataRetrieving._sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving._format_core_answer(answers, request_id)
+            DataRetrieving._format_core_answer(answers, request_id, core_answer)
         else:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
@@ -179,10 +180,8 @@ class DataRetrieving:
         return all_answers
 
     @staticmethod
-    def _format_core_answer(answers: list, request_id: str):
+    def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
         """Формирование структуры финального ответа"""
-
-        core_answer = CoreAnswer()
 
         # Предельное количество "смотри также"
         THRESHOLD = 5

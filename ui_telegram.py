@@ -361,8 +361,8 @@ def what_cube_handler(message):
         text_to_send = "Бот думает, что это один из кубов: \n"
         for ind, elem in tuple(enumerate(clf.predict_proba(req)))[:3]:
             cube_name, proba = elem
-            text_to_send += "{}. {} -> *{}%*\n".format(ind+1, cube_name, round(proba*100,2))
-        bot.send_message(message.chat.id, text_to_send,parse_mode='Markdown')
+            text_to_send += "{}. {} -> *{}%*\n".format(ind + 1, cube_name, round(proba * 100, 2))
+        bot.send_message(message.chat.id, text_to_send, parse_mode='Markdown')
     except Exception as err:
         catch_bot_exception(message, "/whatcube", err)
 
@@ -389,8 +389,6 @@ def voice_processing(message):
         )
     )
     process_response(message, input_format='voice', file_content=file_data.content)
-
-
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -468,7 +466,16 @@ def process_response(message, input_format='text', file_content=None):
                 parse_mode='Markdown'
             )
     else:
-        bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
+        user_request = ''
+        if input_format != 'text':
+            user_request = '*Ваш запрос*\nДататрон решил, что вы его спросили: "{}"\n\n'
+            user_request = user_request.format(result.user_request)
+
+        bot.send_message(
+            message.chat.id,
+            user_request + constants.ERROR_NO_DOCS_FOUND,
+            parse_mode='Markdown'
+        )
 
         extra_results = look_further(result)
         if extra_results:
@@ -480,8 +487,9 @@ def process_response(message, input_format='text', file_content=None):
 
 
 def process_cube_questions(message, cube_result, request_id, input_format):
+    is_input_text = (input_format == 'text')
+
     if cube_result.status:
-        is_input_text = (input_format == 'text')
         form_feedback(message, request_id, cube_result, not is_input_text)
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
@@ -498,8 +506,16 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
             bot.send_message(message.chat.id, stats)
     else:
-        if cube_result.message:
-            bot.send_message(message.chat.id, cube_result.message)
+        user_request = ''
+        if not is_input_text:
+            user_request = '*Ваш запрос*\nДататрон решил, что вы его спросили: "{}"\n\n'
+            user_request = user_request.format(cube_result.feedback['user_request'])
+
+        bot.send_message(
+            message.chat.id,
+            user_request + cube_result.message,
+            parse_mode='Markdown'
+        )
 
 
 def process_minfin_questions(message, minfin_result):
