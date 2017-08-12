@@ -202,7 +202,7 @@ class BaseTester:
             "MAC": safe_mean(self.get_absolute_confidences()),
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
-            }
+                }
         }
 
     def get_log_filename_pattern(self):
@@ -372,6 +372,7 @@ class CubeTester(BaseTester):
     """
     Реализует логику и метрики, специфичные для кубов
     """
+
     def __init__(
             self,
             percentiles=tuple([25, 50, 75, 90, 95]),
@@ -426,17 +427,17 @@ class CubeTester(BaseTester):
         """Добавляет ещё один истинный не результат определения ТОЛЬКО меры"""
         self._only_measure_wrongs += 1
 
-    def _add_true_only_members(self):
+    def _add_true_only_members(self, num):
         """Добавляет ещё один ложный не результат определения ТОЛЬКО измерения"""
-        self._only_members_trues += 1
+        self._only_members_trues += num
 
     def get_trues_only_members(self):
         """Возвращает число ложный результатов ТОЛЬКО по определению измерения"""
         return self._only_members_trues
 
-    def _add_wrong_only_members(self):
+    def _add_wrong_only_members(self, num):
         """Добавляет ещё один истинный не результат определения ТОЛЬКО измерения"""
-        self._only_members_wrongs += 1
+        self._only_members_wrongs += num
 
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
@@ -578,10 +579,19 @@ class CubeTester(BaseTester):
 
         # игнорирование порядка элементов измерений
         members_equal = (set(q1_members) == set(q2_members))
+
+        # подсчет метрики с учетом возможности частичного совпадения
+        q1_members_len, q2_members_len = len(q1_members), len(q2_members)
         if members_equal:
-            self._add_true_only_members()
+            self._add_true_only_members(
+                max(q1_members_len, q2_members_len)
+            )
         else:
-            self._add_wrong_only_members()
+            self._add_wrong_only_members(
+                len(set(q1_members) - set(q2_members))
+                if q1_members_len > q2_members_len
+                else len(set(q2_members) - set(q1_members))
+            )
 
         return bool(measure_equal and cube_equal and members_equal)
 

@@ -509,23 +509,41 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         create_basic_mdx_query()
 
 
-def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
+def best_answer_depending_on_cube(cube_data_list: list, correct_cube: str):
     """
     Выбор лучшего ответа по заданному кубу, если это возможно
     """
 
     # Для работы системы до появления классификатора
-    if not cube_name:
+    if not correct_cube:
         return
 
+    # Если данные есть
     if cube_data_list:
         used_cube = cube_data_list[0].selected_cube['cube']
 
-        if used_cube != cube_name:
+        if used_cube != correct_cube:
             for cube_data in list(cube_data_list):
-                if cube_data.selected_cube['cube'] == cube_name:
-                    cube_data_list.remove(cube_data)
-                    cube_data_list.insert(0, cube_data)
+                scoring_model = MODEL_CONFIG["cube_answers_scoring_model"]
+
+                if cube_data.selected_cube['cube'] == correct_cube:
+                    # Перемена (swap) скора алгоритмически лучшего и
+                    # верного по классификатору ответов местами
+
+                    (
+                        cube_data.score[scoring_model],
+                        cube_data_list[0].score[scoring_model]
+                    ) = (
+                        cube_data_list[0].score[scoring_model],
+                        cube_data.score[scoring_model],
+                    )
+
+                    # ответы снова в порядке убывания скора
+                    cube_data_list = sorted(
+                        cube_data_list,
+                        key=lambda cube_data_elem: cube_data_elem.score[scoring_model],
+                        reverse=True
+                    )
 
                     logging.info(
                         "Query_ID: {}\tMessage: {}".format(
@@ -533,17 +551,18 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
                             'Лучший ответ был сменен. Был куб {}, '
                             'стал {}, лучший путь {}'.format(
                                 used_cube,
-                                cube_name,
+                                correct_cube,
                                 cube_data.tree_path
                             )
                         )
                     )
+
                     return
         else:
             logging.info(
                 "Query_ID: {}\tMessage: {}".format(
                     cube_data_list[0].request_id,
-                    'Куб алгоритмически лучшего ответа'
+                    'Куб алгоритмически лучшего ответа '
                     'совпадает с кубом из классификатора'
                 )
             )

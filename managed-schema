@@ -406,8 +406,8 @@
   <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
-  <field name="cube_caption" type="string" multiValued="false"/> <!-- Индексирование название куба-->
-  <field name="member_caption" type="string" multiValued="false"/> <!-- Индексирование название измерений-->
+  <field name="cube_caption" type="string" multiValued="false" indexed="false"/>
+  <field name="member_caption" type="string" multiValued="false" indexed="false"/>
   <field name="lem_member_caption" type="string" multiValued="false"/> <!-- Индексирование нормализованных названий измерений-->
   <field name="lem_member_caption_len" type="tlong"/> <!-- Длина этого поля для бустинга -->
   <field name="lem_question_len" type="tlong"/> <!-- Аналогичное поле для минфина -->
