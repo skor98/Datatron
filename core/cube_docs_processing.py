@@ -97,6 +97,7 @@ class CubeProcessor:
                         cube['score'],
                         correct_cube[1]
                     )
+                    break
 
             cube_data.cubes = sorted(
                 cube_data.cubes,
