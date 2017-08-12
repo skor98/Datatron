@@ -61,6 +61,16 @@ class CubeProcessor:
                     # создание MDX-запросов
                     csl.create_mdx_query(item)
 
+            # фильтрация по наличие данных возможно только на этом этапе
+            # когда собран MDX-запрос
+            if MODEL_CONFIG["enable_cube_data_existence_checking"]:
+                csl.filter_cube_data_without_answer(cube_data_list)
+
+            # после фильтрации по наличию данных можно выбрать лучший
+            # как с помощью классификатора, так и по умолчанию (то есть по скору)
+            if MODEL_CONFIG["enable_cube_clf"]:
+                csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list
         )
@@ -123,8 +133,15 @@ class CubeProcessor:
         )
 
         # Выбор главного ответа по классификатору
-        if MODEL_CONFIG["use_cube_clf"]:
+        # Альтернативная версия выбора главного ответа
+        if MODEL_CONFIG["enable_cube_clf"]:
             csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+
+        if MODEL_CONFIG["enable_cube_data_existence_checking"]:
+            # так, как мы хотим, чтобы смотри также нормально работало
+            # то при проверке на наличие данных придется проверять не первые три
+            # запроса, а все; 5 запросов может быть мало
+            threshold = 9
 
         return cube_data_list[:threshold + 1]
 

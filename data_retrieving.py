@@ -11,7 +11,8 @@ from core.solr import Solr
 from core.cube_docs_processing import CubeAnswer
 from core.support_library import group_documents
 from core.support_library import send_request_to_server
-from core.support_library import format_cube_answer
+from core.support_library import process_server_response
+from core.support_library import process_cube_answer
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
@@ -60,10 +61,11 @@ class DataRetrieving:
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            # clf = CubeClassifier.inst()
-            # cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
-
-            cube_answers = CubeProcessor.get_data(cube_data)
+            if MODEL_CONFIG["enable_cube_clf"]:
+                clf = CubeClassifier.inst()
+                cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+            else:
+                cube_answers = CubeProcessor.get_data(cube_data)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -233,7 +235,12 @@ class DataRetrieving:
                 core_answer.answer.cube
             )
 
-            format_cube_answer(core_answer.answer, response)
+            # ответ с сервера
+            value = process_server_response(core_answer.answer, response)
+
+            # форматирование ответа при его наличии
+            if value:
+                process_cube_answer(core_answer.answer, value)
         # Если главный ответ по минфину
         else:
             # фильтр по релевантности на минфин
