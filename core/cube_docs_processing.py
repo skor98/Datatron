@@ -93,7 +93,7 @@ class CubeProcessor:
         if correct_cube:
             for cube in cube_data.cubes:
                 if cube['cube'] == correct_cube[0]:
-                    cube['score'] *= boosting_function(
+                    cube['score'] = boosting_function(
                         cube['score'],
                         correct_cube[1]
                     )
