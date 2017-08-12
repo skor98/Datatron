@@ -46,6 +46,8 @@ STOP_WORDS = set(stopwords.words("russian"))
 STOP_WORDS.update(set("подсказать также иной да нет -".split()))
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
+YEARS_RE = re.compile(r"\s(\d\d(\d\d)?)\s")
+WORDS_NO_PROCESS = {"текущийгод", "нетекущийгод"}
 
 
 class CubeClassifier():
@@ -437,13 +439,16 @@ def _get_tests_data():
 
 def _preprocess(s: str):
     """Возвращает массив токенов по строке"""
-    return tuple(map(
-        get_normal_form,
+    s = s.replace("2017", "текущийгод")
+    s = s.replace("17", "текущийгод")
+    s = YEARS_RE.sub(" нетекущийгод ", s + " ")
+    return tuple(set(map(
+        lambda x: get_normal_form(x) if x not in WORDS_NO_PROCESS else x,
         filter(
             lambda x: x not in STOP_WORDS,
             WORDS_RE.findall(s.lower())
         )
-    ))
+    )))
 
 
 def _get_folder_files(test_path):
