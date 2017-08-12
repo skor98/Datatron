@@ -518,43 +518,48 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
     if not cube_name:
         return
 
-    used_cube = cube_data_list[0].selected_cube['cube']
+    if cube_data_list:
+        used_cube = cube_data_list[0].selected_cube['cube']
 
-    if used_cube != cube_name:
-        for cube_data in list(cube_data_list):
-            if cube_data.selected_cube['cube'] == cube_name:
-                cube_data_list.remove(cube_data)
-                cube_data_list.insert(0, cube_data)
+        if used_cube != cube_name:
+            for cube_data in list(cube_data_list):
+                if cube_data.selected_cube['cube'] == cube_name:
+                    cube_data_list.remove(cube_data)
+                    cube_data_list.insert(0, cube_data)
 
-                logging.info(
-                    "Query_ID: {}\tMessage: {}".format(
-                        cube_data.request_id,
-                        'Лучший ответ был сменен. Был куб {}, '
-                        'стал {}, лучший путь {}'.format(
-                            used_cube,
-                            cube_name,
-                            cube_data.tree_path
+                    logging.info(
+                        "Query_ID: {}\tMessage: {}".format(
+                            cube_data.request_id,
+                            'Лучший ответ был сменен. Был куб {}, '
+                            'стал {}, лучший путь {}'.format(
+                                used_cube,
+                                cube_name,
+                                cube_data.tree_path
+                            )
                         )
                     )
+                    return
+        else:
+            logging.info(
+                "Query_ID: {}\tMessage: {}".format(
+                    cube_data_list[0].request_id,
+                    'Куб алгоритмически лучшего ответа'
+                    'совпадает с кубом из классификатора'
                 )
-                return
-    else:
+            )
+            return
+
         logging.info(
             "Query_ID: {}\tMessage: {}".format(
                 cube_data_list[0].request_id,
-                'Куб алгоритмически лучшего ответа'
-                'совпадает с кубом из классификатора'
+                "Выбор лучшим запроса на основе куба из "
+                "классификатора не возможен, нет подходящих путей"
             )
         )
-        return
-
-    logging.info(
-        "Query_ID: {}\tMessage: {}".format(
-            cube_data_list[0].request_id,
-            "Выбор лучшим запроса на основе куба из "
-            "классификатора не возможен, нет подходящих путей"
+    else:
+        logging.info(
+            "Message: нет данных для выполнения этой операции"
         )
-    )
 
 
 def delete_repetitions(cube_data_list: list):

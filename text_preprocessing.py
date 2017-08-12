@@ -39,7 +39,7 @@ class TextPreprocessing:
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
         self.stop_words = set(stopwords.words(self.language))
-        self.stop_words.remove('не')
+        self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
 
     def normalization(
