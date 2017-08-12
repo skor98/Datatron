@@ -37,7 +37,7 @@ class CubeProcessor:
             if cube_data_list:
                 # доработка вариантов
                 for item in cube_data_list:
-                    csl.filter_measures_by_selected_cube(item)
+                    csl.select_measure_for_selected_cube(item)
                     csl.score_cube_question(item)
 
                 cube_data_list = CubeProcessor._take_best_cube_data(
@@ -122,8 +122,9 @@ class CubeProcessor:
             )
         )
 
-        # Выбор первого ответа по корректному кубу, если возможно
-        csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+        # Выбор главного ответа по классификатору
+        if MODEL_CONFIG["use_cube_clf"]:
+            csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
 
         return cube_data_list[:threshold + 1]
 

@@ -146,7 +146,10 @@ def format_numerical(number: float):
         res = '{},{} {}'.format(str_num[:-9], str_num[-9], 'млрд')
     else:
         res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
+
+    res += ' руб.'
     logging.debug("Сконвертировали {} в {}".format(number, res))
+
     return res
 
 
@@ -260,14 +263,20 @@ def check_if_year_is_current(cube_data: CubeData):
     return bool(given_year == datetime.datetime.now().year)
 
 
-def filter_measures_by_selected_cube(cube_data: CubeData):
+def select_measure_for_selected_cube(cube_data: CubeData):
     """Фильтрация мер по принадлежности к выбранному кубу"""
 
     if cube_data.measures:
         cube_data.measures = [
             item for item in cube_data.measures
-            if item['cube'] == cube_data.selected_cube
+            if item['cube'] == cube_data.selected_cube['cube']
             ]
+
+        if cube_data.measures:
+            # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
+            # для повышения скора
+            if cube_data.measures[0]['score'] > MODEL_CONFIG["measure_matching_threshold"]:
+                cube_data.selected_measure = cube_data.measures[0]
 
 
 def group_documents(solr_documents: list, user_request: str, request_id: str):
@@ -322,11 +331,16 @@ def score_cube_question(cube_data: CubeData):
 
         cube_score = cube_data.selected_cube['score']
         avg_member_score = numpy.mean([member['score'] for member in cube_data.members])
-        measure_score = 0
-        if cube_data.measures:
-            measure_score = cube_data.measures['score']
 
-        cube_data.score['sum'] = cube_score + avg_member_score + measure_score
+        measure_score = 0
+        if cube_data.selected_measure:
+            measure_score = cube_data.selected_measure['score']
+
+        cube_data.score['sum'] = (
+            MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
+            avg_member_score +
+            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+        )
 
     # получение скоринг-модели
     score_model = MODEL_CONFIG["cube_answers_scoring_model"]
@@ -414,10 +428,10 @@ def process_default_members(cube_data: CubeData):
 
 def process_default_measures(cube_data: CubeData):
     """Обработка значения меры по умолчанию"""
-    if cube_data.measures:
-        cube_data.selected_measure = cube_data.measures[0]['cube_value']
-    else:
-        cube_data.selected_measure = cube_data.selected_cube['default_measure']
+    if not cube_data.selected_measure:
+        cube_data.selected_measure = {
+            'cube_value': cube_data.selected_cube['default_measure']
+        }
 
 
 def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
@@ -454,7 +468,7 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
             ))
 
         cube_data.mdx_query = mdx_template.format(
-            cube_data.selected_measure,
+            cube_data.selected_measure['cube_value'],
             cube_data.selected_cube['cube'],
             ','.join(dim_str_value)
         )

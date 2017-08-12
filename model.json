@@ -1,6 +1,9 @@
 {
     "best_cube_data_threshold": 5,
     "cube_answers_scoring_model": "sum",
+    "cube_weight_in_sum_scoring_model": 1.5,
+    "measure_weight_in_sum_scoring_model": 1,
+    "measure_matching_threshold": 10,
     "delete_repeating_words_in_request": true,
     "enable_idea_command_from_db": false,
     "enable_minfin_tf_idf_key_words_calculation": false,
@@ -12,6 +15,7 @@
     "model_cube_clf_gb_max_depth": 3,
     "model_cube_clf_lr_reg": 1,
     "model_cube_clf_type": "GradientBoosting",
+    "use_cube_clf": false,
     "normalization_delete_digits_default": false,
     "normalization_delete_question_words_default": true,
     "normalization_delete_repeatings_default": false,

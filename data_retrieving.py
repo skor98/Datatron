@@ -59,8 +59,10 @@ class DataRetrieving:
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            clf = CubeClassifier.inst()
-            cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+            # clf = CubeClassifier.inst()
+            # cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+
+            cube_answers = CubeProcessor.get_data(cube_data)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -145,19 +147,18 @@ class DataRetrieving:
 
         short_question_threshold = MODEL_CONFIG["short_request_threshold"]
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
+        request_len = len(norm_user_request.split())
 
-        if len(norm_user_request.split()) <= short_question_threshold:
-            # надо добавить пробел в конце, иначе будет слипание
-            norm_user_request = norm_user_request.strip() + " "
-            norm_user_request *= multiplier
-            # а потом снова убрать пробел в конце
-            norm_user_request = norm_user_request.strip()
+        if request_len <= short_question_threshold:
+            norm_user_request = ' '.join(
+                [norm_user_request.strip()] * multiplier
+            )
 
             logging.info(
                 "Query_ID: {}\tMessage: Запрос из {} слов был "
                 "удлинен в {} раза".format(
                     request_id,
-                    len(norm_user_request.split()),
+                    request_len,
                     multiplier
                 )
             )
