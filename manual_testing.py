@@ -382,6 +382,12 @@ class CubeTester(BaseTester):
         self._only_cube_wrongs = 0
         self._only_cube_trues = 0
 
+        self._only_measure_wrongs = 0
+        self._only_measure_trues = 0
+
+        self._only_members_trues = 0
+        self._only_members_wrongs = 0
+
         self._wrong_minfins = 0
 
     def _add_wrong_minfin(self):
@@ -407,6 +413,30 @@ class CubeTester(BaseTester):
     def get_wrongs_only_cube(self):
         """Возвращает число истинных результатов ТОЛЬКО по определению куба"""
         return self._only_cube_wrongs
+
+    def _add_true_only_measure(self):
+        """Добавляет ещё один ложный не результат определения ТОЛЬКО меры"""
+        self._only_measure_trues += 1
+
+    def get_trues_only_measure(self):
+        """Возвращает число ложный результатов ТОЛЬКО по определению меры"""
+        return self._only_measure_trues
+
+    def _add_wrong_only_measure(self):
+        """Добавляет ещё один истинный не результат определения ТОЛЬКО меры"""
+        self._only_measure_wrongs += 1
+
+    def _add_true_only_members(self):
+        """Добавляет ещё один ложный не результат определения ТОЛЬКО измерения"""
+        self._only_members_trues += 1
+
+    def get_trues_only_members(self):
+        """Возвращает число ложный результатов ТОЛЬКО по определению измерения"""
+        return self._only_members_trues
+
+    def _add_wrong_only_members(self):
+        """Добавляет ещё один истинный не результат определения ТОЛЬКО измерения"""
+        self._only_members_wrongs += 1
 
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
@@ -450,9 +480,16 @@ class CubeTester(BaseTester):
         """
         res = super().get_results()
 
+        total = self.get_trues() + self.get_wrongs()
+
         # Точность ТОЛЬКО по определению куба
-        total_only_cube = self.get_trues_only_cube() + self.get_wrongs_only_cube()
-        res["onlycubeAcc"] = self.get_trues_only_cube() / total_only_cube
+        res["onlycubeAcc"] = self.get_trues_only_cube() / total
+
+        # Точность ТОЛЬКО по определению МЕРЫ
+        res["onlymeasureAcc"] = self.get_trues_only_measure() / total
+
+        # Точность ТОЛЬКО по определению измерений
+        res["onlymembersAcc"] = self.get_trues_only_members() / total
 
         # Какая часть неверных результатов из-за того, что ответ по минфину
         res["wrongMinfin"] = self.get_wrong_minfins() / self.get_wrongs()
@@ -528,8 +565,12 @@ class CubeTester(BaseTester):
         )
 
         measure_equal = (q1_measure == q2_measure)
-        cube_equal = (q1_cube == q2_cube)
+        if measure_equal:
+            self._add_true_only_measure()
+        else:
+            self._add_wrong_only_measure()
 
+        cube_equal = (q1_cube == q2_cube)
         if cube_equal:
             self._add_true_only_cube()
         else:
@@ -537,6 +578,10 @@ class CubeTester(BaseTester):
 
         # игнорирование порядка элементов измерений
         members_equal = (set(q1_members) == set(q2_members))
+        if members_equal:
+            self._add_true_only_members()
+        else:
+            self._add_wrong_only_members()
 
         return bool(measure_equal and cube_equal and members_equal)
 
