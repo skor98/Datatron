@@ -146,14 +146,17 @@ def format_numerical(number: float):
         res = '{},{} {}'.format(str_num[:-9], str_num[-9], 'млрд')
     else:
         res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
+
+    res += ' руб.'
     logging.debug("Сконвертировали {} в {}".format(number, res))
+
     return res
 
 
-def format_cube_answer(cube_answer, response: requests):
+def process_server_response(cube_answer, response: requests):
     """
-    Работа над ответом по кубу: получение данных, форматирование
-    ответа, добавление обратной связи
+    Работа над ответом по кубу: получение данных и обработка ответа
+    от сервера Кристы
     """
 
     if response.status_code == 200:
@@ -187,40 +190,73 @@ def format_cube_answer(cube_answer, response: requests):
                 cube_answer.request_id,
                 response.get('message', '')
             ))
-    # Обработка случая, когда данных нет
+        return
+        # Обработка случая, когда данных нет
     elif response["cells"][0][0]["value"] is None:
         cube_answer.status = False
         cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
         cube_answer.response = None
-    # В остальных случаях
+        return
+        # В остальных случаях, то есть когда все хорошо
     else:
-        # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
-        value = float(response["cells"][0][0]["value"])
+        return float(response["cells"][0][0]["value"])
 
-        # Получение из базы знаний (knowledge_base.db) формата для меры
-        value_format = get_representation_format(cube_answer.mdx_query)
 
-        # Добавление форматированного результата
-        # Если формат для меры - 0, что означает число
-        if not value_format:
-            formatted_value = format_numerical(value)
-            cube_answer.formatted_response = formatted_value
-        # Если формат для меры - 1, что означает процент
-        elif value_format == 1:
-            # Перевод округление
-            formatted_value = '{}%'.format(round(value, 5))
-            cube_answer.formatted_response = formatted_value
+def check_mdx_returns_data(response: requests):
+    """
+    Быстрая обработка ответа сервера, специально для отсеивания запросов,
+    не возвращающих данные
+    """
 
-        # Добавление к неформатированного результата
-        # Если формат меры - 0, то просто целое число без знаков после запятой
-        if not value_format:
-            cube_answer.response = int(str(value).split('.')[0])
-        # Если формат для меры - 1, то возращается полученный неокругленный результат
-        elif value_format == 1:
-            cube_answer.response = str(value)
+    if response.status_code == 200:
+        try:
+            response = response.json()
+        except json.JSONDecodeError:
+            return
+    else:
+        return
 
-        # добавление обратной связи в поле экземпляра класа
-        cube_answer.message = ''
+    # Обработка случая, когда MDX-запрос некорректный
+    if not response.get('success', 1):
+        return
+    # Обработка случая, когда данных нет
+    elif response["cells"][0][0]["value"] is None:
+        return
+    # В остальных случаях, то есть когда все хорошо
+    else:
+        return True
+
+
+def process_cube_answer(cube_answer, value):
+    """
+    Доформирование ответа по кубам: форматирование ответа
+    """
+
+    # Результат по кубам может возвращаться в трех видах - рубли, процент, штуки
+    # Получение из базы знаний (knowledge_base.db) формата для меры
+    value_format = get_representation_format(cube_answer.mdx_query)
+
+    # Добавление форматированного результата
+    # Если формат для меры - 0, что означает число
+    if not value_format:
+        formatted_value = format_numerical(value)
+        cube_answer.formatted_response = formatted_value
+    # Если формат для меры - 1, что означает процент
+    elif value_format == 1:
+        # Перевод округление
+        formatted_value = '{}%'.format(round(value, 5))
+        cube_answer.formatted_response = formatted_value
+
+    # Добавление к неформатированного результата
+    # Если формат меры - 0, то просто целое число без знаков после запятой
+    if not value_format:
+        cube_answer.response = int(str(value).split('.')[0])
+    # Если формат для меры - 1, то возращается полученный неокругленный результат
+    elif value_format == 1:
+        cube_answer.response = str(value)
+
+    # добавление обратной связи в поле экземпляра класа
+    cube_answer.message = ''
 
     # Создание фидбека в другом формате для удобного логирования
     feedback_verbal = cube_answer.feedback['verbal']
@@ -260,14 +296,20 @@ def check_if_year_is_current(cube_data: CubeData):
     return bool(given_year == datetime.datetime.now().year)
 
 
-def filter_measures_by_selected_cube(cube_data: CubeData):
+def select_measure_for_selected_cube(cube_data: CubeData):
     """Фильтрация мер по принадлежности к выбранному кубу"""
 
     if cube_data.measures:
         cube_data.measures = [
             item for item in cube_data.measures
-            if item['cube'] == cube_data.selected_cube
+            if item['cube'] == cube_data.selected_cube['cube']
             ]
+
+        if cube_data.measures:
+            # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
+            # для повышения скора
+            if cube_data.measures[0]['score'] > MODEL_CONFIG["measure_matching_threshold"]:
+                cube_data.selected_measure = cube_data.measures[0]
 
 
 def group_documents(solr_documents: list, user_request: str, request_id: str):
@@ -322,11 +364,16 @@ def score_cube_question(cube_data: CubeData):
 
         cube_score = cube_data.selected_cube['score']
         avg_member_score = numpy.mean([member['score'] for member in cube_data.members])
-        measure_score = 0
-        if cube_data.measures:
-            measure_score = cube_data.measures['score']
 
-        cube_data.score['sum'] = cube_score + avg_member_score + measure_score
+        measure_score = 0
+        if cube_data.selected_measure:
+            measure_score = cube_data.selected_measure['score']
+
+        cube_data.score['sum'] = (
+            MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
+            avg_member_score +
+            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+        )
 
     # получение скоринг-модели
     score_model = MODEL_CONFIG["cube_answers_scoring_model"]
@@ -357,30 +404,28 @@ def process_with_member_for_territory(cube_data: CubeData):
     """Обработка связанных значений для ТЕРРИТОРИЙ"""
 
     if cube_data.terr_member:
+        found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+
+        # если территория уже добавлена, как связанное значение
+        if cube_data.terr_member['dimension'] in found_cube_dimensions:
+            cube_data.terr_member = None
+            return
+
         connected_dim = cube_data.terr_member.get(
             'connected_value.dimension_cube_value',
             None
         )
 
         if connected_dim:
-            # удаление других найденных значений для BGLevels
-            # а также уже указанных элементов измерения ТЕРРИТОРИЯ,
-            # которые могли появиться в cube_data.members
-            # через связанные значений
-            cube_data.members = [
-                member for member in cube_data.members
-                if (
-                    member['dimension'] != connected_dim and
-                    member['dimension'] != cube_data.terr_member['dimension']
-                )]
-
-            # добавление связанного значения
-            cube_data.members.append(
-                {
-                    'dimension': connected_dim,
-                    'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-                }
-            )
+            # если вместо связанного значения уже что-то используется другое
+            if connected_dim not in found_cube_dimensions:
+                # добавление связанного значения
+                cube_data.members.append(
+                    {
+                        'dimension': connected_dim,
+                        'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                    }
+                )
 
 
 def process_default_members(cube_data: CubeData):
@@ -414,10 +459,10 @@ def process_default_members(cube_data: CubeData):
 
 def process_default_measures(cube_data: CubeData):
     """Обработка значения меры по умолчанию"""
-    if cube_data.measures:
-        cube_data.selected_measure = cube_data.measures[0]['cube_value']
-    else:
-        cube_data.selected_measure = cube_data.selected_cube['default_measure']
+    if not cube_data.selected_measure:
+        cube_data.selected_measure = {
+            'cube_value': cube_data.selected_cube['default_measure']
+        }
 
 
 def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
@@ -454,7 +499,7 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
             ))
 
         cube_data.mdx_query = mdx_template.format(
-            cube_data.selected_measure,
+            cube_data.selected_measure['cube_value'],
             cube_data.selected_cube['cube'],
             ','.join(dim_str_value)
         )
@@ -546,6 +591,35 @@ def delete_repetitions(cube_data_list: list):
             before_deleting - after_deleting
         )
     )
+
+
+def filter_cube_data_without_answer(cube_data_list: list):
+    """
+    Метод, который оставляет в списке только возвращающие данные запросы
+    """
+
+    if cube_data_list:
+        request_id = cube_data_list[0].request_id
+        before_filtering = len(cube_data_list)
+
+        for cube_data in list(cube_data_list):
+
+            response = send_request_to_server(
+                cube_data.mdx_query,
+                cube_data.selected_cube['cube']
+            )
+
+            if not check_mdx_returns_data(response):
+                cube_data_list.remove(cube_data)
+
+        after_filtering = len(cube_data_list)
+
+        logging.info(
+            'Query_ID: {}\tMessage: {} запрос(a/ов) не имели данных'.format(
+                request_id,
+                before_filtering - after_filtering
+            )
+        )
 
 
 def feedback_preprocessing(verbal_feedback):

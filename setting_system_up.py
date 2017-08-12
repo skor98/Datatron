@@ -129,7 +129,7 @@ if __name__ == '__main__':
         set_up_cube_data(args.solr_index)
     if args.minfin:
         set_up_minfin_data(args.solr_index)
-    if not args.disable_testing and args.db and args.cube and args.minfin:
+    if not args.disable_testing and args.cube and args.minfin:
         score, results = get_results(write_logs=True)
 
         current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)

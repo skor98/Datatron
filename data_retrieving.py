@@ -11,7 +11,8 @@ from core.solr import Solr
 from core.cube_docs_processing import CubeAnswer
 from core.support_library import group_documents
 from core.support_library import send_request_to_server
-from core.support_library import format_cube_answer
+from core.support_library import process_server_response
+from core.support_library import process_cube_answer
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
@@ -36,6 +37,7 @@ class DataRetrieving:
         """API метод к ядру системы"""
 
         core_answer = CoreAnswer()
+        core_answer.user_request = user_request
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
@@ -59,8 +61,11 @@ class DataRetrieving:
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            clf = CubeClassifier.inst()
-            cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+            if MODEL_CONFIG["enable_cube_clf"]:
+                clf = CubeClassifier.inst()
+                cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+            else:
+                cube_answers = CubeProcessor.get_data(cube_data)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -72,7 +77,7 @@ class DataRetrieving:
 
             answers = DataRetrieving._sort_answers(minfin_answers, cube_answers)
 
-            core_answer = DataRetrieving._format_core_answer(answers, request_id)
+            DataRetrieving._format_core_answer(answers, request_id, core_answer)
         else:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
@@ -93,14 +98,6 @@ class DataRetrieving:
             user_request,
             delete_question_words=False
         )
-
-        # Год необходимо учитовать в нормированных данных по кубам
-        # Но необходимо исключать из запросов, иначе вверх
-        # поисковой выдачи выходят документы по Минфину
-        if 'год' in norm_user_request:
-            norm_user_request = norm_user_request.replace(
-                'год', ''
-            )
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
             norm_user_request = DataRetrieving._set_user_request(
@@ -145,19 +142,18 @@ class DataRetrieving:
 
         short_question_threshold = MODEL_CONFIG["short_request_threshold"]
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
+        request_len = len(norm_user_request.split())
 
-        if len(norm_user_request.split()) <= short_question_threshold:
-            # надо добавить пробел в конце, иначе будет слипание
-            norm_user_request = norm_user_request.strip() + " "
-            norm_user_request *= multiplier
-            # а потом снова убрать пробел в конце
-            norm_user_request = norm_user_request.strip()
+        if request_len <= short_question_threshold:
+            norm_user_request = ' '.join(
+                [norm_user_request.strip()] * multiplier
+            )
 
             logging.info(
                 "Query_ID: {}\tMessage: Запрос из {} слов был "
                 "удлинен в {} раза".format(
                     request_id,
-                    len(norm_user_request.split()),
+                    request_len,
                     multiplier
                 )
             )
@@ -186,10 +182,8 @@ class DataRetrieving:
         return all_answers
 
     @staticmethod
-    def _format_core_answer(answers: list, request_id: str):
+    def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
         """Формирование структуры финального ответа"""
-
-        core_answer = CoreAnswer()
 
         # Предельное количество "смотри также"
         THRESHOLD = 5
@@ -241,7 +235,12 @@ class DataRetrieving:
                 core_answer.answer.cube
             )
 
-            format_cube_answer(core_answer.answer, response)
+            # ответ с сервера
+            value = process_server_response(core_answer.answer, response)
+
+            # форматирование ответа при его наличии
+            if value:
+                process_cube_answer(core_answer.answer, value)
         # Если главный ответ по минфину
         else:
             # фильтр по релевантности на минфин
