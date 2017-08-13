@@ -595,11 +595,12 @@ def process_minfin_questions(message, minfin_result):
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n*Ответ: {answer}*\nQuery\_ID: {query_id}'
+        '{pretty_feed}\n*Ответ: {answer}*{time_data_relevance}\n\nQuery\_ID: {query_id}'
     )
     separator = ''
     expert_str = ''
     verbal_str = ''
+    time_data_relevance = ''
 
     pretty_feed = 'Datatron понял ваш запрос как "`{}`"\n'.format(
         cube_result.feedback['pretty_feedback']
@@ -615,12 +616,20 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
+    cubes_with_current_data = (
+        'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
+    )
+
+    if cube_result.feedback['formal']['cube'] in cubes_with_current_data:
+        time_data_relevance = '\nАктуальность данных: *03.08.2017*'
+
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,
         separator=separator,
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
+        time_data_relevance=time_data_relevance,
         query_id=request_id,
         pretty_feed=pretty_feed
     )

@@ -88,7 +88,13 @@ class CubeProcessor:
 
         def boosting_function(score: float, clf_prob: float):
             """Степень бустинга растет с уверенностью классификатора"""
-            return score * (1 - clf_prob/(clf_prob - 1))
+            new_score = score * (1 - clf_prob / (clf_prob - 1))
+
+            # ограничение сверху, чтобы понизить максимальный скор
+            # ответа по кубу и востановить баланс с ответам по минфину
+            if new_score > MODEL_CONFIG["cube_boosting_threshold"]:
+                new_score = MODEL_CONFIG["cube_boosting_threshold"]
+            return new_score
 
         if correct_cube:
             for cube in cube_data.cubes:

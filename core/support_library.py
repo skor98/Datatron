@@ -479,10 +479,12 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         dim_tmp, dim_str_value = "[{}].[{}]", []
 
         for member in cube_data.members:
-            dim_str_value.append(dim_tmp.format(
-                member['dimension'],
-                member['cube_value']
-            ))
+            # TODO: удалить костыль по игнорированию KOSGU
+            if member['dimension'] != 'KOSGU':
+                dim_str_value.append(dim_tmp.format(
+                    member['dimension'],
+                    member['cube_value']
+                ))
 
         # Отдельная обработка лет
         if cube_data.year_member:
@@ -577,7 +579,8 @@ def best_answer_depending_on_cube(cube_data_list: list, correct_cube: str):
         )
     else:
         logging.info(
-            "Message: нет данных для выполнения этой операции"
+            "Message: нет данных для выбора лучшего "
+            "ответа по заданному куба"
         )
 
 

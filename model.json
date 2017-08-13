@@ -1,7 +1,8 @@
 {
     "best_cube_data_threshold": 5,
     "cube_answers_scoring_model": "sum",
-    "cube_weight_in_sum_scoring_model": 1.5,
+    "cube_weight_in_sum_scoring_model": 1.25,
+    "cube_boosting_threshold": 25,
     "delete_repeating_words_in_request": true,
     "enable_cube_clf": true,
     "enable_cube_data_existence_checking": false,

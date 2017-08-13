@@ -424,11 +424,11 @@
   <field name="full_answer" type="string" multiValued="false" indexed="false"/>
   <field name="hierarchy_level" type="tlongs" multiValued="false" indexed="false"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
-  <field name="lem_full_answer" type="string" multiValued="false"/>
+  <field name="lem_full_answer" type="string" multiValued="false" indexed="false"/>
   <field name="lem_key_words" type="string" multiValued="false"/>
   <field name="lem_question" type="string" multiValued="false"/>
   <field name="lem_short_answer" type="string" multiValued="false"/>
-  <field name="lem_synonym_questions" type="strings"/>
+  <field name="lem_extra_key_words" type="string" multiValued="false"/>
   <field name="link" type="strings" indexed="false"/>
   <field name="link_name" type="strings" indexed="false"/>
   <field name="number" type="string" multiValued="false" indexed="false"/>
