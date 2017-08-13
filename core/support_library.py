@@ -383,7 +383,12 @@ def score_cube_question(cube_data: CubeData):
 
 
 def process_with_members(cube_data: CubeData):
-    """Обработка связанных значений"""
+    """
+    Обработка связанных значений для всех измерений
+    кроме TERRITRORIES
+    """
+
+    # тут для BGLEVELS, добавятся TERRITORIES
 
     # используемые измерения на основе выдачи Solr
     found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
@@ -404,6 +409,8 @@ def process_with_member_for_territory(cube_data: CubeData):
     """Обработка связанных значений для ТЕРРИТОРИЙ"""
 
     if cube_data.terr_member:
+
+        # используемые измерения на основе выдачи Solr
         found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
 
         # если территория уже добавлена, как связанное значение
@@ -427,6 +434,20 @@ def process_with_member_for_territory(cube_data: CubeData):
                         'cube_value': cube_data.terr_member['connected_value.member_cube_value']
                     }
                 )
+            else:
+                for member in list(cube_data.members):
+                    if (member['dimension'] == connected_dim and
+                        member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
+                        cube_data.members.remove(member)
+
+                        cube_data.members.append(
+                            {
+                                'dimension': connected_dim,
+                                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                            }
+                        )
+
+                        break
 
 
 def process_default_members(cube_data: CubeData):

@@ -11,6 +11,7 @@
     "enable_repetition_for_short_request": true,
     "measure_matching_threshold": 9.2,
     "measure_weight_in_sum_scoring_model": 1,
+    "member_bglevel_threshold": 5,
     "minfin_manual_key_words_repetition": 5,
     "minfin_tf_idf_key_words_repetition": 1,
     "model_cube_clf_gb_estimators": 100,
