@@ -24,6 +24,7 @@ logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 def get_normal_form(s):
     return get_normal_form.morph.parse(s)[0].normal_form
 
+
 get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
 
@@ -56,6 +57,7 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
+        # text = TextPreprocessing._filter_volume(text)
 
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
         text = re.sub(r'[^\w\s-]+', '', text)
@@ -99,7 +101,7 @@ class TextPreprocessing:
         """Обработка нижнего подчеркивания"""
 
         if '_' in text:
-            return text.replace('_', ' ')
+            text = text.replace('_', ' ')
         return text
 
     @staticmethod
@@ -107,7 +109,18 @@ class TextPreprocessing:
         """Обработка процента"""
 
         if '%' in text:
-            return text.replace('%', 'процент')
+            text = text.replace('%', 'процент')
+        return text
+
+    @staticmethod
+    def _filter_volume(text: str):
+        """
+        Обработка неправильной нормализации слова "объем"
+        """
+
+        if 'объем' in text:
+            text = text.replace('объем', 'объём')
+
         return text
 
     @staticmethod
