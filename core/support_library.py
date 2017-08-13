@@ -417,7 +417,8 @@ def process_with_member_for_territory(cube_data: CubeData):
         )
 
         if connected_dim:
-            # если вместо связанного значения уже что-то используется другое
+            # если не используется измерение из связанного значения
+            # TODO: подумать над этим местом
             if connected_dim not in found_cube_dimensions:
                 # добавление связанного значения
                 cube_data.members.append(

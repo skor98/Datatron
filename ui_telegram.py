@@ -522,7 +522,8 @@ def process_cube_questions(message, cube_result, request_id, input_format):
             user_request = '*Ваш запрос*\n"{}"\n\n'
             user_request = user_request.format(cube_result.feedback['user_request'])
 
-        feedback = '*Запрос после обработки*\n`"{}"`\n\n'.format(
+        feedback = '{}\n*Запрос после обработки*\n`"{}"`\n\n'.format(
+            verbal_feedback(cube_result),
             cube_result.feedback['pretty_feedback']
         )
 
