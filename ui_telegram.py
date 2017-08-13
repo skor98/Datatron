@@ -397,6 +397,12 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, 'https://youtu.be/swok2pcFtNI')
     elif call.data == 'correct_response':
         request_id = call.message.text.split()[-1]
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            show_alert=False,
+            text=constants.MSG_USER_SAID_CORRECT_ANSWER
+        )
+
         logging.info('Query_ID: {}\tКорректность: {}'.format(
             request_id,
             '+'
@@ -407,6 +413,11 @@ def callback_inline(call):
             request_id,
             '-'
         ))
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            show_alert=False,
+            text=constants.MSG_USER_SAID_INCORRECT_ANSWER
+        )
 
 
 def send_admin_messages():
@@ -468,7 +479,7 @@ def process_response(message, input_format='text', file_content=None):
     else:
         user_request = ''
         if input_format != 'text':
-            user_request = '*Ваш запрос*\nДататрон решил, что вы его спросили: "{}"\n\n'
+            user_request = '*Ваш запрос*\n"{}"\n\n'
             user_request = user_request.format(result.user_request)
 
         bot.send_message(
@@ -508,30 +519,30 @@ def process_cube_questions(message, cube_result, request_id, input_format):
     else:
         user_request = ''
         if not is_input_text:
-            user_request = '*Ваш запрос*\nДататрон решил, что вы его спросили: "{}"\n\n'
+            user_request = '*Ваш запрос*\n"{}"\n\n'
             user_request = user_request.format(cube_result.feedback['user_request'])
+
+        feedback = '*Запрос после обработки*\n`"{}"`\n\n'.format(
+            cube_result.feedback['pretty_feedback']
+        )
 
         bot.send_message(
             message.chat.id,
-            user_request + cube_result.message,
+            user_request + feedback + cube_result.message,
             parse_mode='Markdown'
         )
 
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        bot.send_message(
-            message.chat.id,
-            'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-            parse_mode='Markdown'
-        )
 
         if minfin_result.full_answer:
             bot.send_message(
                 message.chat.id,
-                '*Ответ:* {}'.format(minfin_result.full_answer),
-                parse_mode='Markdown',
-                reply_to_message_id=message.message_id
+                '*Запрос после обработки*\n`"{}"`\n\n*Ответ*\n{}'.format(
+                    minfin_result.question,
+                    minfin_result.full_answer),
+                parse_mode='Markdown'
             )
         # может быть несколько
         if minfin_result.link_name:
@@ -595,20 +606,20 @@ def process_minfin_questions(message, minfin_result):
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n*Ответ: {answer}*{time_data_relevance}\n\nQuery\_ID: {query_id}'
+        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nQuery\_ID: {query_id}'
     )
     separator = ''
     expert_str = ''
     verbal_str = ''
     time_data_relevance = ''
 
-    pretty_feed = 'Datatron понял ваш запрос как "`{}`"\n'.format(
+    pretty_feed = '*Запрос после обработки*\n`"{}"`'.format(
         cube_result.feedback['pretty_feedback']
     )
 
     user_request = ''
     if user_request_notification:
-        user_request = '*Ваш запрос*\nДататрон решил, что Вы его спросили: "{}"\n\n'
+        user_request = '*Ваш запрос*\n"{}"\n\n'
         user_request = user_request.format(cube_result.feedback['user_request'])
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -657,7 +668,7 @@ def expert_feedback(cube_result):
     return expert_str
 
 
-def verbal_feedback(cube_result, title='Найдено в базе данных:'):
+def verbal_feedback(cube_result, title='Найдено в базе данных'):
     """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
 
     verbal_fb_list = []
