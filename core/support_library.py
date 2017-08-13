@@ -393,16 +393,26 @@ def process_with_members(cube_data: CubeData):
     # используемые измерения на основе выдачи Solr
     found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
 
-    for member in cube_data.members:
+    for member in list(cube_data.members):
         with_member_dim = member.get('connected_value.dimension_cube_value', None)
 
         if with_member_dim and with_member_dim not in found_cube_dimensions:
-            cube_data.members.append(
-                {
-                    'dimension': with_member_dim,
-                    'cube_value': member['connected_value.member_cube_value']
-                }
-            )
+            if with_member_dim and with_member_dim not in found_cube_dimensions:
+                # Если есть связанное значение является территорией
+                # И в запросе есть территория, вес который больше элемента
+                # То элемент и связанное значение игнорируется
+                if (with_member_dim == 'TERRITORIES' and
+                    cube_data.terr_member and
+                    cube_data.terr_member['cube_value'] != '08-2' and
+                    member['score'] < cube_data.terr_member['score']):
+                    cube_data.members.remove(member)
+                else:
+                    cube_data.members.append(
+                        {
+                            'dimension': with_member_dim,
+                            'cube_value': member['connected_value.member_cube_value']
+                        }
+                    )
 
 
 def process_with_member_for_territory(cube_data: CubeData):
@@ -437,7 +447,7 @@ def process_with_member_for_territory(cube_data: CubeData):
             else:
                 for member in list(cube_data.members):
                     if (member['dimension'] == connected_dim and
-                        member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
+                                member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
                         cube_data.members.remove(member)
 
                         cube_data.members.append(
