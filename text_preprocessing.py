@@ -16,15 +16,13 @@ import nltk
 import pymorphy2
 
 from model_manager import MODEL_CONFIG
-from core.tonita_parser import TonitaParser
+from core.parsers.time_parser import tp_time
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
-
 
 @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
 def get_normal_form(s):
     return get_normal_form.morph.parse(s)[0].normal_form
-
 
 get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -65,12 +63,16 @@ class TextPreprocessing:
         tokens = nltk.word_tokenize(text.lower())
         tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
 
+        # Лемматизация
+        tokens = [get_normal_form(t) for t in tokens]
+
+        # Парсим даты
+        if parse_dates:
+            tokens = tp_time(' '.join(tokens)).split(' ')
+
         # Убираем цифры
         if delete_digits:
             tokens = filter(lambda t: not t.isdigit(), tokens)
-
-        # Лемматизация
-        tokens = [get_normal_form(t) for t in tokens]
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
@@ -81,10 +83,6 @@ class TextPreprocessing:
 
         # Убираем стоп-слова
         tokens = filter(lambda t: t not in stop_words, tokens)
-
-        # Парсим даты
-        if parse_dates:
-            tokens = TonitaParser.process(' '.join(tokens)).split(' ')
 
         # Убираем повторяющиеся слова
         if delete_repeatings:
