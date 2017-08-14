@@ -12,6 +12,7 @@ import random
 import string
 import uuid
 
+import json
 import requests
 import telebot
 from flask import Flask, request, abort
@@ -368,7 +369,7 @@ def what_cube_handler(message):
 
 
 @bot.message_handler(content_types=['text'])
-def salute(message):
+def main_search_function_from_outside(message):
     try:
         greets = MessengerManager.greetings(message.text.strip())
         if greets:
@@ -418,6 +419,16 @@ def callback_inline(call):
             show_alert=False,
             text=constants.MSG_USER_SAID_INCORRECT_ANSWER
         )
+    elif call.data == 'look_also_1':
+        process_look_also_request(call, 1)
+    elif call.data == 'look_also_2':
+        process_look_also_request(call, 2)
+    elif call.data == 'look_also_3':
+        process_look_also_request(call, 3)
+    elif call.data == 'look_also_4':
+        process_look_also_request(call, 4)
+    elif call.data == 'look_also_5':
+        process_look_also_request(call, 5)
 
 
 def send_admin_messages():
@@ -473,8 +484,11 @@ def process_response(message, input_format='text', file_content=None):
         if extra_results:
             bot.send_message(
                 message.chat.id,
-                "*Смотри также:*\n" + extra_results,
-                parse_mode='Markdown'
+                "*Смотри также:*\n" + ''.join(extra_results),
+                parse_mode='Markdown',
+                reply_markup=see_more_buttons_dynamic(
+                    len(extra_results)
+                )
             )
     else:
         user_request = ''
@@ -492,8 +506,11 @@ def process_response(message, input_format='text', file_content=None):
         if extra_results:
             bot.send_message(
                 message.chat.id,
-                "Вы *можете посмотреть:*\n" + extra_results,
-                parse_mode='Markdown'
+                "Вы *можете посмотреть:*\n" + ''.join(extra_results),
+                parse_mode='Markdown',
+                reply_markup=see_more_buttons_dynamic(
+                    len(extra_results)
+                )
             )
 
 
@@ -732,6 +749,56 @@ def first_letter_lower(input_str):
     return input_str[:1].lower() + input_str[1:]
 
 
+def see_more_buttons_dynamic(number_of_questions):
+    """Динамическая клавиатура для смотри также"""
+    buttons = []
+    for i in range(1, number_of_questions + 1):
+        buttons.append(
+            {'text': str(i), 'callback_data': 'look_also_' + str(i)}
+        )
+
+    return json.dumps({'inline_keyboard': [buttons]})
+
+
+def get_look_also_question_by_num(message: str, num: int):
+    """
+    Возвращает запрос из смотри также под заданным номером
+    """
+    num = str(num) + '.'
+    message = [msg.rsplit('(', 1)[0].replace(num, '')
+               for msg in message.split('\n')
+               if msg.startswith(num)]
+    return message[0]
+
+
+def main_search_function_from_inside(message):
+    """
+    Входная точка в систему для использования изнутри
+    """
+
+    try:
+        greets = MessengerManager.greetings(message.text)
+        if greets:
+            bot.send_message(message.chat.id, greets)
+        else:
+            process_response(message)
+    except Exception as err:
+        catch_bot_exception(message, "/text", err)
+
+
+def process_look_also_request(call, num: int):
+    """
+    Обработка см.также запросов по нажатию инлайн-кнопки
+    """
+
+    look_also_req = get_look_also_question_by_num(
+        call.message.text, num)
+
+    call.message.text = look_also_req
+
+    main_search_function_from_inside(call.message)
+
+
 def look_further(result):
     """Смотри также/Вы можете посмотреть"""
 
@@ -764,9 +831,9 @@ def look_further(result):
         look_also = ['{}. {}\n'.format(idx + 1, elem)
                      for idx, elem in enumerate(look_also)]
 
-        return ''.join(look_also)
+        return look_also
     else:
-        return ''
+        return []
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
