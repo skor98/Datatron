@@ -23,7 +23,7 @@
     "normalization_delete_question_words_default": true,
     "normalization_delete_repeatings_default": false,
     "normalization_parse_dates_default": true,
-    "relevant_minfin_main_answer_threshold": 18,
+    "relevant_minfin_main_answer_threshold": 15,
     "repetition_num_for_short_request": 2,
     "short_request_threshold": 4,
     "solr_documents_to_return": 150,
