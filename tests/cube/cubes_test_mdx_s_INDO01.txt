@@ -1,0 +1,1 @@
+﻿Доходы ярославской области по налогу на прибыль:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])

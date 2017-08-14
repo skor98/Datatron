@@ -581,16 +581,13 @@ class CubeTester(BaseTester):
         members_equal = (set(q1_members) == set(q2_members))
 
         # подсчет метрики с учетом возможности частичного совпадения
-        q1_members_len, q2_members_len = len(q1_members), len(q2_members)
         if members_equal:
-            self._add_true_only_members(
-                max(q1_members_len, q2_members_len)
-            )
+            self._add_true_only_members(len(q1_members))
         else:
             self._add_wrong_only_members(
-                len(set(q1_members) - set(q2_members))
-                if q1_members_len > q2_members_len
-                else len(set(q2_members) - set(q1_members))
+                len(set(q1_members).symmetric_difference(
+                    set(q2_members))
+                )
             )
 
         return bool(measure_equal and cube_equal and members_equal)

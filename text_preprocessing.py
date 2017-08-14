@@ -20,9 +20,11 @@ from core.parsers.time_parser import tp_time
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
+
 @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
 def get_normal_form(s):
     return get_normal_form.morph.parse(s)[0].normal_form
+
 
 get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -48,7 +50,7 @@ class TextPreprocessing:
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
             delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
-            parse_dates = MODEL_CONFIG["normalization_parse_dates_default"]
+            parse_dates=MODEL_CONFIG["normalization_parse_dates_default"]
     ):
         """Метод для нормализации текста"""
 
