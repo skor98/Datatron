@@ -301,3 +301,13 @@ def read_minfin_data():
         dfs.append(df)
 
     return files, dfs
+
+
+def delete_oblast():
+    for member in dbc.Member.select().where(dbc.Member.lem_caption.contains(" область ")):
+        lc = member.lem_caption
+        nlc = lc.replace("область ", "")
+        dbc.Member.update(lem_caption=nlc).where(dbc.Member.id == member.id).execute()
+
+
+delete_oblast()
