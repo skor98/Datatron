@@ -61,15 +61,13 @@ class TextPreprocessing:
         text = TextPreprocessing._filter_underscore(text)
         # text = TextPreprocessing._filter_volume(text)
 
-        # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
-        text = re.sub(r'[^\w-]+', ' ', text)
-
         # Токенизируем
         tokens = nltk.word_tokenize(text.lower())
+        tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
 
         # Убираем цифры
         if delete_digits:
-            tokens = [t for t in tokens if not t.isdigit()]
+            tokens = filter(lambda t: not t.isdigit(), tokens)
 
         # Лемматизация
         tokens = [get_normal_form(t) for t in tokens]
@@ -82,7 +80,7 @@ class TextPreprocessing:
             stop_words = stop_words - delete_stop_words_set
 
         # Убираем стоп-слова
-        tokens = [t for t in tokens if t not in stop_words]
+        tokens = filter(lambda t: t not in stop_words, tokens)
 
         # Парсим даты
         if parse_dates:
