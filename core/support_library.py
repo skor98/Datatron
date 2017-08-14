@@ -236,6 +236,11 @@ def process_cube_answer(cube_answer, value):
     # Получение из базы знаний (knowledge_base.db) формата для меры
     value_format = get_representation_format(cube_answer.mdx_query)
 
+    # TODO: убрать этот костыль
+    if ('KDPERCENT' in cube_answer.mdx_query or
+                'EXPERCENT' in cube_answer.mdx_query):
+        value_format = 1
+
     # Добавление форматированного результата
     # Если формат для меры - 0, что означает число
     if not value_format:
@@ -396,9 +401,20 @@ def preprocess_territory_member(cube_data: CubeData):
     # Игнорирование территории РФ для EXYRO3
     # TODO: убрать этот костыль
     if (cube_data.selected_cube['cube'] == 'EXYR03' and
-        cube_data.terr_member and
-        cube_data.terr_member['cube_value'] == '08-2'):
+            cube_data.terr_member and
+                cube_data.terr_member['cube_value'] == '08-2'):
         cube_data.terr_member = None
+
+        # TODO: убрать этот костыль
+        for member in list(cube_data.members):
+            if member['cube_value'] == '09-12':
+                cube_data.members.remove(member)
+                cube_data.members.append(
+                    {
+                        'dimension': member['dimension'],
+                        'cube_value': '09-0'
+                    }
+                )
 
 
 def process_with_members(cube_data: CubeData):
@@ -418,9 +434,9 @@ def process_with_members(cube_data: CubeData):
             # И в запросе есть территория, вес который больше элемента
             # То элемент и связанное значение игнорируется
             if (with_member_dim == 'TERRITORIES' and
-                cube_data.terr_member and
-                cube_data.terr_member['cube_value'] != '08-2' and
-                member['score'] < cube_data.terr_member['score']):
+                    cube_data.terr_member and
+                        cube_data.terr_member['cube_value'] != '08-2' and
+                        member['score'] < cube_data.terr_member['score']):
                 cube_data.members.remove(member)
             else:
                 cube_data.members.append(
