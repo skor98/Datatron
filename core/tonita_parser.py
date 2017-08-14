@@ -170,8 +170,8 @@ def date_to_text(date, unit):
     res = str(date.year)
     u_len = unit_lens[unit]
     if u_len != 12:
-        u_start = (date.month - (date.month-1) % u_len)
-        res = ' '.join([norm_months[u_start-1], res])
+        u_end = date.month + u_len - ((date.month-1) % u_len) - 1
+        res = ' '.join([norm_months[u_end-1], res])
     return res
 
 
