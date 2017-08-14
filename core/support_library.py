@@ -236,6 +236,11 @@ def process_cube_answer(cube_answer, value):
     # Получение из базы знаний (knowledge_base.db) формата для меры
     value_format = get_representation_format(cube_answer.mdx_query)
 
+    # TODO: убрать этот костыль
+    if ('KDPERCENT' in cube_answer.mdx_query or
+                'EXPERCENT' in cube_answer.mdx_query):
+        value_format = 1
+
     # Добавление форматированного результата
     # Если формат для меры - 0, что означает число
     if not value_format:
@@ -382,28 +387,72 @@ def score_cube_question(cube_data: CubeData):
         sum_scoring()
 
 
+def preprocess_territory_member(cube_data: CubeData):
+    """
+    Дополнительные фильтры по территории
+    """
+
+    for member in cube_data.members:
+        # игнорирование территории для опредленных уровней бюджета
+        if member['dimension'] == 'BGLEVELS':
+            if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+                cube_data.terr_member = None
+
+    # Игнорирование территории РФ для EXYRO3
+    # TODO: убрать этот костыль
+    if (cube_data.selected_cube['cube'] == 'EXYR03' and
+            cube_data.terr_member and
+                cube_data.terr_member['cube_value'] == '08-2'):
+        cube_data.terr_member = None
+
+        # TODO: убрать этот костыль
+        for member in list(cube_data.members):
+            if member['cube_value'] == '09-12':
+                cube_data.members.remove(member)
+                cube_data.members.append(
+                    {
+                        'dimension': member['dimension'],
+                        'cube_value': '09-0'
+                    }
+                )
+
+
 def process_with_members(cube_data: CubeData):
-    """Обработка связанных значений"""
+    """
+    Обработка связанных значений для всех измерений
+    кроме TERRITRORIES
+    """
 
     # используемые измерения на основе выдачи Solr
     found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
 
-    for member in cube_data.members:
+    for member in list(cube_data.members):
         with_member_dim = member.get('connected_value.dimension_cube_value', None)
 
         if with_member_dim and with_member_dim not in found_cube_dimensions:
-            cube_data.members.append(
-                {
-                    'dimension': with_member_dim,
-                    'cube_value': member['connected_value.member_cube_value']
-                }
-            )
+            # Если есть связанное значение является территорией
+            # И в запросе есть территория, вес который больше элемента
+            # То элемент и связанное значение игнорируется
+            if (with_member_dim == 'TERRITORIES' and
+                    cube_data.terr_member and
+                        cube_data.terr_member['cube_value'] != '08-2' and
+                        member['score'] < cube_data.terr_member['score']):
+                cube_data.members.remove(member)
+            else:
+                cube_data.members.append(
+                    {
+                        'dimension': with_member_dim,
+                        'cube_value': member['connected_value.member_cube_value']
+                    }
+                )
 
 
 def process_with_member_for_territory(cube_data: CubeData):
     """Обработка связанных значений для ТЕРРИТОРИЙ"""
 
     if cube_data.terr_member:
+
+        # используемые измерения на основе выдачи Solr
         found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
 
         # если территория уже добавлена, как связанное значение
@@ -417,7 +466,8 @@ def process_with_member_for_territory(cube_data: CubeData):
         )
 
         if connected_dim:
-            # если вместо связанного значения уже что-то используется другое
+            # если не используется измерение из связанного значения
+            # TODO: подумать над этим местом
             if connected_dim not in found_cube_dimensions:
                 # добавление связанного значения
                 cube_data.members.append(
@@ -426,6 +476,20 @@ def process_with_member_for_territory(cube_data: CubeData):
                         'cube_value': cube_data.terr_member['connected_value.member_cube_value']
                     }
                 )
+            else:
+                for member in list(cube_data.members):
+                    if (member['dimension'] == connected_dim and
+                                member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
+                        cube_data.members.remove(member)
+
+                        cube_data.members.append(
+                            {
+                                'dimension': connected_dim,
+                                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                            }
+                        )
+
+                        break
 
 
 def process_default_members(cube_data: CubeData):
@@ -509,23 +573,41 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         create_basic_mdx_query()
 
 
-def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
+def best_answer_depending_on_cube(cube_data_list: list, correct_cube: str):
     """
     Выбор лучшего ответа по заданному кубу, если это возможно
     """
 
     # Для работы системы до появления классификатора
-    if not cube_name:
+    if not correct_cube:
         return
 
+    # Если данные есть
     if cube_data_list:
         used_cube = cube_data_list[0].selected_cube['cube']
 
-        if used_cube != cube_name:
+        if used_cube != correct_cube:
             for cube_data in list(cube_data_list):
-                if cube_data.selected_cube['cube'] == cube_name:
-                    cube_data_list.remove(cube_data)
-                    cube_data_list.insert(0, cube_data)
+                scoring_model = MODEL_CONFIG["cube_answers_scoring_model"]
+
+                if cube_data.selected_cube['cube'] == correct_cube:
+                    # Перемена (swap) скора алгоритмически лучшего и
+                    # верного по классификатору ответов местами
+
+                    (
+                        cube_data.score[scoring_model],
+                        cube_data_list[0].score[scoring_model]
+                    ) = (
+                        cube_data_list[0].score[scoring_model],
+                        cube_data.score[scoring_model],
+                    )
+
+                    # ответы снова в порядке убывания скора
+                    cube_data_list = sorted(
+                        cube_data_list,
+                        key=lambda cube_data_elem: cube_data_elem.score[scoring_model],
+                        reverse=True
+                    )
 
                     logging.info(
                         "Query_ID: {}\tMessage: {}".format(
@@ -533,17 +615,18 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
                             'Лучший ответ был сменен. Был куб {}, '
                             'стал {}, лучший путь {}'.format(
                                 used_cube,
-                                cube_name,
+                                correct_cube,
                                 cube_data.tree_path
                             )
                         )
                     )
+
                     return
         else:
             logging.info(
                 "Query_ID: {}\tMessage: {}".format(
                     cube_data_list[0].request_id,
-                    'Куб алгоритмически лучшего ответа'
+                    'Куб алгоритмически лучшего ответа '
                     'совпадает с кубом из классификатора'
                 )
             )
@@ -558,7 +641,8 @@ def best_answer_depending_on_cube(cube_data_list: list, cube_name: str):
         )
     else:
         logging.info(
-            "Message: нет данных для выполнения этой операции"
+            "Message: нет данных для выбора лучшего "
+            "ответа по заданному куба"
         )
 
 

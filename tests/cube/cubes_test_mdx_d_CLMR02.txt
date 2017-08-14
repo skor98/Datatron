@@ -1,5 +1,5 @@
-Задолженность РФ по состоянию на 01.01.2017:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-2],[YEARS].[2017])
-Внешний долг Российской Федерации на 01.02.2017 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-2],[YEARS].[2017],[MARKS].[33-1])
+Задолженность РФ по состоянию на 01.01.2017:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-12],[YEARS].[2016])
+Внешний долг Российской Федерации на 01.02.2017 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-1],[YEARS].[2017],[MARKS].[33-1])
 Сколько составлял внешний долг России в конце 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016],[MARKS].[33-1])
 Объем внешнего долга Российской Федерации в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016],[MARKS].[33-1])
 Внешний долг Российской федерации по состоянию на первое марта 2017 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-2],[YEARS].[2017],[MARKS].[33-1])

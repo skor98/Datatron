@@ -23,8 +23,15 @@ class CubeProcessor:
     """
 
     @staticmethod
-    def get_data(cube_data: CubeData, correct_cube: str = None):
+    def get_data(cube_data: CubeData, correct_cube: tuple = None):
         """API метод к работе с документами по кубам в ядре"""
+
+        # увеличения скора корректного по мнению классификатора куба
+        CubeProcessor._boost_correct_cube_from_clf(cube_data, correct_cube)
+
+        # увеличения скора мер от корректного по мнеию классификатора куба
+        CubeProcessor._boost_measures_of_correct_cube_from_clf(
+            cube_data, correct_cube)
 
         cube_data_list = []
 
@@ -41,11 +48,12 @@ class CubeProcessor:
                     csl.score_cube_question(item)
 
                 cube_data_list = CubeProcessor._take_best_cube_data(
-                    cube_data_list,
-                    correct_cube
-                )
+                    cube_data_list, correct_cube[0])
 
                 for item in cube_data_list:
+                    # предобработка территорий
+                    csl.preprocess_territory_member(item)
+
                     # обработка связанных значений
                     csl.process_with_members(item)
 
@@ -66,16 +74,68 @@ class CubeProcessor:
             if MODEL_CONFIG["enable_cube_data_existence_checking"]:
                 csl.filter_cube_data_without_answer(cube_data_list)
 
-            # после фильтрации по наличию данных можно выбрать лучший
-            # как с помощью классификатора, так и по умолчанию (то есть по скору)
-            if MODEL_CONFIG["enable_cube_clf"]:
-                csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+                # после фильтрации по наличию данных можно выбрать лучший
+                # как с помощью классификатора, так и по умолчанию (то есть по скору)
+                if MODEL_CONFIG["enable_cube_clf"]:
+                    csl.best_answer_depending_on_cube(cube_data_list, correct_cube[0])
 
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list
         )
 
         return answers
+
+    @staticmethod
+    def _boost_correct_cube_from_clf(cube_data: CubeData, correct_cube: tuple):
+        """
+        Бустинг куба, который классификатор считает корректным
+        """
+
+        def boosting_function(score: float, clf_prob: float):
+            """Степень бустинга растет с уверенностью классификатора"""
+            new_score = score * (1 - clf_prob / (clf_prob - 1))
+
+            # ограничение сверху, чтобы понизить максимальный скор
+            # ответа по кубу и востановить баланс с ответам по минфину
+            if new_score > MODEL_CONFIG["cube_boosting_threshold"]:
+                new_score = MODEL_CONFIG["cube_boosting_threshold"]
+            return new_score
+
+        if correct_cube:
+            for cube in cube_data.cubes:
+                if cube['cube'] == correct_cube[0]:
+                    cube['score'] = boosting_function(
+                        cube['score'],
+                        correct_cube[1]
+                    )
+                    break
+
+            cube_data.cubes = sorted(
+                cube_data.cubes,
+                key=lambda elem: elem['score'],
+                reverse=True
+            )
+
+    @staticmethod
+    def _boost_measures_of_correct_cube_from_clf(
+            cube_data: CubeData,
+            correct_cube: tuple
+    ):
+        """
+        Увеличение скора мер корректного по мнению
+        классификатора куба
+        """
+
+        if correct_cube:
+            for measure in cube_data.measures:
+                if measure['cube'] == correct_cube:
+                    measure['score'] += 1
+
+            cube_data.measures = sorted(
+                cube_data.measures,
+                key=lambda elem: elem['score'],
+                reverse=True
+            )
 
     @staticmethod
     def _get_several_cube_answers(cube_data: CubeData):

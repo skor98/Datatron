@@ -63,7 +63,9 @@ class DataRetrieving:
 
             if MODEL_CONFIG["enable_cube_clf"]:
                 clf = CubeClassifier.inst()
-                cube_answers = CubeProcessor.get_data(cube_data, clf.predict(user_request))
+                best_prediction = tuple(clf.predict_proba(user_request))[0]
+
+                cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
             else:
                 cube_answers = CubeProcessor.get_data(cube_data)
 
@@ -239,7 +241,7 @@ class DataRetrieving:
             value = process_server_response(core_answer.answer, response)
 
             # форматирование ответа при его наличии
-            if value:
+            if value is not None:
                 process_cube_answer(core_answer.answer, value)
         # Если главный ответ по минфину
         else:

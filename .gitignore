@@ -218,7 +218,14 @@ tests/results/
 .eric6project
 __init__.py
 
-0_local/
+# local temp scripts
+inprogress/
 
 # ignore
 *.pkl
+
+# ignore auto minfin tests
+tests/minfin/minfin_test_auto*.txt
+
+
+kb/knowledge_base\.db-journal
