@@ -61,11 +61,9 @@ class TextPreprocessing:
         text = TextPreprocessing._filter_underscore(text)
         # text = TextPreprocessing._filter_volume(text)
 
-        # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
-        text = re.sub(r'[^\w-]+', ' ', text)
-
         # Токенизируем
         tokens = nltk.word_tokenize(text.lower())
+        tokens = list(filter(lambda w: re.fullmatch(r'\W*', w) is None, tokens))
 
         # Убираем цифры
         if delete_digits:
