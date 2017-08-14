@@ -1,13 +1,17 @@
+from os import path
+from config import SETTINGS
+from flask import send_file
+
 class ResourceHelper:
 # помогает получить ресурсы
 
     @staticmethod
     def get_image(image_id):
-        return get_resource(image_id, "img", 'image/jpeg')
+        return ResourceHelper.get_resource(image_id, "img", 'image/jpeg')
 
     @staticmethod
     def get_document(document_id):
-        return get_resource(document_id, "doc", 'application/pdf')
+        return ResourceHelper.get_resource(document_id, "doc", 'application/pdf')
 
     @staticmethod
     def get_resource(resource_id, resource_type, resource_mimetype):
