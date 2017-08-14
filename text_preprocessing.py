@@ -115,7 +115,7 @@ class TextPreprocessing:
         """Обработка процента"""
 
         if '%' in text:
-            text = text.replace('%', 'процент')
+            text = text.replace('%', ' процент')
         return text
 
     @staticmethod

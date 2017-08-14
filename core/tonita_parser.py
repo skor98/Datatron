@@ -38,9 +38,9 @@ afternext_re = '(?P<pref>(?:после[- ]?)+)следующий (?P<unit>{})'.f
 later_re = '(?:через )?(?:<interval>{})(?: спустя)?'.format(unitcombo)
 
 _dayformat = '(?P<day>[0-3]?[0-9])'
-_monthformat = '(?P<month>[01]?[0-9]|{})'.format(all_months)
+_monthformat = '(?P<month>0?[0-9]|1[012]|{})'.format(all_months)
 _yearformat = r'(?:20)?(?P<year>[01][0-9])'
-dateformat_re = r'(?:{}[.\- /])?{}(?:[.\- /]{})?'.format(
+dateformat_re = r'{}?(?P<sep>[.\- /]){}(?P=sep){}'.format(
     _dayformat, _monthformat, _yearformat)
 
 
