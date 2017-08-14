@@ -16,7 +16,7 @@
 Расходы России на национальную безопасность и правоохранительную деятельность в 2015:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-850484], [MARKS].[03-4], [YEARS].[2015])
 Расходы Российской Федерации 2012 на национальную безопасность и правоохранительную деятельность:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-850484], [MARKS].[03-4], [YEARS].[2012])
 Расходы 2014 на нац безопасность:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-850484], [MARKS].[03-4], [YEARS].[2014])
-Расходы России 2014 на органы внутренних дел:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-413294], [MARKS].[03-4], [YEARS].[2016])
+Расходы России 2014 на органы внутренних дел:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-413294], [MARKS].[03-4], [YEARS].[2014])
 Расходы России на органы юстиции в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-413296], [MARKS].[03-4], [YEARS].[2016])
 Расходы РФ на органы безопасности в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-854333], [MARKS].[03-4], [YEARS].[2016])
 Расходы России на миграционную политику в 2012:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-850760], [MARKS].[03-4], [YEARS].[2012])

@@ -29,6 +29,10 @@ class CubeProcessor:
         # увеличения скора корректного по мнению классификатора куба
         CubeProcessor._boost_correct_cube_from_clf(cube_data, correct_cube)
 
+        # увеличения скора мер от корректного по мнеию классификатора куба
+        CubeProcessor._boost_measures_of_correct_cube_from_clf(
+            cube_data, correct_cube)
+
         cube_data_list = []
 
         if cube_data:
@@ -44,11 +48,12 @@ class CubeProcessor:
                     csl.score_cube_question(item)
 
                 cube_data_list = CubeProcessor._take_best_cube_data(
-                    cube_data_list,
-                    correct_cube[0]
-                )
+                    cube_data_list, correct_cube[0])
 
                 for item in cube_data_list:
+                    # предобработка территорий
+                    csl.preprocess_territory_member(item)
+
                     # обработка связанных значений
                     csl.process_with_members(item)
 
@@ -107,6 +112,27 @@ class CubeProcessor:
 
             cube_data.cubes = sorted(
                 cube_data.cubes,
+                key=lambda elem: elem['score'],
+                reverse=True
+            )
+
+    @staticmethod
+    def _boost_measures_of_correct_cube_from_clf(
+            cube_data: CubeData,
+            correct_cube: tuple
+    ):
+        """
+        Увеличение скора мер корректного по мнению
+        классификатора куба
+        """
+
+        if correct_cube:
+            for measure in cube_data.measures:
+                if measure['cube'] == correct_cube:
+                    measure['score'] += 1
+
+            cube_data.measures = sorted(
+                cube_data.measures,
                 key=lambda elem: elem['score'],
                 reverse=True
             )

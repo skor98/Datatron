@@ -257,7 +257,7 @@ class CubeDocsGeneration:
                  .join(dbc.Measure)
                  .switch(dbc.CubeMeasure)
                  .join(dbc.Cube)
-                 .where(dbc.Measure.id.not_in(default_measures_ids))
+                 .where(dbc.Measure.cube_value != 'VALUE')
                  )
 
         # Создание нужной структуры документов

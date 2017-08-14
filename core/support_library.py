@@ -382,13 +382,30 @@ def score_cube_question(cube_data: CubeData):
         sum_scoring()
 
 
+def preprocess_territory_member(cube_data: CubeData):
+    """
+    Дополнительные фильтры по территории
+    """
+
+    for member in cube_data.members:
+        # игнорирование территории для опредленных уровней бюджета
+        if member['dimension'] == 'BGLEVELS':
+            if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+                cube_data.terr_member = None
+
+    # Игнорирование территории РФ для EXYRO3
+    # TODO: убрать этот костыль
+    if (cube_data.selected_cube['cube'] == 'EXYR03' and
+        cube_data.terr_member and
+        cube_data.terr_member['cube_value'] == '08-2'):
+        cube_data.terr_member = None
+
+
 def process_with_members(cube_data: CubeData):
     """
     Обработка связанных значений для всех измерений
     кроме TERRITRORIES
     """
-
-    # тут для BGLEVELS, добавятся TERRITORIES
 
     # используемые измерения на основе выдачи Solr
     found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
@@ -397,22 +414,21 @@ def process_with_members(cube_data: CubeData):
         with_member_dim = member.get('connected_value.dimension_cube_value', None)
 
         if with_member_dim and with_member_dim not in found_cube_dimensions:
-            if with_member_dim and with_member_dim not in found_cube_dimensions:
-                # Если есть связанное значение является территорией
-                # И в запросе есть территория, вес который больше элемента
-                # То элемент и связанное значение игнорируется
-                if (with_member_dim == 'TERRITORIES' and
-                    cube_data.terr_member and
-                    cube_data.terr_member['cube_value'] != '08-2' and
-                    member['score'] < cube_data.terr_member['score']):
-                    cube_data.members.remove(member)
-                else:
-                    cube_data.members.append(
-                        {
-                            'dimension': with_member_dim,
-                            'cube_value': member['connected_value.member_cube_value']
-                        }
-                    )
+            # Если есть связанное значение является территорией
+            # И в запросе есть территория, вес который больше элемента
+            # То элемент и связанное значение игнорируется
+            if (with_member_dim == 'TERRITORIES' and
+                cube_data.terr_member and
+                cube_data.terr_member['cube_value'] != '08-2' and
+                member['score'] < cube_data.terr_member['score']):
+                cube_data.members.remove(member)
+            else:
+                cube_data.members.append(
+                    {
+                        'dimension': with_member_dim,
+                        'cube_value': member['connected_value.member_cube_value']
+                    }
+                )
 
 
 def process_with_member_for_territory(cube_data: CubeData):
@@ -511,12 +527,10 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         dim_tmp, dim_str_value = "[{}].[{}]", []
 
         for member in cube_data.members:
-            # TODO: удалить костыль по игнорированию KOSGU
-            if member['dimension'] != 'KOSGU':
-                dim_str_value.append(dim_tmp.format(
-                    member['dimension'],
-                    member['cube_value']
-                ))
+            dim_str_value.append(dim_tmp.format(
+                member['dimension'],
+                member['cube_value']
+            ))
 
         # Отдельная обработка лет
         if cube_data.year_member:
