@@ -27,9 +27,12 @@ from sklearn.model_selection import KFold, ParameterGrid
 
 from nltk.corpus import stopwords
 
+from peewee import fn
+
 from text_preprocessing import get_normal_form
 from config import TEST_PATH_CUBE, DATA_PATH
 from model_manager import MODEL_CONFIG, save_default_model
+from kb.kb_db_creation import Member
 import logs_helper
 # pylint: disable=invalid-name
 
@@ -442,16 +445,58 @@ def _preprocess(s: str):
     s = s.replace("2017", "текущийгод")
     s = s.replace("17", "текущийгод")
     s = YEARS_RE.sub(" нетекущийгод ", s + " ")
-    return tuple(set(map(
+    res = set(map(
         lambda x: get_normal_form(x) if x not in WORDS_NO_PROCESS else x,
         filter(
             lambda x: x not in STOP_WORDS,
             WORDS_RE.findall(s.lower())
         )
-    )))
+    ))
+    for terr in _get_territories():
+        if terr.issubset(res):
+            res = res.difference(terr)
+            res.add("члентерритория")
+            break
+
+    return tuple(res)
 
 
 def _get_folder_files(test_path):
     """Генератор путей к файлам в указанной папке"""
     for file_name in os.listdir(test_path):
         yield os.path.join(test_path, file_name)
+
+
+def _get_territories():
+    if _get_territories.territories:
+        return _get_territories.territories
+
+    terr_query = Member.select(
+        Member.lem_caption,
+        Member.lem_synonyms
+    ).where(
+        fn.Lower(fn.Substr(Member.cube_value, 1, 2)) == '08'
+    )
+
+    territories = []
+
+    for territory in terr_query:
+        if territory.lem_caption in ["неуказанный территория", "неуказанный наименование"]:
+            continue
+        territories.append(set(territory.lem_caption.split()))
+        if territory.lem_synonyms:
+            for synonym in territory.lem_synonyms.split():
+                territories.append(set([synonym]))
+    territories.append({"кабардино", "балкария"})
+    territories.append({"хмао"})
+    territories.append({"крымский"})
+    territories.append({"крым"})
+    territories.append({"кабардино", "балкарский", "республика"})
+
+    territories = tuple(territories)
+
+    _get_territories.territories = territories
+
+    return _get_territories.territories
+
+_get_territories.territories = None
