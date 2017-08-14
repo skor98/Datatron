@@ -16,6 +16,7 @@ import nltk
 import pymorphy2
 
 from model_manager import MODEL_CONFIG
+from core.tonita_parser import TonitaParser
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -48,7 +49,8 @@ class TextPreprocessing:
             text,
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
-            delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"]
+            delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
+            parse_dates = MODEL_CONFIG["normalization_parse_dates_default"]
     ):
         """Метод для нормализации текста"""
 
@@ -60,7 +62,7 @@ class TextPreprocessing:
         # text = TextPreprocessing._filter_volume(text)
 
         # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
-        text = re.sub(r'[^\w\s-]+', '', text)
+        text = re.sub(r'[^\w-]+', ' ', text)
 
         # Токенизируем
         tokens = nltk.word_tokenize(text.lower())
@@ -72,10 +74,6 @@ class TextPreprocessing:
         # Лемматизация
         tokens = [get_normal_form(t) for t in tokens]
 
-        # Убираем повторяющиеся слова
-        if delete_repeatings:
-            tokens = list(set(tokens))
-
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
         stop_words = set(self.stop_words)
@@ -85,6 +83,14 @@ class TextPreprocessing:
 
         # Убираем стоп-слова
         tokens = [t for t in tokens if t not in stop_words]
+
+        # Парсим даты
+        if parse_dates:
+            tokens = TonitaParser.process(' '.join(tokens)).split(' ')
+
+        # Убираем повторяющиеся слова
+        if delete_repeatings:
+            tokens = list(set(tokens))
 
         normalized_request = ' '.join(tokens)
 
