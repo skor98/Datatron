@@ -169,7 +169,8 @@ class CubeDocsGeneration:
 
         # Все уникальные территории
         members = (dbc.Member
-                   .select(fn.Distinct(dbc.Member.lem_caption))
+                   .select(fn.Distinct(dbc.Member.lem_caption),
+                           dbc.Member.lem_synonyms)
                    .join(dbc.DimensionMember)
                    .join(dbc.Dimension)
                    .where(dbc.Dimension.cube_value == 'TERRITORIES'))

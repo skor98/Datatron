@@ -1,4 +1,4 @@
-Налоговые и неналоговые доходы РФ:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-1], [KDGROUPS].[05-82], [MARKS].[03-2])
+﻿Налоговые и неналоговые доходы РФ:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-1], [KDGROUPS].[05-82], [MARKS].[03-2])
 Налоговые и неналоговые доходы бюджета в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-1], [KDGROUPS].[05-82], [MARKS].[03-2])
 Сколько денег поступило в бюджет с налоговых и неналоговых доходов РФ в текущем году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-1], [KDGROUPS].[05-82], [MARKS].[03-2])
 Налоговые доходы госбюджета в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-1], [KDGROUPS].[05-12], [MARKS].[03-2]) 
