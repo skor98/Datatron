@@ -51,7 +51,6 @@ def get_minfin_data():
 
 get_minfin_data.data = None
 
-
 @time_with_message("_read_minfin_data", "debug", 10)
 def _read_minfin_data():
     """
@@ -75,7 +74,6 @@ def _read_minfin_data():
             data["question"].tolist()
         )
     )
-
 
 def is_valid_api_key(api_key):
     """
@@ -134,6 +132,11 @@ class TextQuery(Resource):
 
     @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
+        data = self.get_data()
+
+        return data.toJSON_API()
+
+    def get_data(self):
         args = parser.parse_args()
         logging.info(args)
 
@@ -152,7 +155,7 @@ class TextQuery(Resource):
             args["apikey"],
             "",
             request_id
-        ).toJSON_API()
+        )
 
 
 class MinfinList(Resource):
@@ -213,29 +216,16 @@ class TextQueryV2(Resource):
 
     @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
-        args = parser.parse_args()
-        logging.info(args)
+        answer = self.get_data()
 
-        if not is_valid_api_key(args["apikey"]):
-            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+        return answer.toJSON_API()
 
-        request_text = args['query']
-        request_id = uuid4().hex
+    def get_data(self):
+        text_query = TextQuery()
+        answer = text_query.get_data()
+        result = TextResponseModel.from_answer(answer)
+        return result
 
-        if len(args['query']) < 4:
-            abort(400, message='You need "query" parameter"')
-
-        response = MessengerManager.make_request(
-            request_text,
-            "API v2",
-            args["apikey"],
-            "",
-            request_id
-        )
-
-        result = TextResponseModel.from_answer(response)
-
-        return result.toJSON_API()
 
 class MinfinListV2(Resource):
     """Возвращает весь список минфин вопросов. Актуально, пока их мало"""

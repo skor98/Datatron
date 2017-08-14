@@ -10,6 +10,47 @@ from models.responses.question_model import QuestionModel
 class TextResponseModel:
 # модель ответа клиенту
 
+    def __init__(self):
+        self.status = False
+        self.question = None
+        self.full_answer = 'Ответ не найден'
+        self.short_answer = 'Ответ не найден'
+        self.document_links = None
+        self.image_links = None
+        self.http_ref_links = None
+        self.associated_quesions = None
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
+
+    def toJSON_API(self):
+        keys_to_return = (
+            'status',
+            'question',
+            'full_answer',
+            'short_answer',
+            'associated_quesions',
+        )
+
+        # если есть списки документов, изображений или ссылок,
+        # добавим их в конечный ответ
+        if self.document_links is not None:
+            keys_to_return = keys_to_return + ('document_links',)
+
+        if self.image_links is not None:
+            keys_to_return = keys_to_return + ('image_links',)
+
+        if self.http_ref_links is not None:
+                keys_to_return = keys_to_return + ('http_ref_links',)
+
+        result_dict = {key: getattr(self, key, None) for key in keys_to_return}
+
+        return json.dumps(
+            result_dict,
+            default=lambda obj: getattr(obj, 'to_reduced_api_object', lambda: None)(),
+            ensure_ascii=False,
+        ).encode("utf-8")
+
     @staticmethod
     def from_answer(response: CoreAnswer):
         # формирование ответа для клиента
@@ -106,44 +147,3 @@ class TextResponseModel:
             http_ref_links.append(http_ref_link)
         else:
             return None
-
-    def __init__(self):
-        self.status = False
-        self.question = None
-        self.full_answer = 'Ответ не найден'
-        self.short_answer = 'Ответ не найден'
-        self.document_links = None
-        self.image_links = None
-        self.http_ref_links = None
-        self.associated_quesions = None
-
-    def toJSON(self):
-        return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
-
-    def toJSON_API(self):
-        keys_to_return = (
-            'status',
-            'question',
-            'full_answer',
-            'short_answer',
-            'associated_quesions',
-        )
-
-        # если есть списки документов, изображений или ссылок,
-        # добавим их в конечный ответ
-        if self.document_links is not None:
-            keys_to_return = keys_to_return + ('document_links',)
-
-        if self.image_links is not None:
-            keys_to_return = keys_to_return + ('image_links',)
-
-        if self.http_ref_links is not None:
-                keys_to_return = keys_to_return + ('http_ref_links',)
-
-        result_dict = {key: getattr(self, key, None) for key in keys_to_return}
-
-        return json.dumps(
-            result_dict,
-            default=lambda obj: getattr(obj, 'to_reduced_api_object', lambda: None)(),
-            ensure_ascii=False,
-        ).encode("utf-8")
