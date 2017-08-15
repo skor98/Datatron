@@ -29,6 +29,7 @@ from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import text_to_speech
 from core.cube_classifier import CubeClassifier
+from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -353,7 +354,7 @@ def get_user_feedbacks(message):
 @bot.message_handler(commands=['whatcube'])
 def what_cube_handler(message):
     """
-    Позволяет протестировать как ведёт себя классификатор на сервере
+    Позволяет протестировать как ведёт себя классификатор типов кубов на сервере
     /whatcube Цели разработки бюджетного прогноза РФ
     """
     try:
@@ -366,6 +367,23 @@ def what_cube_handler(message):
         bot.send_message(message.chat.id, text_to_send, parse_mode='Markdown')
     except Exception as err:
         catch_bot_exception(message, "/whatcube", err)
+
+@bot.message_handler(commands=['whattype'])
+def what_cube_handler(message):
+    """
+    Позволяет протестировать как ведёт себя классификатор куб/минфин на сервере
+    /whattype Цели разработки бюджетного прогноза РФ
+    """
+    try:
+        clf = CubeOrMinfinClassifier.inst()
+        req = " ".join(message.text.split()[1:])
+        text_to_send = "Возможные типы документа: \n"
+        for ind, elem in tuple(enumerate(clf.predict_proba(req))):
+            cube_name, proba = elem
+            text_to_send += "{}. {} -> *{}%*\n".format(ind + 1, cube_name, round(proba * 100, 2))
+        bot.send_message(message.chat.id, text_to_send, parse_mode='Markdown')
+    except Exception as err:
+        catch_bot_exception(message, "/whattype", err)
 
 
 @bot.message_handler(content_types=['text'])
