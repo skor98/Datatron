@@ -14,7 +14,8 @@ import datetime
 from os import path
 from math import isnan
 
-from core.cube_classifier import train_and_save_model, select_best_model
+from core.cube_classifier import train_and_save_cube_clf, select_best_cube_clf
+from core.cube_or_minfin_classifier import select_best_cube_or_minfin_clf, train_and_save_cube_or_minfin_clf
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
@@ -112,7 +113,8 @@ if __name__ == '__main__':
 
     if args.cube_clf_select:
         # Если потратили столько времени на выбор модели, то можно её и обучить
-        select_best_model()
+        select_best_cube_clf()
+        select_best_cube_or_minfin_clf()
         args.cube_clf = True
 
     if not args.cube_clf and not args.db and not args.cube and not args.minfin:
@@ -122,7 +124,8 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.cube_clf:
-        train_and_save_model()
+        train_and_save_cube_clf()
+        train_and_save_cube_or_minfin_clf()
     if args.db:
         set_up_db()
     if args.cube:
