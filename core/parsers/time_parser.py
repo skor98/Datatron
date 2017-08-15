@@ -58,7 +58,7 @@ def current_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     begin = bool(match.group('begin'))
     newdate = process_units(datetime.today(), u_len, begin)
-    return date_to_text(newdate)
+    return date_to_text(newdate, nomonth=(u_len == 12))
 
 
 @tp_time.re_handler(last_re)
@@ -68,7 +68,7 @@ def last_h(match):
     begin = bool(match.group('begin'))
     newdate = mod_date(datetime.today(), -sum_len)
     newdate = process_units(newdate, u_len, begin)
-    return date_to_text(newdate)
+    return date_to_text(newdate, nomonth=(u_len == 12))
 
 
 @tp_time.re_handler(next_re)
@@ -78,43 +78,63 @@ def next_h(match):
     begin = bool(match.group('begin'))
     newdate = mod_date(datetime.today(), sum_len)
     newdate = process_units(newdate, u_len, begin)
-    return date_to_text(newdate) 
+    return date_to_text(newdate, nomonth=(u_len == 12))
 
 
 @tp_time.re_handler(ago_re)
 def ago_h(match):
     words = match.group('interval').split(' ')
     sum_len = 0
+    u_lens = []
     coeff = 1
     for word in words:
         if word.isnumeric():
             coeff = int(word)
         else:
-            sum_len += unit_lens.get(word, 0) * coeff
+            u_len = unit_lens.get(word, 0)
+            if u_len != 0:
+                u_lens.append(u_len)
+            sum_len += u_len * coeff
             coeff = 1
+
+    if not u_lens:
+        return match.group(0)
     newdate = mod_date(datetime.today(), -sum_len)
-    return date_to_text(newdate)
+    if len(u_lens) == 1:
+        newdate = process_units(newdate, u_lens[0])
+        return date_to_text(newdate, nomonth=(u_lens[0] == 12))
+    return date_to_text(newdate, nomonth=False)
 
 
 @tp_time.re_handler(later_re)
 def later_h(match):
     words = match.group('interval').split(' ')
     sum_len = 0
+    u_lens = []
     coeff = 1
     for word in words:
         if word.isnumeric():
             coeff = int(word)
         else:
-            sum_len += unit_lens.get(word, 0) * coeff
+            u_len = unit_lens.get(word, 0)
+            if u_len != 0:
+                u_lens.append(u_len)
+            sum_len += u_len * coeff
             coeff = 1
+
+    if not u_lens:
+        return match.group(0)
     newdate = mod_date(datetime.today(), sum_len)
-    return date_to_text(newdate)
+    if len(u_lens) == 1:
+        newdate = process_units(newdate, u_lens[0])
+        return date_to_text(newdate, nomonth=(u_lens[0] == 12))
+    return date_to_text(newdate, nomonth=False)
 
 
 @tp_time.re_handler(static_re)
 def static_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
-    if u_len >= 12:
+    if u_len == 12:
         return match.group(0)
     newmonth = u_len * int(match.group('num'))
     newmonth = max(min(newmonth, 12), 1)
@@ -128,7 +148,7 @@ def static_h(match):
     begin = bool(match.group('begin'))
     newdate = datetime(year=newyear, month=newmonth, day=1)
     newdate = process_units(newdate, u_len, begin)
-    return date_to_text(newdate)
+    return date_to_text(newdate, nomonth=False)
 
 
 @tp_time.re_handler(dateformat_re)
@@ -148,7 +168,7 @@ def date_h(match):
     newday = int(match.group('day'))
     newdate = datetime(day=newday, month=newmonth, year=newyear)
     newdate = process_units(newdate, 1, newday <= 15)
-    return date_to_text(newdate)
+    return date_to_text(newdate, nomonth=False)
 
 
 def process_units(date, u_len=1, begin=False):
@@ -158,10 +178,14 @@ def process_units(date, u_len=1, begin=False):
     return datetime(year=date.year, month=newmonth, day=1)
 
 
-def date_to_text(date):
+def date_to_text(date, nomonth=False):
     res_month = norm_months[date.month-1]
     if date.year < 1200:
+        if nomonth:
+            return str(datetime.today().year)
         return res_month
+    if nomonth:
+        return str(date.year)
     return ' '.join([res_month, str(date.year)])
 
 
