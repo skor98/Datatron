@@ -10,22 +10,24 @@ from datetime import datetime
 
 from core.tonita_parser import TonitaParser
 
-tp_time = TonitaParser()
+time_tp = TonitaParser()
 
 norm_months = [
     'январь', 'февраль', 'март', 'апрель',
     'май', 'июнь', 'июль', 'август',
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
-tp_time.add_many_subs({m[:3]: m for m in norm_months if len(m) > 3})
+time_tp.add_many_subs({m[:3]: m for m in norm_months if len(m) > 3})
 anymonth = '|'.join(norm_months)
 
-tp_time.add_many_subs({
+time_tp.add_many_subs({
     'г': 'год',
     'мес': 'месяц',
     'кв': 'квартал',
     'полугодие': 'семестр',
     'полгода': 'семестр',
+    'сегодня': 'этот месяц',
+    '': '',
 })
 unit_lens = {
     'год': 12,
@@ -40,8 +42,8 @@ unitcombo = '(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
 points = r'(?:(?P<begin>начало|состояние|канун) |(?P<end>конец|итог|финал|окончание) )?'
 
 current_re = r'{}(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
-last_re = r'{}(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший) (?P<unit>{})'.format(points, anyunit)
-next_re = '{}(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий) (?P<unit>{})'.format(points, anyunit)
+last_re = r'{}(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
+next_re = '{}(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points, anyunit)
 ago_re = r'(?P<interval>{}) назад'.format(unitcombo)
 later_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)| спустя)'.format(unitcombo)
 
@@ -53,7 +55,7 @@ dateformat_re = r'{}(?P<sep>[.\- /]){}(?:(?P=sep){})?'.format(
 
 static_re = r'{}(?P<num>0?[1-9]|1[012]?) (?P<unit>{})(?: {})?'.format(points, anyunit, _yearformat)
 
-@tp_time.re_handler(current_re)
+@time_tp.re_handler(current_re)
 def current_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     begin = bool(match.group('begin'))
@@ -61,7 +63,7 @@ def current_h(match):
     return date_to_text(newdate, nomonth=(u_len == 12))
 
 
-@tp_time.re_handler(last_re)
+@time_tp.re_handler(last_re)
 def last_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     sum_len = u_len * len(match.group('pref').split('з'))
@@ -71,7 +73,7 @@ def last_h(match):
     return date_to_text(newdate, nomonth=(u_len == 12))
 
 
-@tp_time.re_handler(next_re)
+@time_tp.re_handler(next_re)
 def next_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     sum_len = u_len * len(match.group('pref').split('з'))
@@ -81,7 +83,7 @@ def next_h(match):
     return date_to_text(newdate, nomonth=(u_len == 12))
 
 
-@tp_time.re_handler(ago_re)
+@time_tp.re_handler(ago_re)
 def ago_h(match):
     words = match.group('interval').split(' ')
     sum_len = 0
@@ -106,7 +108,7 @@ def ago_h(match):
     return date_to_text(newdate, nomonth=False)
 
 
-@tp_time.re_handler(later_re)
+@time_tp.re_handler(later_re)
 def later_h(match):
     words = match.group('interval').split(' ')
     sum_len = 0
@@ -131,7 +133,7 @@ def later_h(match):
     return date_to_text(newdate, nomonth=False)
 
 
-@tp_time.re_handler(static_re)
+@time_tp.re_handler(static_re)
 def static_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     if u_len == 12:
@@ -151,7 +153,7 @@ def static_h(match):
     return date_to_text(newdate, nomonth=False)
 
 
-@tp_time.re_handler(dateformat_re)
+@time_tp.re_handler(dateformat_re)
 def date_h(match):
     newyear = match.group('year')
     if not newyear:
