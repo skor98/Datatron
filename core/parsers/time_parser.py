@@ -51,7 +51,7 @@ _yearformat = r'(?P<year>(?:20)?[0-9][0-9])'
 dateformat_re = r'{}(?P<sep>[.\- /]){}(?:(?P=sep){})?'.format(
     _dayformat, _monthformat, _yearformat)
 
-static_re = r'{}(?P<num>[0-9]+) (?P<unit>{})(?: {})?'.format(points, anyunit, _yearformat)
+static_re = r'{}(?P<num>0?[1-9]|1[012]?) (?P<unit>{})(?: {})?'.format(points, anyunit, _yearformat)
 
 @tp_time.re_handler(current_re)
 def current_h(match):
@@ -113,6 +113,11 @@ def later_h(match):
 
 @tp_time.re_handler(static_re)
 def static_h(match):
+    u_len = unit_lens.get(match.group('unit'), 1)
+    if u_len >= 12:
+        return match.group(0)
+    newmonth = u_len * int(match.group('num'))
+    newmonth = max(min(newmonth, 12), 1)
     newyear = match.group('year')
     if not newyear:
         newyear = 1000
@@ -120,8 +125,6 @@ def static_h(match):
         newyear = int(newyear)
         if newyear < 100:
             newyear += 2000
-    u_len = unit_lens.get(match.group('unit'), 1)
-    newmonth = u_len * int(match.group('num'))
     begin = bool(match.group('begin'))
     newdate = datetime(year=newyear, month=newmonth, day=1)
     newdate = process_units(newdate, u_len, begin)
