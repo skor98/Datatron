@@ -369,7 +369,7 @@ def what_cube_handler(message):
         catch_bot_exception(message, "/whatcube", err)
 
 @bot.message_handler(commands=['whattype'])
-def what_cube_handler(message):
+def what_type_handler(message):
     """
     Позволяет протестировать как ведёт себя классификатор куб/минфин на сервере
     /whattype Цели разработки бюджетного прогноза РФ
