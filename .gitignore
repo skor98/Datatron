@@ -227,5 +227,7 @@ inprogress/
 # ignore auto minfin tests
 tests/minfin/minfin_test_auto*.txt
 
+# ingore scripts for data manipulation in db
+kb/ts*
 
 kb/knowledge_base\.db-journal

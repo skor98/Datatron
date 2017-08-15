@@ -9,7 +9,6 @@ Created on Mon Jul 24 13:13:08 2017
 # pylint: disable=missing-docstring
 
 from pymorphy2 import MorphAnalyzer
-import re
 
 #SYNONYMS = [
 #    ('субъект', 'территория', 'регион', 'область', 'край', 'республика',
@@ -20,12 +19,13 @@ import re
 
 class Word(object):
 
-    def __init__(self, parsed_word):
+    def __init__(self, parsed_word, caps='lower'):
         if isinstance(parsed_word, str):
             parsed_word = Phrase.morph.parse(parsed_word)[0]
         elif isinstance(parsed_word, Word):
             parsed_word = parsed_word.original
         self.original = parsed_word
+        self.caps = caps
 
     @property
     def normal(self):
@@ -33,7 +33,12 @@ class Word(object):
 
     @property
     def verbal(self):
-        return self.original.word
+        res = self.original.word
+        if self.caps == 'upper':
+            return res.upper()
+        if self.caps == 'title':
+            return res.capitalize()
+        return res.lower()
 
     @property
     def deriv_tags(self):
@@ -58,7 +63,7 @@ class Word(object):
         grammemes = set(g for g in grammemes if g is not None)
         if not grammemes:
             return self.clone()
-        return Word(self.original.inflect(grammemes))
+        return Word(self.original.inflect(grammemes), self.caps)
 
 
     def agrees(self, other):
@@ -105,7 +110,7 @@ class Word(object):
                 or self.case == 'accs')
 
     def clone(self):
-        return Word(self.original)
+        return Word(self.original, self.caps)
 
     def __getattr__(self, attr):
         return getattr(self.original.tag, attr, None)
@@ -275,12 +280,18 @@ class Phrase(object):
     def parse(phrase):
         res = []
         for word in phrase.strip(' \n\ufeff').split(' '):
+            if word.isupper():
+                caps = 'upper'
+            elif word.istitle():
+                caps = 'title'
+            else:
+                caps = 'lower'
             parsed = Phrase.morph.parse(word)
             if parsed[0].tag.case == 'accs' and not (res and res[-1].accepts_accs):
                 options = [p for p in parsed if p.tag.case != 'accs']
-                res.append(Word(options[0] if options else parsed[0]))
+                res.append(Word(options[0] if options else parsed[0], caps))
             else:
-                res.append(Word(parsed[0]))
+                res.append(Word(parsed[0], caps))
         return res
 
     @staticmethod

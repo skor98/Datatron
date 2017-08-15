@@ -16,7 +16,9 @@ import nltk
 import pymorphy2
 
 from model_manager import MODEL_CONFIG
-from core.tonita_parser import TonitaParser
+
+from core.parsers.time_parser import time_tp
+from core.parsers.syn_parser import syn_tp
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -50,7 +52,8 @@ class TextPreprocessing:
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
             delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
-            parse_dates = MODEL_CONFIG["normalization_parse_dates_default"]
+            parse_dates=MODEL_CONFIG["parser_dates_default"],
+            parse_syns=MODEL_CONFIG["parser_syns_default"],
     ):
         """Метод для нормализации текста"""
 
@@ -65,12 +68,23 @@ class TextPreprocessing:
         tokens = nltk.word_tokenize(text.lower())
         tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
 
+        # Лемматизация
+        tokens = [get_normal_form(t) for t in tokens]
+
+        # Генерация одного большого парсера
+        parser = None
+        if parse_syns:
+            parser += syn_tp
+        if parse_dates:
+            parser += time_tp
+
+        # Парсинг всего
+        if parser is not None:
+            tokens = parser(' '.join(tokens)).split(' ')
+
         # Убираем цифры
         if delete_digits:
             tokens = filter(lambda t: not t.isdigit(), tokens)
-
-        # Лемматизация
-        tokens = [get_normal_form(t) for t in tokens]
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
@@ -81,10 +95,6 @@ class TextPreprocessing:
 
         # Убираем стоп-слова
         tokens = filter(lambda t: t not in stop_words, tokens)
-
-        # Парсим даты
-        if parse_dates:
-            tokens = TonitaParser.process(' '.join(tokens)).split(' ')
 
         # Убираем повторяющиеся слова
         if delete_repeatings:
