@@ -5,6 +5,8 @@
 Работа с документами по Минфину
 """
 
+from core.support_library import MinfinData
+
 
 class MinfinProcessor:
     """
@@ -12,17 +14,20 @@ class MinfinProcessor:
     """
 
     @staticmethod
-    def get_data(minfin_docs: list, user_request: str):
+    def get_data(minfin_data: MinfinData):
         """Работа с документами для вопросов Минфина"""
 
         answers = []
 
         # Обработка случая, когда документов по минфину не найдено
-        if not minfin_docs:
+        if not minfin_data.documents:
             return answers
 
-        for document in minfin_docs:
-            answer = MinfinAnswer(user_request)
+        for document in minfin_data.documents:
+            answer = MinfinAnswer(
+                minfin_data.user_request,
+                minfin_data.request_id
+            )
 
             answer.score = document['score']
             answer.number = document['number']
@@ -62,8 +67,9 @@ class MinfinAnswer:
     Возвращаемый объект этого модуля
     """
 
-    def __init__(self, user_request=''):
+    def __init__(self, user_request='', request_id=''):
         self.user_request = user_request
+        self.request_id = request_id
         self.type = 'minfin'
         self.score = 0
         self.number = 0
@@ -113,7 +119,7 @@ class MinfinAnswer:
         if res["link"] or res["document"] or res["picture"]:
             res["attachments"] = []
             if res["link"]:
-                for link,  link_name in zip(res["link"], res["link_name"]):
+                for link, link_name in zip(res["link"], res["link_name"]):
                     res["attachments"].append({
                         "type": "url",
                         "path": link,
@@ -121,7 +127,7 @@ class MinfinAnswer:
                     })
 
             if res["document"]:
-                for doc_name,  doc_caption in zip(res["document"], res["document_caption"]):
+                for doc_name, doc_caption in zip(res["document"], res["document_caption"]):
                     res["attachments"].append({
                         "type": "document",
                         "path": doc_name,
@@ -148,5 +154,3 @@ class MinfinAnswer:
         del res["picture_caption"]
 
         return res
-
-

@@ -194,8 +194,7 @@ class CubeProcessor:
 
         # Выбор главного ответа по классификатору
         # Альтернативная версия выбора главного ответа
-        if MODEL_CONFIG["enable_cube_clf"]:
-            csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+        csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
 
         if MODEL_CONFIG["enable_cube_data_existence_checking"]:
             # так, как мы хотим, чтобы смотри также нормально работало
