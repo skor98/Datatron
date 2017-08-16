@@ -70,13 +70,13 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--cube-clf-select",
+        "--clf-select",
         action='store_true',
         help='Выбор лучшей модели для классификатора по кубам. Может быть долгим!',
     )
 
     parser.add_argument(
-        "--cube-clf",
+        "--clf",
         action='store_true',
         help='Тренировка классификатора по кубам и его сохранение',
     )
@@ -111,19 +111,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
-    if args.cube_clf_select:
+    if args.clf_select:
         # Если потратили столько времени на выбор модели, то можно её и обучить
         select_best_cube_clf()
         select_best_cube_or_minfin_clf()
-        args.cube_clf = True
+        args.clf = True
 
-    if not args.cube_clf and not args.db and not args.cube and not args.minfin:
+    if not args.clf and not args.db and not args.cube and not args.minfin:
         print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
             sys.argv[0]
         ))
         sys.exit(0)
 
-    if args.cube_clf:
+    if args.clf:
         train_and_save_cube_clf()
         train_and_save_cube_or_minfin_clf()
     if args.db:
