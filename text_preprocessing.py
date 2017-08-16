@@ -17,12 +17,16 @@ import pymorphy2
 
 from model_manager import MODEL_CONFIG
 
+from core.parsers.time_parser import time_tp
+from core.parsers.syn_parser import syn_tp
+
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
 @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
 def get_normal_form(s):
     return get_normal_form.morph.parse(s)[0].normal_form
+
 
 get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
@@ -39,15 +43,17 @@ class TextPreprocessing:
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
         self.stop_words = set(stopwords.words(self.language))
-        self.stop_words.remove('не')
-        self.stop_words.update(set("также иной да нет -".split()))
+        self.stop_words -= {'не', 'такой'}
+        self.stop_words.update(set("подсказать также иной да нет -".split()))
 
     def normalization(
             self,
             text,
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
-            delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"]
+            delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
+            parse_dates=MODEL_CONFIG["parser_dates_default"],
+            parse_syns=MODEL_CONFIG["parser_syns_default"],
     ):
         """Метод для нормализации текста"""
 
@@ -56,23 +62,29 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
-
-        # Выпиливаем всю оставшуюся пунктуацию, кроме дефисов
-        text = re.sub(r'[^\w\s-]+', '', text)
+        # text = TextPreprocessing._filter_volume(text)
 
         # Токенизируем
         tokens = nltk.word_tokenize(text.lower())
-
-        # Убираем цифры
-        if delete_digits:
-            tokens = [t for t in tokens if not t.isdigit()]
+        tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
 
         # Лемматизация
         tokens = [get_normal_form(t) for t in tokens]
 
-        # Убираем повторяющиеся слова
-        if delete_repeatings:
-            tokens = list(set(tokens))
+        # Генерация одного большого парсера
+        parser = None
+        if parse_syns:
+            parser += syn_tp
+        if parse_dates:
+            parser += time_tp
+
+        # Парсинг всего
+        if parser is not None:
+            tokens = parser(' '.join(tokens)).split(' ')
+
+        # Убираем цифры
+        if delete_digits:
+            tokens = filter(lambda t: not t.isdigit(), tokens)
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
@@ -82,7 +94,11 @@ class TextPreprocessing:
             stop_words = stop_words - delete_stop_words_set
 
         # Убираем стоп-слова
-        tokens = [t for t in tokens if t not in stop_words]
+        tokens = filter(lambda t: t not in stop_words, tokens)
+
+        # Убираем повторяющиеся слова
+        if delete_repeatings:
+            tokens = list(set(tokens))
 
         normalized_request = ' '.join(tokens)
 
@@ -99,7 +115,7 @@ class TextPreprocessing:
         """Обработка нижнего подчеркивания"""
 
         if '_' in text:
-            return text.replace('_', ' ')
+            text = text.replace('_', ' ')
         return text
 
     @staticmethod
@@ -107,7 +123,18 @@ class TextPreprocessing:
         """Обработка процента"""
 
         if '%' in text:
-            return text.replace('%', 'процент')
+            text = text.replace('%', ' процент')
+        return text
+
+    @staticmethod
+    def _filter_volume(text: str):
+        """
+        Обработка неправильной нормализации слова "объем"
+        """
+
+        if 'объем' in text:
+            text = text.replace('объем', 'объём')
+
         return text
 
     @staticmethod

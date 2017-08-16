@@ -12,6 +12,7 @@ import random
 import string
 import uuid
 
+import json
 import requests
 import telebot
 from flask import Flask, request, abort
@@ -27,6 +28,8 @@ from dbs.user_support_library import get_feedbacks
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import text_to_speech
+from core.cube_classifier import CubeClassifier
+from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -348,8 +351,43 @@ def get_user_feedbacks(message):
         catch_bot_exception(message, "/getfeedback", err)
 
 
+@bot.message_handler(commands=['whatcube'])
+def what_cube_handler(message):
+    """
+    Позволяет протестировать как ведёт себя классификатор типов кубов на сервере
+    /whatcube Цели разработки бюджетного прогноза РФ
+    """
+    try:
+        clf = CubeClassifier.inst()
+        req = " ".join(message.text.split()[1:])
+        text_to_send = "Бот думает, что это один из кубов: \n"
+        for ind, elem in tuple(enumerate(clf.predict_proba(req)))[:3]:
+            cube_name, proba = elem
+            text_to_send += "{}. {} -> *{}%*\n".format(ind + 1, cube_name, round(proba * 100, 2))
+        bot.send_message(message.chat.id, text_to_send, parse_mode='Markdown')
+    except Exception as err:
+        catch_bot_exception(message, "/whatcube", err)
+
+@bot.message_handler(commands=['whattype'])
+def what_type_handler(message):
+    """
+    Позволяет протестировать как ведёт себя классификатор куб/минфин на сервере
+    /whattype Цели разработки бюджетного прогноза РФ
+    """
+    try:
+        clf = CubeOrMinfinClassifier.inst()
+        req = " ".join(message.text.split()[1:])
+        text_to_send = "Возможные типы документа: \n"
+        for ind, elem in tuple(enumerate(clf.predict_proba(req))):
+            cube_name, proba = elem
+            text_to_send += "{}. {} -> *{}%*\n".format(ind + 1, cube_name, round(proba * 100, 2))
+        bot.send_message(message.chat.id, text_to_send, parse_mode='Markdown')
+    except Exception as err:
+        catch_bot_exception(message, "/whattype", err)
+
+
 @bot.message_handler(content_types=['text'])
-def salute(message):
+def main_search_function_from_outside(message):
     try:
         greets = MessengerManager.greetings(message.text.strip())
         if greets:
@@ -378,6 +416,12 @@ def callback_inline(call):
         bot.send_message(call.message.chat.id, 'https://youtu.be/swok2pcFtNI')
     elif call.data == 'correct_response':
         request_id = call.message.text.split()[-1]
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            show_alert=False,
+            text=constants.MSG_USER_SAID_CORRECT_ANSWER
+        )
+
         logging.info('Query_ID: {}\tКорректность: {}'.format(
             request_id,
             '+'
@@ -388,6 +432,21 @@ def callback_inline(call):
             request_id,
             '-'
         ))
+        bot.answer_callback_query(
+            callback_query_id=call.id,
+            show_alert=False,
+            text=constants.MSG_USER_SAID_INCORRECT_ANSWER
+        )
+    elif call.data == 'look_also_1':
+        process_look_also_request(call, 1)
+    elif call.data == 'look_also_2':
+        process_look_also_request(call, 2)
+    elif call.data == 'look_also_3':
+        process_look_also_request(call, 3)
+    elif call.data == 'look_also_4':
+        process_look_also_request(call, 4)
+    elif call.data == 'look_also_5':
+        process_look_also_request(call, 5)
 
 
 def send_admin_messages():
@@ -443,24 +502,40 @@ def process_response(message, input_format='text', file_content=None):
         if extra_results:
             bot.send_message(
                 message.chat.id,
-                "*Смотри также:*\n" + extra_results,
-                parse_mode='Markdown'
+                "*Смотри также:*\n" + ''.join(extra_results),
+                parse_mode='Markdown',
+                reply_markup=see_more_buttons_dynamic(
+                    len(extra_results)
+                )
             )
     else:
-        bot.send_message(message.chat.id, constants.ERROR_NO_DOCS_FOUND)
+        user_request = ''
+        if input_format != 'text':
+            user_request = '*Ваш запрос*\n"{}"\n\n'
+            user_request = user_request.format(result.user_request)
+
+        bot.send_message(
+            message.chat.id,
+            user_request + constants.ERROR_NO_DOCS_FOUND,
+            parse_mode='Markdown'
+        )
 
         extra_results = look_further(result)
         if extra_results:
             bot.send_message(
                 message.chat.id,
-                "Вы *можете посмотреть:*\n" + extra_results,
-                parse_mode='Markdown'
+                "Вы *можете посмотреть:*\n" + ''.join(extra_results),
+                parse_mode='Markdown',
+                reply_markup=see_more_buttons_dynamic(
+                    len(extra_results)
+                )
             )
 
 
 def process_cube_questions(message, cube_result, request_id, input_format):
+    is_input_text = (input_format == 'text')
+
     if cube_result.status:
-        is_input_text = (input_format == 'text')
         form_feedback(message, request_id, cube_result, not is_input_text)
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
@@ -477,24 +552,33 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 
             bot.send_message(message.chat.id, stats)
     else:
-        if cube_result.message:
-            bot.send_message(message.chat.id, cube_result.message)
+        user_request = ''
+        if not is_input_text:
+            user_request = '*Ваш запрос*\n"{}"\n\n'
+            user_request = user_request.format(cube_result.feedback['user_request'])
+
+        feedback = '{}\n*Запрос после обработки*\n`"{}"`\n\n'.format(
+            verbal_feedback(cube_result),
+            cube_result.feedback['pretty_feedback']
+        )
+
+        bot.send_message(
+            message.chat.id,
+            user_request + feedback + cube_result.message,
+            parse_mode='Markdown'
+        )
 
 
 def process_minfin_questions(message, minfin_result):
     if minfin_result.status:
-        bot.send_message(
-            message.chat.id,
-            'Datatron понял ваш вопрос как *"{}"*'.format(minfin_result.question),
-            parse_mode='Markdown'
-        )
 
         if minfin_result.full_answer:
             bot.send_message(
                 message.chat.id,
-                '*Ответ:* {}'.format(minfin_result.full_answer),
-                parse_mode='Markdown',
-                reply_to_message_id=message.message_id
+                '*Запрос после обработки*\n`"{}"`\n\n*Ответ*\n{}'.format(
+                    minfin_result.question,
+                    minfin_result.full_answer),
+                parse_mode='Markdown'
             )
         # может быть несколько
         if minfin_result.link_name:
@@ -558,19 +642,20 @@ def process_minfin_questions(message, minfin_result):
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n*Ответ: {answer}*\nQuery\_ID: {query_id}'
+        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nQuery\_ID: {query_id}'
     )
     separator = ''
     expert_str = ''
     verbal_str = ''
+    time_data_relevance = ''
 
-    pretty_feed = 'Datatron понял ваш запрос как "`{}`"\n'.format(
+    pretty_feed = '*Запрос после обработки*\n`"{}"`'.format(
         cube_result.feedback['pretty_feedback']
     )
 
     user_request = ''
     if user_request_notification:
-        user_request = '*Ваш запрос*\nДататрон решил, что Вы его спросили: "{}"\n\n'
+        user_request = '*Ваш запрос*\n"{}"\n\n'
         user_request = user_request.format(cube_result.feedback['user_request'])
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -578,12 +663,20 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
+    cubes_with_current_data = (
+        'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
+    )
+
+    if cube_result.feedback['formal']['cube'] in cubes_with_current_data:
+        time_data_relevance = '\nАктуальность данных: *03.08.2017*'
+
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,
         separator=separator,
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
+        time_data_relevance=time_data_relevance,
         query_id=request_id,
         pretty_feed=pretty_feed
     )
@@ -611,7 +704,7 @@ def expert_feedback(cube_result):
     return expert_str
 
 
-def verbal_feedback(cube_result, title='Найдено в базе данных:'):
+def verbal_feedback(cube_result, title='Найдено в базе данных'):
     """Переработка найденного докумнета по куб для выдачи в 'смотри также'"""
 
     verbal_fb_list = []
@@ -632,29 +725,21 @@ def verbal_feedback(cube_result, title='Найдено в базе данных:
 
 
 def loof_also_for_cube(cube_result):
-#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-#
-#    verbal_fb_list = []
-#    verbal_fb = cube_result.feedback['verbal']
-#
-#    verbal_fb_list.append(verbal_fb['domain'])
-#
-#    if verbal_fb['measure'] != 'Значение':
-#        verbal_fb_list.append(verbal_fb['measure'].lower())
-#
-#    verbal_fb_list.extend(
-#        first_letter_lower(item['member_caption']) for item in verbal_fb['dims'])
-#
-#    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-#        verbal_fb_list.append('({}: {})'.format(
-#            "*База знаний*",
-#            cube_result.get_score()
-#        ))
-#    else:
-#        verbal_fb_list.append('({})'.format("*База знаний*"))
-#
-#    return ' '.join(verbal_fb_list)
-    return cube_result.feedback.get('pretty_feedback', '...')
+    feedback = cube_result.feedback.get('pretty_feedback', '...')
+
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        look_also_str = '{} ({}: {})'.format(
+            feedback,
+            '*База знаний*',
+            cube_result.get_score()
+        )
+    else:
+        look_also_str = '{} ({})'.format(
+            feedback,
+            '*База знаний*',
+        )
+
+    return look_also_str
 
 
 def answer_to_look_also_format(answer):
@@ -673,12 +758,63 @@ def answer_to_look_also_format(answer):
                 "*Минфин*"
             )
 
+
 def first_letter_lower(input_str):
     """Первод первой буквы слова в нижний регистр"""
 
     if not input_str:
         return ""
     return input_str[:1].lower() + input_str[1:]
+
+
+def see_more_buttons_dynamic(number_of_questions):
+    """Динамическая клавиатура для смотри также"""
+    buttons = []
+    for i in range(1, number_of_questions + 1):
+        buttons.append(
+            {'text': str(i), 'callback_data': 'look_also_' + str(i)}
+        )
+
+    return json.dumps({'inline_keyboard': [buttons]})
+
+
+def get_look_also_question_by_num(message: str, num: int):
+    """
+    Возвращает запрос из смотри также под заданным номером
+    """
+    num = str(num) + '.'
+    message = [msg.rsplit('(', 1)[0].replace(num, '')
+               for msg in message.split('\n')
+               if msg.startswith(num)]
+    return message[0]
+
+
+def main_search_function_from_inside(message):
+    """
+    Входная точка в систему для использования изнутри
+    """
+
+    try:
+        greets = MessengerManager.greetings(message.text)
+        if greets:
+            bot.send_message(message.chat.id, greets)
+        else:
+            process_response(message)
+    except Exception as err:
+        catch_bot_exception(message, "/text", err)
+
+
+def process_look_also_request(call, num: int):
+    """
+    Обработка см.также запросов по нажатию инлайн-кнопки
+    """
+
+    look_also_req = get_look_also_question_by_num(
+        call.message.text, num)
+
+    call.message.text = look_also_req
+
+    main_search_function_from_inside(call.message)
 
 
 def look_further(result):
@@ -713,9 +849,9 @@ def look_further(result):
         look_also = ['{}. {}\n'.format(idx + 1, elem)
                      for idx, elem in enumerate(look_also)]
 
-        return ''.join(look_also)
+        return look_also
     else:
-        return ''
+        return []
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:

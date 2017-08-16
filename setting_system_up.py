@@ -14,20 +14,18 @@ import datetime
 from os import path
 from math import isnan
 
+from core.cube_classifier import train_and_save_cube_clf, select_best_cube_clf
+from core.cube_or_minfin_classifier import select_best_cube_or_minfin_clf, train_and_save_cube_or_minfin_clf
 from kb.db_filling import KnowledgeBaseSupport
 from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 from config import SETTINGS, TEST_PATH_RESULTS, DATETIME_FORMAT
 from manual_testing import get_results
-
-# не убирайте эту строчку, иначе логгирование не будет работать
-import logs_helper  # pylint: disable=unused-import
-from logs_helper import time_with_message
+import logs_helper
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
 
-
-@time_with_message("set_up_db", "info")
+@logs_helper.time_with_message("set_up_db", "info")
 def set_up_db():
     """Создание и заполнение БД"""
 
@@ -40,7 +38,7 @@ def set_up_db():
     kbs.set_up_db()
 
 
-@time_with_message("set_up_cube_data", "info")
+@logs_helper.time_with_message("set_up_cube_data", "info")
 def set_up_cube_data(index_way='curl'):
     """
     Создание и индексирование документов по кубам. Если
@@ -69,6 +67,18 @@ if __name__ == '__main__':
         "--db",
         action='store_true',
         help='Создание и заполнение БД',
+    )
+
+    parser.add_argument(
+        "--clf-select",
+        action='store_true',
+        help='Выбор лучшей модели для классификатора по кубам. Может быть долгим!',
+    )
+
+    parser.add_argument(
+        "--clf",
+        action='store_true',
+        help='Тренировка классификатора по кубам и его сохранение',
     )
 
     parser.add_argument(
@@ -101,19 +111,28 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
-    if not args.db and not args.cube and not args.minfin:
+    if args.clf_select:
+        # Если потратили столько времени на выбор модели, то можно её и обучить
+        select_best_cube_clf()
+        select_best_cube_or_minfin_clf()
+        args.clf = True
+
+    if not args.clf and not args.db and not args.cube and not args.minfin:
         print("Ничего не делаю. Если вы хотите иного, вызовите {} --help".format(
             sys.argv[0]
         ))
         sys.exit(0)
 
+    if args.clf:
+        train_and_save_cube_clf()
+        train_and_save_cube_or_minfin_clf()
     if args.db:
         set_up_db()
     if args.cube:
         set_up_cube_data(args.solr_index)
     if args.minfin:
         set_up_minfin_data(args.solr_index)
-    if not args.disable_testing:
+    if not args.disable_testing and args.cube and args.minfin:
         score, results = get_results(write_logs=True)
 
         current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)

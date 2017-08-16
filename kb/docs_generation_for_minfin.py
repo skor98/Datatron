@@ -64,9 +64,6 @@ def _refactor_data(data):
     MinfinDocument
     """
 
-    # количество повторений ключевых слов прописанных методологом
-    manual_key_words_repetition = MODEL_CONFIG["minfin_manual_key_words_repetition"]
-
     # объекта класса, осуществляющего нормализацию
     tp = TextPreprocessing(uuid.uuid4())
 
@@ -74,25 +71,13 @@ def _refactor_data(data):
     for row in data.itertuples():
         doc = MinfinDocument()
         doc.number = row.id
-        doc.question = row.question
 
-        lem_question = tp.normalization(
+        doc.question = row.question
+        doc.lem_question = tp.normalization(
             row.question,
             delete_digits=True,
             delete_question_words=False
         )
-        doc.lem_question = lem_question
-
-        synonym_questions = _get_manual_synonym_questions(doc.number)
-
-        if synonym_questions:
-            lem_synonym_questions = [
-                tp.normalization(q,
-                                 delete_digits=True,
-                                 delete_question_words=False)
-                for q in synonym_questions
-                ]
-            doc.lem_synonym_questions = lem_synonym_questions
 
         doc.short_answer = row.short_answer
         doc.lem_short_answer = tp.normalization(
@@ -105,12 +90,40 @@ def _refactor_data(data):
                 row.full_answer,
                 delete_digits=True
             )
-        kw = tp.normalization(row.key_words,
-                              delete_question_words=False,
-                              delete_repeatings=True)
 
-        # Ключевые слова записываются трижды, для увеличения качества поиска документа
-        doc.lem_key_words = ' '.join([kw] * manual_key_words_repetition)
+        lem_key_words = tp.normalization(
+            row.key_words,
+            delete_question_words=False,
+            delete_repeatings=True
+        )
+
+        doc.lem_key_words = ' '.join(
+            [lem_key_words] * MODEL_CONFIG["minfin_manual_key_words_repetition"]
+        )
+
+        synonym_questions = _get_manual_synonym_questions(doc.number)
+        if synonym_questions:
+            lem_synonym_questions = [
+                tp.normalization(
+                    question,
+                    delete_digits=True,
+                    delete_question_words=False
+                )
+                for question in synonym_questions
+                ]
+
+            # уникальные слова по синонимичным запросам
+            lem_extra_key_words = set(' '.join(lem_synonym_questions).split())
+
+            # добавление уникальных слов и длинного ответа
+            lem_extra_key_words.union(set(doc.lem_full_answer.split()))
+
+            # удаление уже используемых слов lem_key_words, lem_short_answer
+            lem_extra_key_words -= set(doc.lem_key_words.split())
+            lem_extra_key_words -= set(doc.lem_short_answer.split())
+            lem_extra_key_words = ' '.join(lem_extra_key_words)
+
+            doc.lem_extra_key_words = ' '.join([lem_extra_key_words] * 5)
 
         # Может быть несколько
         if row.link_name:
@@ -376,7 +389,7 @@ class MinfinDocument:
         self.short_answer = ''
         self.full_answer = None
         self.lem_question = ''
-        self.lem_synonym_questions = None
+        self.lem_extra_key_words = None
         self.lem_short_answer = ''
         self.lem_full_answer = None
         self.lem_key_words = ''

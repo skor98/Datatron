@@ -153,6 +153,8 @@ class CubeDocsGeneration:
                     'type': 'year_dim_member',
                     'dimension': 'YEARS',
                     'cube_value': year,
+                    'lem_member_caption': year,
+                    'lem_member_caption_len': 1,
                     'member_caption': year
                 }
             )
@@ -167,7 +169,8 @@ class CubeDocsGeneration:
 
         # Все уникальные территории
         members = (dbc.Member
-                   .select(fn.Distinct(dbc.Member.lem_caption))
+                   .select(fn.Distinct(dbc.Member.lem_caption),
+                           dbc.Member.lem_synonyms)
                    .join(dbc.DimensionMember)
                    .join(dbc.Dimension)
                    .where(dbc.Dimension.cube_value == 'TERRITORIES'))
@@ -255,7 +258,7 @@ class CubeDocsGeneration:
                  .join(dbc.Measure)
                  .switch(dbc.CubeMeasure)
                  .join(dbc.Cube)
-                 .where(dbc.Measure.id.not_in(default_measures_ids))
+                 .where(dbc.Measure.cube_value != 'VALUE')
                  )
 
         # Создание нужной структуры документов

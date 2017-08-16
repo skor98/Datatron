@@ -217,3 +217,17 @@ tests/results/
 *.e4p
 .eric6project
 __init__.py
+
+# local temp scripts
+inprogress/
+
+# ignore
+*.pkl
+
+# ignore auto minfin tests
+tests/minfin/minfin_test_auto*.txt
+
+# ingore scripts for data manipulation in db
+kb/ts*
+
+kb/knowledge_base\.db-journal

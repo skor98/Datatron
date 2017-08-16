@@ -50,6 +50,14 @@ def safe_mean(values):
         return float("NaN")
 
 
+def get_jaccard(a: set, b: set):
+    """
+    Возвращает меру Жаккара между множествами a и b \in [0,1]
+    Много -- хорошо.
+    """
+    return len(a.intersection(b)) / len(a.union(b))
+
+
 class QualityTester:
     """
     Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик.
@@ -202,7 +210,7 @@ class BaseTester:
             "MAC": safe_mean(self.get_absolute_confidences()),
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
-            }
+                }
         }
 
     def get_log_filename_pattern(self):
@@ -372,6 +380,7 @@ class CubeTester(BaseTester):
     """
     Реализует логику и метрики, специфичные для кубов
     """
+
     def __init__(
             self,
             percentiles=tuple([25, 50, 75, 90, 95]),
@@ -381,6 +390,11 @@ class CubeTester(BaseTester):
 
         self._only_cube_wrongs = 0
         self._only_cube_trues = 0
+
+        self._only_measure_wrongs = 0
+        self._only_measure_trues = 0
+
+        self._members_jaccard = 0
 
         self._wrong_minfins = 0
 
@@ -407,6 +421,26 @@ class CubeTester(BaseTester):
     def get_wrongs_only_cube(self):
         """Возвращает число истинных результатов ТОЛЬКО по определению куба"""
         return self._only_cube_wrongs
+
+    def _add_true_only_measure(self):
+        """Добавляет ещё один ложный не результат определения ТОЛЬКО меры"""
+        self._only_measure_trues += 1
+
+    def get_trues_only_measure(self):
+        """Возвращает число ложный результатов ТОЛЬКО по определению меры"""
+        return self._only_measure_trues
+
+    def _add_wrong_only_measure(self):
+        """Добавляет ещё один истинный не результат определения ТОЛЬКО меры"""
+        self._only_measure_wrongs += 1
+
+    def _add_members_jackard(self, val):
+        """Добавляет ещё одно расстояние Жаккара у внутренней сумме по измерениям"""
+        self._members_jaccard += val
+
+    def get_members_jaccard(self):
+        """Возвращает среднюю меру Жаккара по измерениям"""
+        return self._members_jaccard / (self.get_trues() + self.get_wrongs())
 
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
@@ -450,9 +484,16 @@ class CubeTester(BaseTester):
         """
         res = super().get_results()
 
+        total = self.get_trues() + self.get_wrongs()
+
         # Точность ТОЛЬКО по определению куба
-        total_only_cube = self.get_trues_only_cube() + self.get_wrongs_only_cube()
-        res["onlycubeAcc"] = self.get_trues_only_cube() / total_only_cube
+        res["onlycubeAcc"] = self.get_trues_only_cube() / total
+
+        # Точность ТОЛЬКО по определению МЕРЫ
+        res["onlymeasureAcc"] = self.get_trues_only_measure() / total
+
+        # Средняя мера Жаккарда по измерениям. Чем ближе к 1, тем лучше
+        res["onlymembersJacc"] = self.get_members_jaccard()
 
         # Какая часть неверных результатов из-за того, что ответ по минфину
         res["wrongMinfin"] = self.get_wrong_minfins() / self.get_wrongs()
@@ -510,7 +551,7 @@ class CubeTester(BaseTester):
 
         def get_members(mdx_query):
             """Получение регуляркой элементов измерений"""
-            return members_p.findall(mdx_query)
+            return set(members_p.findall(mdx_query))
 
         mdx_query1 = mdx_query1.upper()
         mdx_query2 = mdx_query2.upper()
@@ -528,15 +569,21 @@ class CubeTester(BaseTester):
         )
 
         measure_equal = (q1_measure == q2_measure)
-        cube_equal = (q1_cube == q2_cube)
+        if measure_equal:
+            self._add_true_only_measure()
+        else:
+            self._add_wrong_only_measure()
 
+        cube_equal = (q1_cube == q2_cube)
         if cube_equal:
             self._add_true_only_cube()
         else:
             self._add_wrong_only_cube()
 
         # игнорирование порядка элементов измерений
-        members_equal = (set(q1_members) == set(q2_members))
+        members_equal = (q1_members == q2_members)
+
+        self._add_members_jackard(get_jaccard(q1_members, q2_members))
 
         return bool(measure_equal and cube_equal and members_equal)
 

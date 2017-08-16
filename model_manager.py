@@ -34,7 +34,7 @@ class ModelManager:
     def save(self, path: str):
         """Сохраняет настройки в файл"""
         with open(path, "w") as file_out:
-            json.dump(self.params, file_out, indent=4)
+            json.dump(self.params, file_out, indent=4, sort_keys=True)
 
     def set_default(self):
         """Устанавливает эту модель главной"""
@@ -50,6 +50,16 @@ def set_default_model(mdl: ModelManager):
     MODEL_CONFIG.params = mdl.params
     return MODEL_CONFIG
 
+
+def save_default_model(mdl: ModelManager):
+    """
+    Делает модель общей и сохраняет её
+    Поскольку params это сслыка, то такая реализация подойдёт
+    """
+    global MODEL_CONFIG
+    MODEL_CONFIG.params = mdl.params
+    MODEL_CONFIG.save(MODEL_CONFIG_PATH)
+    return MODEL_CONFIG
 
 def restore_default_model():
     """Восстанавливает настройки модели из файла"""
