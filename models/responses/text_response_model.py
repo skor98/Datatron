@@ -85,7 +85,7 @@ class TextResponseModel:
             answer = "Datatron понял ваш запрос как '{}'".format(pretty_feedback)
 
         if formatted_response is not None:
-            answer = answer + "\nОтвет: {}".format(formatted_response)
+            answer = "{}\nОтвет: {}".format(answer, formatted_response)
 
         text_response.short_answer = answer
         text_response.full_answer = answer
