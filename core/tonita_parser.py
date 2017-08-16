@@ -18,7 +18,7 @@ class TonitaParser(object):
             self.add_many_subs(sub_dict)
 
     def re_handler(self, regexp, preserve_old=False):
-        cond_re = re.compile(r'(?<!\w)' + regexp + r'(?!\w)')
+        cond_re = re.compile(r'(?<!\w)' + regexp + r'(?!\w)', re.IGNORECASE)
         def _decorate(func):
             def _wrapped(text):
                 match = cond_re.search(text)
@@ -40,9 +40,20 @@ class TonitaParser(object):
             self.add_simple_sub(origin, sub_dict[origin])
 
     def __add__(self, other):
-        res = TonitaParser()
-        res.actions = self.actions + other.actions
-        return res
+        if other is None:
+            other = TonitaParser()
+        if hasattr(other, 'actions'):
+            res = TonitaParser()
+            res.actions = self.actions + other.actions
+            return res
+        raise TypeError
+
+    def __radd__(self, other):
+        if other is None:
+            other = TonitaParser()
+        if hasattr(other, 'actions'):
+            return other.__add__(self)
+        raise TypeError
 
     def __call__(self, text):
         res = text

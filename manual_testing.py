@@ -50,6 +50,14 @@ def safe_mean(values):
         return float("NaN")
 
 
+def get_jaccard(a: set, b: set):
+    """
+    Возвращает меру Жаккара между множествами a и b \in [0,1]
+    Много -- хорошо.
+    """
+    return len(a.intersection(b)) / len(a.union(b))
+
+
 class QualityTester:
     """
     Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик.
@@ -386,8 +394,7 @@ class CubeTester(BaseTester):
         self._only_measure_wrongs = 0
         self._only_measure_trues = 0
 
-        self._only_members_trues = 0
-        self._only_members_wrongs = 0
+        self._members_jaccard = 0
 
         self._wrong_minfins = 0
 
@@ -427,17 +434,13 @@ class CubeTester(BaseTester):
         """Добавляет ещё один истинный не результат определения ТОЛЬКО меры"""
         self._only_measure_wrongs += 1
 
-    def _add_true_only_members(self, num):
-        """Добавляет ещё один ложный не результат определения ТОЛЬКО измерения"""
-        self._only_members_trues += num
+    def _add_members_jackard(self, val):
+        """Добавляет ещё одно расстояние Жаккара у внутренней сумме по измерениям"""
+        self._members_jaccard += val
 
-    def get_trues_only_members(self):
-        """Возвращает число ложный результатов ТОЛЬКО по определению измерения"""
-        return self._only_members_trues
-
-    def _add_wrong_only_members(self, num):
-        """Добавляет ещё один истинный не результат определения ТОЛЬКО измерения"""
-        self._only_members_wrongs += num
+    def get_members_jaccard(self):
+        """Возвращает среднюю меру Жаккара по измерениям"""
+        return self._members_jaccard / (self.get_trues() + self.get_wrongs())
 
     def get_test_files_paths(self):
         return get_test_files(TEST_PATH_CUBE, "cubes_test_mdx")
@@ -489,8 +492,8 @@ class CubeTester(BaseTester):
         # Точность ТОЛЬКО по определению МЕРЫ
         res["onlymeasureAcc"] = self.get_trues_only_measure() / total
 
-        # Точность ТОЛЬКО по определению измерений
-        res["onlymembersAcc"] = self.get_trues_only_members() / total
+        # Средняя мера Жаккарда по измерениям. Чем ближе к 1, тем лучше
+        res["onlymembersJacc"] = self.get_members_jaccard()
 
         # Какая часть неверных результатов из-за того, что ответ по минфину
         res["wrongMinfin"] = self.get_wrong_minfins() / self.get_wrongs()
@@ -548,7 +551,7 @@ class CubeTester(BaseTester):
 
         def get_members(mdx_query):
             """Получение регуляркой элементов измерений"""
-            return members_p.findall(mdx_query)
+            return set(members_p.findall(mdx_query))
 
         mdx_query1 = mdx_query1.upper()
         mdx_query2 = mdx_query2.upper()
@@ -578,17 +581,9 @@ class CubeTester(BaseTester):
             self._add_wrong_only_cube()
 
         # игнорирование порядка элементов измерений
-        members_equal = (set(q1_members) == set(q2_members))
+        members_equal = (q1_members == q2_members)
 
-        # подсчет метрики с учетом возможности частичного совпадения
-        if members_equal:
-            self._add_true_only_members(len(q1_members))
-        else:
-            self._add_wrong_only_members(
-                len(set(q1_members).symmetric_difference(
-                    set(q2_members))
-                )
-            )
+        self._add_members_jackard(get_jaccard(q1_members, q2_members))
 
         return bool(measure_equal and cube_equal and members_equal)
 

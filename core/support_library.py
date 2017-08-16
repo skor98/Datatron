@@ -766,12 +766,8 @@ def get_pretty_feedback(cube_name, verbal_feedback):
         else:
             val = val.inflect(word[1:]).verbal
 
-        if word[0][0] == '_':
-            pass
-        elif word[0][0].isupper():
+        if word[0][0].isupper() and val[0].islower():
             val = val[0].upper() + val[1:]
-        else:
-            val = val[0].lower() + val[1:]
 
         code[word_index] = val
         res += code + [context]
