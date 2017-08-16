@@ -73,6 +73,8 @@ def _refactor_data(data):
         doc.number = row.id
 
         doc.question = row.question
+
+        # индексируемое поле
         doc.lem_question = tp.normalization(
             row.question,
             delete_digits=True,
@@ -80,6 +82,8 @@ def _refactor_data(data):
         )
 
         doc.short_answer = row.short_answer
+
+        # индексируемое поле
         doc.lem_short_answer = tp.normalization(
             row.short_answer,
             delete_digits=True
@@ -97,6 +101,7 @@ def _refactor_data(data):
             delete_repeatings=True
         )
 
+        # индексируемое поле
         doc.lem_key_words = ' '.join(
             [lem_key_words] * MODEL_CONFIG["minfin_manual_key_words_repetition"]
         )
@@ -123,6 +128,7 @@ def _refactor_data(data):
             lem_extra_key_words -= set(doc.lem_short_answer.split())
             lem_extra_key_words = ' '.join(lem_extra_key_words)
 
+            # индексируемое поле
             doc.lem_extra_key_words = ' '.join([lem_extra_key_words] * 5)
 
         # Может быть несколько
