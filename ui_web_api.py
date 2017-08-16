@@ -23,6 +23,9 @@ import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
 from config import SETTINGS
 
+from models.responses.text_response_model import TextResponseModel
+
+from utils.resource_helper import ResourceHelper
 
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
@@ -48,7 +51,6 @@ def get_minfin_data():
 
 get_minfin_data.data = None
 
-
 @time_with_message("_read_minfin_data", "debug", 10)
 def _read_minfin_data():
     """
@@ -72,7 +74,6 @@ def _read_minfin_data():
             data["question"].tolist()
         )
     )
-
 
 def is_valid_api_key(api_key):
     """
@@ -131,6 +132,11 @@ class TextQuery(Resource):
 
     @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
+        data = self.get_data()
+
+        return data.toJSON_API()
+
+    def get_data(self):
         args = parser.parse_args()
         logging.info(args)
 
@@ -149,7 +155,7 @@ class TextQuery(Resource):
             args["apikey"],
             "",
             request_id
-        ).toJSON_API()
+        )
 
 
 class MinfinList(Resource):
@@ -210,25 +216,15 @@ class TextQueryV2(Resource):
 
     @time_with_message("TextQuery API Get", "info", 4)
     def get(self):
-        args = parser.parse_args()
-        logging.info(args)
+        answer = self.get_data()
 
-        if not is_valid_api_key(args["apikey"]):
-            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+        return answer.toJSON_API()
 
-        request_text = args['query']
-        request_id = uuid4().hex
-
-        if len(args['query']) < 4:
-            abort(400, message='You need "query" parameter"')
-
-        return MessengerManager.make_request(
-            request_text,
-            "API v1",
-            args["apikey"],
-            "",
-            request_id
-        ).toJSON_API()
+    def get_data(self):
+        text_query = TextQuery()
+        answer = text_query.get_data()
+        result = TextResponseModel.from_answer(answer)
+        return result
 
 
 class MinfinListV2(Resource):
@@ -285,12 +281,8 @@ def get_image():
     ToDo: фиксить один тип
     """
     img_name = request.args.get('path')
-    if not img_name:
-        abort(404)
-    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "img", img_name)
-    if not path.isfile(img_path):
-        abort(404, message="Resource {} is NOT valid".format(img_name))
-    return send_file(img_path, mimetype='image/jpeg')
+
+    return ResourceHelper.get_image(img_name)
 
 
 @app.route('/v1/resources/document')
@@ -299,10 +291,14 @@ def get_document():
     Получение документа. Пока они все отдаются как pdf. Это не вечно
     ToDo: фиксить один тип
     """
-    img_name = request.args.get('path')
-    if not img_name:
-        abort(404)
-    img_path = path.join(SETTINGS.DATATRON_FOLDER, "data", "minfin", "doc", img_name)
-    if not path.isfile(img_path):
-        abort(404, message="Resource {} is NOT valid".format(img_name))
-    return send_file(img_path, mimetype='application/pdf')
+    doc_name = request.args.get('path')
+
+    return ResourceHelper.get_document(doc_name)
+
+@app.route('/v2/resources/image/<image_id>')
+def get_image_v2(image_id):
+    return ResourceHelper.get_image(image_id)
+
+@app.route('/v2/resources/document/<document_id>')
+def get_document_v2(document_id):
+    return ResourceHelper.get_document(document_id)
