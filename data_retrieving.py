@@ -59,7 +59,7 @@ class DataRetrieving:
                 request_id
             )
 
-            minfin_answers = MinfinProcessor.get_data(minfin_docs)
+            minfin_answers = MinfinProcessor.get_data(minfin_docs, user_request)
 
             if MODEL_CONFIG["enable_cube_clf"]:
                 clf = CubeClassifier.inst()

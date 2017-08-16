@@ -12,7 +12,7 @@ class MinfinProcessor:
     """
 
     @staticmethod
-    def get_data(minfin_docs: list):
+    def get_data(minfin_docs: list, user_request: str):
         """Работа с документами для вопросов Минфина"""
 
         answers = []
@@ -22,10 +22,9 @@ class MinfinProcessor:
             return answers
 
         for document in minfin_docs:
-            answer = MinfinAnswer()
+            answer = MinfinAnswer(user_request)
 
             answer.score = document['score']
-            answer.status = True
             answer.number = document['number']
             answer.question = document['question']
             answer.short_answer = document['short_answer']
@@ -63,8 +62,8 @@ class MinfinAnswer:
     Возвращаемый объект этого модуля
     """
 
-    def __init__(self):
-        self.status = False
+    def __init__(self, user_request=''):
+        self.user_request = user_request
         self.type = 'minfin'
         self.score = 0
         self.number = 0
@@ -89,6 +88,7 @@ class MinfinAnswer:
 
     def to_reduced_object(self):
         keys_to_return = (
+            'user_request'
             'type',
             'number',
             'question',
