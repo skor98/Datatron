@@ -7,13 +7,13 @@
 
 import datetime
 import pandas as pd
-import os
 
 from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
-from config import QUERY_DB_PATH, TEST_PATH_RESULTS
+from config import QUERY_DB_PATH
 from model_manager import MODEL_CONFIG
 from kb.kb_support_library import read_minfin_data
+from kb.kb_support_library import get_correct_cube_questions
 
 _database = SqliteDatabase(QUERY_DB_PATH)
 
@@ -114,18 +114,8 @@ def get_random_requests(num=5):
         minfin_data = pd.concat(dfs)
         data = minfin_data['question'].tolist()
 
-        # чтение данных по минфину
-        files = [elem for elem in os.listdir(TEST_PATH_RESULTS) if
-            (
-                elem.endswith('.txt') and elem.startswith('cube')
-            )]
-
-        with open(os.path.join(TEST_PATH_RESULTS, max(files)), 'r', encoding='utf-8') as file:
-            for line in file:
-                line = line.split('\t')
-                if len(line) > 1:
-                    if line[1] == '+':
-                        data.append(line[2].strip()+'?')
+        # чтение данных по кубу
+        data.append(get_correct_cube_questions())
 
         return pd.DataFrame(data)
 

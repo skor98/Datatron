@@ -11,7 +11,7 @@ from os import listdir, path
 import kb.kb_db_creation as dbc
 
 from text_preprocessing import TextPreprocessing
-from config import SETTINGS
+from config import SETTINGS, TEST_PATH_RESULTS
 
 
 def get_caption_for_measure(cube_value, cube_name):
@@ -301,3 +301,26 @@ def read_minfin_data():
         dfs.append(df)
 
     return files, dfs
+
+
+def get_correct_cube_questions():
+    """
+    Получение списка корректных запросов по кубам
+    из последнего прогона тестов
+    """
+
+    questions = []
+
+    files = [elem for elem in listdir(TEST_PATH_RESULTS) if
+             (
+                 elem.endswith('.txt') and elem.startswith('cube')
+             )]
+
+    with open(path.join(TEST_PATH_RESULTS, max(files)), 'r', encoding='utf-8') as file:
+        for line in file:
+            line = line.split('\t')
+            if len(line) > 1:
+                if line[1] == '+':
+                    questions.append(line[2].strip())
+
+    return questions
