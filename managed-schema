@@ -409,8 +409,8 @@
   <field name="cube_caption" type="string" multiValued="false" indexed="false"/>
   <field name="member_caption" type="string" multiValued="false" indexed="false"/>
   <field name="lem_member_caption" type="string" multiValued="false"/> <!-- Индексирование нормализованных названий измерений-->
-  <field name="lem_member_caption_len" type="tlong"/> <!-- Длина этого поля для бустинга -->
-  <field name="lem_question_len" type="tlong"/> <!-- Аналогичное поле для минфина -->
+  <field name="lem_member_caption_len" type="tlong" indexed="false"/> <!-- Длина этого поля для бустинга -->
+  <field name="lem_question_len" type="tlong" indexed="false"/> <!-- Аналогичное поле для минфина -->
   <field name="connected_value.member_cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="connected_value.dimension_cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="cube" type="string" multiValued="false" indexed="false"/>
