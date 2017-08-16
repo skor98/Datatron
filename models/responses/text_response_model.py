@@ -78,8 +78,17 @@ class TextResponseModel:
     @staticmethod
     def from_cube_answer(text_response, response: CubeAnswer):
         # формирование ответа для клиента по ответу по кубу
-        text_response.short_answer = response.answer.message
-        text_response.full_answer = response.answer.message
+        pretty_feedback = response.answer.feedback.get('pretty_feedback')
+        formatted_response = response.answer.formatted_response
+
+        if pretty_feedback is not None:
+            answer = "Datatron понял ваш запрос как '{}'".format(pretty_feedback)
+
+        if formatted_response is not None:
+            answer = "{}\nОтвет: {}".format(answer, formatted_response)
+
+        text_response.short_answer = answer
+        text_response.full_answer = answer
 
         return text_response
 
