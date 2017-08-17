@@ -56,6 +56,13 @@ class TextResponseModel:
         # формирование ответа для клиента
         text_response = TextResponseModel()
         text_response.status = response.status
+
+        text_response.associated_quesions = TextResponseModel.get_associated_quesions(
+            response.more_answers_order,
+            response.more_cube_answers,
+            response.more_minfin_answers
+        )
+
         if response.answer is None:
             return text_response
 
@@ -66,12 +73,6 @@ class TextResponseModel:
         if isinstance(response.answer, MinfinAnswer):
             logging.info('ответ по минфину')
             TextResponseModel.from_minfin_answer(text_response, response)
-
-        text_response.associated_quesions = TextResponseModel.get_associated_quesions(
-            response.more_answers_order,
-            response.more_cube_answers,
-            response.more_minfin_answers
-        )
 
         return text_response
 
