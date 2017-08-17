@@ -190,7 +190,7 @@ def date_to_text(date, noyear=False, nomonth=False):
 def mod_date(date, delta):
     delta += date.month - 1
     newmonth = (delta % 12) + 1
-    newyear = max(1, date.year + (delta // 12))
+    newyear = min(max(1, date.year + (delta // 12)), 3000)
     return datetime(year=newyear, month=newmonth, day=1)
 
 
