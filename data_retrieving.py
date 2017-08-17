@@ -17,14 +17,12 @@ from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
 from core.cube_classifier import CubeClassifier
-from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 
 from text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
 from model_manager import MODEL_CONFIG
-
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -55,18 +53,21 @@ class DataRetrieving:
 
         # Если хотя бы 1 документ найден:
         if solr_response['numFound']:
-            minfin_data, cube_data = group_documents(
+            minfin_docs, cube_data = group_documents(
                 solr_response['docs'],
                 user_request,
                 request_id
             )
 
-            minfin_answers = MinfinProcessor.get_data(minfin_data)
+            minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            clf = CubeClassifier.inst()
-            best_prediction = tuple(clf.predict_proba(user_request))[0]
+            if MODEL_CONFIG["enable_cube_clf"]:
+                clf = CubeClassifier.inst()
+                best_prediction = tuple(clf.predict_proba(user_request))[0]
 
-            cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
+                cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
+            else:
+                cube_answers = CubeProcessor.get_data(cube_data)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -181,42 +182,10 @@ class DataRetrieving:
             reverse=True
         )
 
-        DataRetrieving._first_place_right_type(all_answers)
-
         return all_answers
 
     @staticmethod
-    def _first_place_right_type(all_answers: list):
-
-        user_request = all_answers[0].user_request
-
-        clf = CubeOrMinfinClassifier.inst()
-        prediction = tuple(clf.predict_proba(user_request))[0]
-        ans_type = prediction[0].lower()
-
-        if all_answers[0].type != ans_type:
-            for elem in list(all_answers):
-                if elem.type == ans_type:
-                    all_answers.remove(elem)
-                    all_answers.insert(0, elem)
-
-                    logging.info(
-                        "Query_ID: {}\tMessage: Главный ответ был "
-                        "сменен на тип: {}".format(
-                            elem.request_id,
-                            ans_type
-                        )
-                    )
-
-                    break
-        else:
-            logging.info(
-                "Query_ID: {}\tMessage: Тип главного ответа совпадает с"
-                "типом из классификатора".format(all_answers[0].request_id)
-            )
-
-    @staticmethod
-    def _format_core_answer(answers: list, request_id: str, core_answer: CoreAnswer):
+    def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
         """Формирование структуры финального ответа"""
 
         # Предельное количество "смотри также"
