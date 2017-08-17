@@ -81,6 +81,8 @@ def _refactor_data(data):
             delete_question_words=False
         )
 
+        doc.lem_question_len = len(doc.lem_question.split())
+
         doc.short_answer = row.short_answer
 
         # индексируемое поле
@@ -395,6 +397,7 @@ class MinfinDocument:
         self.short_answer = ''
         self.full_answer = None
         self.lem_question = ''
+        self.lem_question_len = 0
         self.lem_extra_key_words = None
         self.lem_short_answer = ''
         self.lem_full_answer = None

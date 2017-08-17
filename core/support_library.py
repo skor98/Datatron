@@ -44,6 +44,15 @@ class CubeData:
         self.score = {}
 
 
+class MinfinData:
+    """Промежуточная структура данных по Минфину"""
+
+    def __init__(self, user_request='', request_id=''):
+        self.user_request = user_request
+        self.request_id = request_id
+        self.documents = []
+
+
 class FunctionExecutionError(Exception):
     """Ошибка при невозможности выполнении функции в узле"""
     pass
@@ -324,7 +333,7 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
     """
 
     # Найденные документы по Минфин вопросам
-    minfin_docs = []
+    minfin_data = MinfinData(user_request, request_id)
 
     cube_data = CubeData(user_request, request_id)
 
@@ -342,7 +351,7 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
         elif doc['type'] == 'measure':
             cube_data.measures.append(doc)
         elif doc['type'] == 'minfin':
-            minfin_docs.append(doc)
+            minfin_data.documents.append(doc)
 
     logging.info(
         "Query_ID: {}\tMessage: Найдено {} cubes, "
@@ -355,7 +364,7 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
             len(cube_data.measures)
         ))
 
-    return minfin_docs, cube_data
+    return minfin_data, cube_data
 
 
 def score_cube_question(cube_data: CubeData):

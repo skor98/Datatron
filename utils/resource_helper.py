@@ -2,8 +2,9 @@ from os import path
 from config import SETTINGS
 from flask import send_file
 
+
 class ResourceHelper:
-# помогает получить ресурсы
+    # помогает получить ресурсы
 
     @staticmethod
     def get_image(image_id):

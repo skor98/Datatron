@@ -30,6 +30,7 @@ from messenger_manager import MessengerManager
 from speechkit import text_to_speech
 from core.cube_classifier import CubeClassifier
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
+from core.cube_docs_processing import CubeProcessor
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -368,6 +369,7 @@ def what_cube_handler(message):
     except Exception as err:
         catch_bot_exception(message, "/whatcube", err)
 
+
 @bot.message_handler(commands=['whattype'])
 def what_type_handler(message):
     """
@@ -491,12 +493,16 @@ def process_response(message, input_format='text', file_content=None):
                 message,
                 result.answer,
                 request_id,
-                input_format=input_format
+                input_format
             )
 
         # Если ответ является ответом по минфину
         else:
-            process_minfin_questions(message, result.answer)
+            process_minfin_questions(
+                message,
+                result.answer,
+                input_format
+            )
 
         extra_results = look_further(result)
         if extra_results:
@@ -569,74 +575,84 @@ def process_cube_questions(message, cube_result, request_id, input_format):
         )
 
 
-def process_minfin_questions(message, minfin_result):
-    if minfin_result.status:
+def process_minfin_questions(message, minfin_result, input_format):
+    is_input_text = (input_format == 'text')
 
-        if minfin_result.full_answer:
+    feedback_str = ('{user_request}*Запрос после обработки*'
+                    '\n`"{question}"`\n\n*Ответ*\n{answer}')
+
+    user_request = ''
+    if not is_input_text:
+        user_request = '*Ваш запрос*\n"{}"\n\n'.format(
+            minfin_result.user_request
+        )
+
+    bot.send_message(
+        message.chat.id,
+        feedback_str.format(
+            user_request=user_request,
+            question=minfin_result.question,
+            answer=minfin_result.full_answer),
+        parse_mode='Markdown'
+    )
+
+    # может быть несколько
+    if minfin_result.link_name:
+        if isinstance(minfin_result.link_name, list):
+            link_output_str = []
+            for idx, (ln, l) in enumerate(zip(minfin_result.link_name, minfin_result.link)):
+                link_output_str.append('{}. [{}]({})'.format(idx + 1, ln, l))
+            link_output_str.insert(
+                0,
+                '*Дополнительные результаты* можно посмотреть по ссылкам:'
+            )
+
             bot.send_message(
                 message.chat.id,
-                '*Запрос после обработки*\n`"{}"`\n\n*Ответ*\n{}'.format(
-                    minfin_result.question,
-                    minfin_result.full_answer),
+                '\n'.join(link_output_str),
                 parse_mode='Markdown'
             )
-        # может быть несколько
-        if minfin_result.link_name:
-            if isinstance(minfin_result.link_name, list):
-                link_output_str = []
-                for idx, (ln, l) in enumerate(zip(minfin_result.link_name, minfin_result.link)):
-                    link_output_str.append('{}. [{}]({})'.format(idx + 1, ln, l))
-                link_output_str.insert(
-                    0,
-                    '*Дополнительные результаты* можно посмотреть по ссылкам:'
-                )
+        else:
+            link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
+            bot.send_message(
+                message.chat.id,
+                '{}\n[{}]({})'.format(
+                    link_output_str,
+                    minfin_result.link_name,
+                    minfin_result.link
+                ),
+                parse_mode='Markdown'
+            )
 
-                bot.send_message(
+    # может быть несколько
+    if minfin_result.picture_caption:
+        if isinstance(minfin_result.picture_caption, list):
+            for pc, p in zip(minfin_result.picture_caption, minfin_result.picture):
+                with open('data/minfin/img/{}'.format(p), 'rb') as picture:
+                    bot.send_photo(message.chat.id, picture, caption=pc)
+        else:
+            with open('data/minfin/img/{}'.format(minfin_result.picture), 'rb') as picture:
+                bot.send_photo(message.chat.id, picture, caption=minfin_result.picture_caption)
+
+    # может быть несколько
+    if minfin_result.document_caption:
+        if isinstance(minfin_result.document_caption, list):
+            for dc, d in zip(minfin_result.document_caption, minfin_result.document):
+                with open('data/minfin/doc/{}'.format(d), 'rb') as document:
+                    bot.send_document(message.chat.id, document, caption=dc)
+        else:
+            with open('data/minfin/doc/{}'.format(minfin_result.document), 'rb') as document:
+                bot.send_document(
                     message.chat.id,
-                    '\n'.join(link_output_str),
-                    parse_mode='Markdown'
-                )
-            else:
-                link_output_str = '*Дополнительные результаты* можно посмотреть по ссылке:'
-                bot.send_message(
-                    message.chat.id,
-                    '{}\n[{}]({})'.format(
-                        link_output_str,
-                        minfin_result.link_name,
-                        minfin_result.link
-                    ),
-                    parse_mode='Markdown'
+                    document,
+                    caption=minfin_result.document_caption
                 )
 
-        # может быть несколько
-        if minfin_result.picture_caption:
-            if isinstance(minfin_result.picture_caption, list):
-                for pc, p in zip(minfin_result.picture_caption, minfin_result.picture):
-                    with open('data/minfin/img/{}'.format(p), 'rb') as picture:
-                        bot.send_photo(message.chat.id, picture, caption=pc)
-            else:
-                with open('data/minfin/img/{}'.format(minfin_result.picture), 'rb') as picture:
-                    bot.send_photo(message.chat.id, picture, caption=minfin_result.picture_caption)
+    bot.send_chat_action(message.chat.id, 'upload_audio')
+    bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
 
-        # может быть несколько
-        if minfin_result.document_caption:
-            if isinstance(minfin_result.document_caption, list):
-                for dc, d in zip(minfin_result.document_caption, minfin_result.document):
-                    with open('data/minfin/doc/{}'.format(d), 'rb') as document:
-                        bot.send_document(message.chat.id, document, caption=dc)
-            else:
-                with open('data/minfin/doc/{}'.format(minfin_result.document), 'rb') as document:
-                    bot.send_document(
-                        message.chat.id,
-                        document,
-                        caption=minfin_result.document_caption
-                    )
-
-        bot.send_chat_action(message.chat.id, 'upload_audio')
-        bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
-
-        if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
-            bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
+    if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
+        bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
@@ -663,13 +679,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
-    cubes_with_current_data = (
-        'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
-    )
-
-    if cube_result.feedback['formal']['cube'] in cubes_with_current_data:
-        time_data_relevance = '\nАктуальность данных: *03.08.2017*'
-
+    time_data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,
