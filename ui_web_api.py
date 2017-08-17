@@ -11,7 +11,6 @@ import logging
 from uuid import uuid4
 import json
 
-
 from flask import send_file
 import pandas as pd
 from flask import Flask, request, make_response
@@ -26,6 +25,7 @@ from config import SETTINGS
 from models.responses.text_response_model import TextResponseModel
 
 from utils.resource_helper import ResourceHelper
+
 
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
@@ -51,6 +51,7 @@ def get_minfin_data():
 
 get_minfin_data.data = None
 
+
 @time_with_message("_read_minfin_data", "debug", 10)
 def _read_minfin_data():
     """
@@ -74,6 +75,7 @@ def _read_minfin_data():
             data["question"].tolist()
         )
     )
+
 
 def is_valid_api_key(api_key):
     """
@@ -295,9 +297,11 @@ def get_document():
 
     return ResourceHelper.get_document(doc_name)
 
+
 @app.route('/v2/resources/image/<image_id>')
 def get_image_v2(image_id):
     return ResourceHelper.get_image(image_id)
+
 
 @app.route('/v2/resources/document/<document_id>')
 def get_document_v2(document_id):

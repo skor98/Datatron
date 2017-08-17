@@ -1,2 +1,3 @@
 ﻿Расходы Ярославской области на образование:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [EXDO01.DB] WHERE ([RZPR].[14-848266],[MARKS].[03-4],[BGLEVELS].[09-12],[TERRITORIES].[08-67713])
+Расходы Москвы на образование:
 Расходы РФ:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [EXDO01.DB] WHERE ([MARKS].[03-4],[BGLEVELS].[09-12],[TERRITORIES].[08-2])

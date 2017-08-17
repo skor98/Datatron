@@ -26,6 +26,7 @@ class CoreAnswer:
     def toJSON_API(self):
         keys_to_return = (
             'status',
+            'confidence',
             'answer',
             'more_answers_order',
             'more_cube_answers',

@@ -54,7 +54,7 @@ class CubeProcessor:
             else:
                 logging.info(
                     "Query_ID: {}\tMessage: Собрано 0 ответов "
-                    "по кубам".format(cube_data.request_i)
+                    "по кубам".format(cube_data.request_id)
                 )
 
             if cube_data_list:
@@ -176,7 +176,7 @@ class CubeProcessor:
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
             except FunctionExecutionErrorNoMembers as error:
-                # НО все равно добавление элемента список,
+                # все равно добавление элемента список,
                 # так как есть еще есть дефолтные значения
                 cube_data_copy.tree_path = path
                 cube_data_list.append(cube_data_copy)
@@ -261,9 +261,10 @@ class CubeProcessor:
 
     @staticmethod
     def get_time_data_relevance(cube_answer):
-        # метод используется в нескольких местах
-        # 1. При формировании ответа для телеграма
-        # 2. При формировании ответа для клиента
+        """
+        Актуальность данных по кубам
+        """
+
         cubes_with_current_data = (
             'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
         )

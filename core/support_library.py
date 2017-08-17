@@ -397,7 +397,7 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = (
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
-            avg_member_score if avg_member_score else 0,
+            avg_member_score if avg_member_score else 0 +
             MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
         )
 

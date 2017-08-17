@@ -671,7 +671,6 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     separator = ''
     expert_str = ''
     verbal_str = ''
-    time_data_relevance = ''
 
     pretty_feed = '*Запрос после обработки*\n`"{}"`'.format(
         cube_result.feedback['pretty_feedback']
@@ -687,14 +686,16 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
-    time_data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
+    data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
+    data_relevance = data_relevance if data_relevance else ''
+
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,
         separator=separator,
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
-        time_data_relevance=time_data_relevance,
+        time_data_relevance=data_relevance,
         query_id=request_id,
         pretty_feed=pretty_feed
     )

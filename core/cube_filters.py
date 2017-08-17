@@ -218,6 +218,7 @@ def all_members_from_first_hierarchy_level(cube_data: CubeData):
 def all_members_from_second_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 2го уровня"""
     if len(cube_data.members) < 2:
+        cube_data.members = []
         raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_second_hierarchy_level.__name__,
             "message": "2 уровня ИЕРАРХИИ не существует"
@@ -230,6 +231,7 @@ def all_members_from_third_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 3го уровня"""
 
     if len(cube_data.members) < 3:
+        cube_data.members = []
         raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_third_hierarchy_level.__name__,
             "message": "3 уровня ИЕРАРХИИ не существует"
@@ -242,6 +244,7 @@ def all_members_from_forth_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 4го уровня"""
 
     if len(cube_data.members) < 4:
+        cube_data.members = []
         raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_forth_hierarchy_level.__name__,
             "message": "4 уровня ИЕРАРХИИ не существует"
