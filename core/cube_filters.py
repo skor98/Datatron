@@ -8,6 +8,7 @@
 from core.support_library import CubeData
 from core.support_library import check_if_year_is_current
 from core.support_library import FunctionExecutionError
+from core.support_library import FunctionExecutionErrorNoMembers
 
 
 def tree_start(cube_data: CubeData):
@@ -180,7 +181,7 @@ def form_members_in_hierachy_by_score(cube_data: CubeData):
         ]
 
     if not cube_data.members:
-        raise FunctionExecutionError({
+        raise FunctionExecutionErrorNoMembers({
             "function": form_members_in_hierachy_by_score.__name__,
             "message": "Все ЭЛЕМЕНТЫ измерений были удалены"
         })
@@ -217,7 +218,7 @@ def all_members_from_first_hierarchy_level(cube_data: CubeData):
 def all_members_from_second_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 2го уровня"""
     if len(cube_data.members) < 2:
-        raise FunctionExecutionError({
+        raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_second_hierarchy_level.__name__,
             "message": "2 уровня ИЕРАРХИИ не существует"
         })
@@ -229,7 +230,7 @@ def all_members_from_third_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 3го уровня"""
 
     if len(cube_data.members) < 3:
-        raise FunctionExecutionError({
+        raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_third_hierarchy_level.__name__,
             "message": "3 уровня ИЕРАРХИИ не существует"
         })
@@ -241,7 +242,7 @@ def all_members_from_forth_hierarchy_level(cube_data: CubeData):
     """Выбор полного набора из 4го уровня"""
 
     if len(cube_data.members) < 4:
-        raise FunctionExecutionError({
+        raise FunctionExecutionErrorNoMembers({
             "function": all_members_from_forth_hierarchy_level.__name__,
             "message": "4 уровня ИЕРАРХИИ не существует"
         })

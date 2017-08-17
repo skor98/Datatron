@@ -24,6 +24,7 @@ from text_preprocessing import TextPreprocessing
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
 from model_manager import MODEL_CONFIG
+
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -210,7 +211,7 @@ class DataRetrieving:
                     break
         else:
             logging.info(
-                "Query_ID: {}\tMessage: Тип главного ответа совпадает с"
+                "Query_ID: {}\tMessage: Тип главного ответа совпадает с "
                 "типом из классификатора".format(all_answers[0].request_id)
             )
 

@@ -12,6 +12,7 @@ from core.graph import Graph
 import core.support_library as csl
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
+from core.support_library import FunctionExecutionErrorNoMembers
 from model_manager import MODEL_CONFIG
 from config import SETTINGS
 
@@ -41,6 +42,20 @@ class CubeProcessor:
 
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
+
+            if cube_data_list:
+                logging.info(
+                    "Query_ID: {}\tMessage: Собрано {} ответов "
+                    "по кубам".format(
+                        cube_data_list[0].request_id,
+                        len(cube_data_list)
+                    )
+                )
+            else:
+                logging.info(
+                    "Query_ID: {}\tMessage: Собрано 0 ответов "
+                    "по кубам".format(cube_data.request_i)
+                )
 
             if cube_data_list:
                 # доработка вариантов
@@ -160,6 +175,18 @@ class CubeProcessor:
 
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
+            except FunctionExecutionErrorNoMembers as error:
+                # НО все равно добавление элемента список,
+                # так как есть еще есть дефолтные значения
+                cube_data_copy.tree_path = path
+                cube_data_list.append(cube_data_copy)
+
+                msg = error.args[0]
+                logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(
+                    cube_data_copy.request_id,
+                    path,
+                    msg['function'],
+                    msg['message']))
             except FunctionExecutionError as error:
                 msg = error.args[0]
                 logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(

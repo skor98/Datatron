@@ -58,6 +58,13 @@ class FunctionExecutionError(Exception):
     pass
 
 
+class FunctionExecutionErrorNoMembers(Exception):
+    """Ошибка при отфильтрации всех элементов измерений
+    кроме ГОД и ТЕРРИТОРИЯ
+    """
+    pass
+
+
 def send_request_to_server(mdx_query: str, cube: str):
     """
     Отправка запроса к серверу Кристы для получения
@@ -376,8 +383,13 @@ def score_cube_question(cube_data: CubeData):
         Сумма скора куба, среднего скора элементов измерений и меры
         """
 
+        avg_member_score = 0
+
         cube_score = cube_data.selected_cube['score']
-        avg_member_score = numpy.mean([member['score'] for member in cube_data.members])
+        members_score = [member['score'] for member in cube_data.members]
+
+        if members_score:
+            avg_member_score = numpy.mean(members_score)
 
         measure_score = 0
         if cube_data.selected_measure:
@@ -385,7 +397,7 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = (
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
-            avg_member_score +
+            avg_member_score if avg_member_score else 0,
             MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
         )
 
