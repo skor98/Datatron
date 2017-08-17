@@ -501,7 +501,8 @@ def process_response(message, input_format='text', file_content=None):
             process_minfin_questions(
                 message,
                 result.answer,
-                input_format
+                result.confidence,
+                input_format,
             )
 
         extra_results = look_further(result)
@@ -575,22 +576,28 @@ def process_cube_questions(message, cube_result, request_id, input_format):
         )
 
 
-def process_minfin_questions(message, minfin_result, input_format):
+def process_minfin_questions(message, minfin_result, ans_confidence, input_format):
     is_input_text = (input_format == 'text')
 
     feedback_str = ('{user_request}*Запрос после обработки*'
-                    '\n`"{question}"`\n\n*Ответ*\n{answer}')
+                    '\n{confidence}`"{question}"`\n\n*Ответ*\n{answer}')
 
     user_request = ''
+    confidence = ''
+
     if not is_input_text:
         user_request = '*Ваш запрос*\n"{}"\n\n'.format(
             minfin_result.user_request
         )
 
+    if not ans_confidence:
+        confidence = 'Возможно вы имели в виду: '
+
     bot.send_message(
         message.chat.id,
         feedback_str.format(
             user_request=user_request,
+            confidence=confidence,
             question=minfin_result.question,
             answer=minfin_result.full_answer),
         parse_mode='Markdown',
