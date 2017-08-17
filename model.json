@@ -4,7 +4,6 @@
     "cube_boosting_threshold": 25,
     "cube_weight_in_sum_scoring_model": 1.25,
     "delete_repeating_words_in_request": true,
-    "enable_cube_data_existence_checking": false,
     "enable_idea_command_from_db": false,
     "enable_minfin_tf_idf_key_words_calculation": false,
     "enable_repetition_for_short_request": true,
