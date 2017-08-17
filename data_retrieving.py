@@ -61,13 +61,10 @@ class DataRetrieving:
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
-            if MODEL_CONFIG["enable_cube_clf"]:
-                clf = CubeClassifier.inst()
-                best_prediction = tuple(clf.predict_proba(user_request))[0]
+            clf = CubeClassifier.inst()
+            best_prediction = tuple(clf.predict_proba(user_request))[0]
 
-                cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
-            else:
-                cube_answers = CubeProcessor.get_data(cube_data)
+            cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
