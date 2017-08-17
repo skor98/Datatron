@@ -733,9 +733,9 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
     if verbal_fb['measure'] != 'Значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
-    verbal_fb_list.extend('{}: {}'.format(item['dimension_caption'],
-                                          first_letter_lower(item['member_caption']))
-                          for item in verbal_fb['dims'])
+    verbal_fb_list.extend('{}: {}'.format(
+        item['dimension_caption'],
+        item['member_caption']) for item in verbal_fb['dims'])
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
@@ -777,23 +777,21 @@ def answer_to_look_also_format(answer):
             )
 
 
-def first_letter_lower(input_str):
-    """Первод первой буквы слова в нижний регистр"""
-
-    if not input_str:
-        return ""
-    return input_str[:1].lower() + input_str[1:]
-
-
 def see_more_buttons_dynamic(number_of_questions):
     """Динамическая клавиатура для смотри также"""
     buttons = []
     for i in range(1, number_of_questions + 1):
         buttons.append(
-            {'text': str(i), 'callback_data': 'look_also_' + str(i)}
+            {
+                'text': str(i),
+                'callback_data': 'look_also_' + str(i)
+            }
         )
 
-    return json.dumps({'inline_keyboard': [buttons]})
+    return json.dumps(
+
+
+        {'inline_keyboard': [buttons]})
 
 
 def get_look_also_question_by_num(message: str, num: int):
