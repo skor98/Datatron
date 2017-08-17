@@ -593,7 +593,8 @@ def process_minfin_questions(message, minfin_result, input_format):
             user_request=user_request,
             question=minfin_result.question,
             answer=minfin_result.full_answer),
-        parse_mode='Markdown'
+        parse_mode='Markdown',
+        reply_markup=constants.RESPONSE_QUALITY
     )
 
     # может быть несколько
