@@ -30,6 +30,7 @@ from messenger_manager import MessengerManager
 from speechkit import text_to_speech
 from core.cube_classifier import CubeClassifier
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
+from core.cube_docs_processing import CubeProcessor
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -678,13 +679,7 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
-    cubes_with_current_data = (
-        'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
-    )
-
-    if cube_result.feedback['formal']['cube'] in cubes_with_current_data:
-        time_data_relevance = '\nАктуальность данных: *03.08.2017*'
-
+    time_data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,

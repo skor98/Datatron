@@ -1,7 +1,7 @@
 import json
 import logging
 from core.answer_object import CoreAnswer
-from core.cube_docs_processing import CubeAnswer
+from core.cube_docs_processing import CubeAnswer, CubeProcessor
 from core.minfin_docs_processing import MinfinAnswer
 
 from models.responses.link_model import LinkModel
@@ -87,6 +87,10 @@ class TextResponseModel:
 
         if formatted_response is not None:
             answer = "{}\nОтвет: {}".format(answer, formatted_response)
+
+        time_data_relevance = CubeProcessor.get_time_data_relevance(response.answer)
+        if time_data_relevance is not None:
+            answer = "{}{}".format(answer, time_data_relevance)
 
         text_response.short_answer = answer
         text_response.full_answer = answer

@@ -232,6 +232,21 @@ class CubeProcessor:
 
         return cube_answer_list
 
+    @staticmethod
+    def get_time_data_relevance(cube_answer):
+        # метод используется в нескольких местах
+        # 1. При формировании ответа для телеграма
+        # 2. При формировании ответа для клиента
+        cubes_with_current_data = (
+            'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
+        )
+
+        time_data_relevance = None
+        if cube_answer.feedback['formal']['cube'] in cubes_with_current_data:
+            time_data_relevance = '\nАктуальность данных: *03.08.2017*'
+
+        return time_data_relevance
+
 
 class CubeAnswer:
     """
