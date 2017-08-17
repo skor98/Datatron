@@ -18,7 +18,7 @@
     "model_cube_clf_gb_max_depth": 2,
     "model_cube_clf_lr_reg": 1,
     "model_cube_clf_type": "GradientBoosting",
-    "model_cube_or_minfin_clf_reg": 4,
+    "model_cube_or_minfin_clf_reg": 10,
     "model_cube_or_minfin_clf_type": "SVM",
     "normalization_delete_digits_default": false,
     "normalization_delete_question_words_default": true,
