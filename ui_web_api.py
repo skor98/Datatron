@@ -6,13 +6,13 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
-from os import path, makedirs
+from os import path, makedirs, listdir
+import re
+import random
 import logging
 from uuid import uuid4
 import json
 
-
-from flask import send_file
 import pandas as pd
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
@@ -21,7 +21,7 @@ from messenger_manager import MessengerManager
 from kb.kb_support_library import read_minfin_data
 import logs_helper  # pylint: disable=unused-import
 from logs_helper import time_with_message
-from config import SETTINGS
+from config import SETTINGS, TEST_PATH_RESULTS
 
 from models.responses.text_response_model import TextResponseModel
 
@@ -48,8 +48,8 @@ def get_minfin_data():
         ).encode("utf-8")
     return get_minfin_data.data
 
-
 get_minfin_data.data = None
+
 
 @time_with_message("_read_minfin_data", "debug", 10)
 def _read_minfin_data():
@@ -74,6 +74,48 @@ def _read_minfin_data():
             data["question"].tolist()
         )
     )
+
+
+def get_good_queries(count=0):
+    """
+    Возвращает успешные вопросы по кубам и минфину в перемешанном виде.
+    Если count == 0, то возвращает все успешные запросы
+    """
+
+    if not get_good_queries.queries:
+        good_cube_query_re = re.compile(r"\d*\.\s+\+\s+(.+)")
+        good_mifin_query_re = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает корректно')
+        get_good_queries.queries = []
+
+        test_paths = listdir(TEST_PATH_RESULTS)
+        try:
+            latest_cube_path = max(filter(lambda x: x.startswith("cube"), test_paths))
+        except ValueError:
+            logging.error("Нет тестов по кубам!")
+        get_good_queries.queries += good_cube_query_re.findall(open(
+            path.join(TEST_PATH_RESULTS, latest_cube_path),
+            encoding="utf-8"
+        ).read())
+
+        try:
+            latest_mifin_path = max(filter(lambda x: x.startswith("minfin"), test_paths))
+        except ValueError:
+            logging.error("Нет тестов по минфину!")
+        get_good_queries.queries += good_mifin_query_re.findall(open(
+            path.join(TEST_PATH_RESULTS, latest_mifin_path),
+            encoding="utf-8"
+        ).read())
+
+        # А теперь поставим везде заглавной первую букву
+        for ind, val in enumerate(get_good_queries.queries):
+            get_good_queries.queries[ind] = val[0].upper() + val[1:]
+
+    if count == 0 or count > len(get_good_queries.queries):
+        count = len(get_good_queries.queries)
+    return random.sample(get_good_queries.queries, count)
+
+get_good_queries.queries = None
+
 
 def is_valid_api_key(api_key):
     """
@@ -235,6 +277,20 @@ class MinfinListV2(Resource):
         return get_minfin_data()
 
 
+class GoodQueries(Resource):
+    """
+    Возвращает список хороших вопросов, которые можно задавать.
+    """
+
+    @time_with_message("GoodQueries API Get", "info", 0.5)
+    def get(self):
+        args = parser.parse_args()
+        count = 0
+        if not args["count"] is None:
+            count = args["count"]
+        return get_good_queries(count=count)
+
+
 app = Flask(__name__)  # pylint: disable=invalid-name
 api = Api(app)  # pylint: disable=invalid-name
 API_VERSION = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
@@ -242,6 +298,7 @@ API_VERSION = getattr(SETTINGS.WEB_SERVER, 'VERSION', 'na')
 parser = reqparse.RequestParser()  # pylint: disable=invalid-name
 parser.add_argument('apikey', type=str, required=True, help="You need API key")
 parser.add_argument('query', type=str)
+parser.add_argument('count', type=int)
 
 
 @api.representation('application/json')
@@ -266,6 +323,7 @@ api.add_resource(MinfinList, '/{}/minfin_docs'.format(API_VERSION))
 api.add_resource(VoiceQueryV2, '/v2/voice')
 api.add_resource(TextQueryV2, '/v2/text')
 api.add_resource(MinfinListV2, '/v2/minfin_docs')
+api.add_resource(GoodQueries, '/v2/good_queries')
 
 
 @app.route('/')
@@ -295,9 +353,11 @@ def get_document():
 
     return ResourceHelper.get_document(doc_name)
 
+
 @app.route('/v2/resources/image/<image_id>')
 def get_image_v2(image_id):
     return ResourceHelper.get_image(image_id)
+
 
 @app.route('/v2/resources/document/<document_id>')
 def get_document_v2(document_id):
