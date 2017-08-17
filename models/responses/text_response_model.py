@@ -1,7 +1,7 @@
 import json
 import logging
 from core.answer_object import CoreAnswer
-from core.cube_docs_processing import CubeAnswer
+from core.cube_docs_processing import CubeAnswer, CubeProcessor
 from core.minfin_docs_processing import MinfinAnswer
 
 from models.responses.link_model import LinkModel
@@ -56,6 +56,13 @@ class TextResponseModel:
         # формирование ответа для клиента
         text_response = TextResponseModel()
         text_response.status = response.status
+
+        text_response.associated_quesions = TextResponseModel.get_associated_quesions(
+            response.more_answers_order,
+            response.more_cube_answers,
+            response.more_minfin_answers
+        )
+
         if response.answer is None:
             return text_response
 
@@ -66,12 +73,6 @@ class TextResponseModel:
         if isinstance(response.answer, MinfinAnswer):
             logging.info('ответ по минфину')
             TextResponseModel.from_minfin_answer(text_response, response)
-
-        text_response.associated_quesions = TextResponseModel.get_associated_quesions(
-            response.more_answers_order,
-            response.more_cube_answers,
-            response.more_minfin_answers
-        )
 
         return text_response
 
@@ -86,6 +87,10 @@ class TextResponseModel:
 
         if formatted_response is not None:
             answer = "{}\nОтвет: {}".format(answer, formatted_response)
+
+        time_data_relevance = CubeProcessor.get_time_data_relevance(response.answer)
+        if time_data_relevance is not None:
+            answer = "{}{}".format(answer, time_data_relevance)
 
         text_response.short_answer = answer
         text_response.full_answer = answer

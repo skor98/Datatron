@@ -194,8 +194,7 @@ class CubeProcessor:
 
         # Выбор главного ответа по классификатору
         # Альтернативная версия выбора главного ответа
-        if MODEL_CONFIG["enable_cube_clf"]:
-            csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
+        csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
 
         if MODEL_CONFIG["enable_cube_data_existence_checking"]:
             # так, как мы хотим, чтобы смотри также нормально работало
@@ -232,6 +231,21 @@ class CubeProcessor:
             )
 
         return cube_answer_list
+
+    @staticmethod
+    def get_time_data_relevance(cube_answer):
+        # метод используется в нескольких местах
+        # 1. При формировании ответа для телеграма
+        # 2. При формировании ответа для клиента
+        cubes_with_current_data = (
+            'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
+        )
+
+        time_data_relevance = None
+        if cube_answer.feedback['formal']['cube'] in cubes_with_current_data:
+            time_data_relevance = '\nАктуальность данных: *03.08.2017*'
+
+        return time_data_relevance
 
 
 class CubeAnswer:
