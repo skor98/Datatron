@@ -293,10 +293,6 @@ def read_minfin_data():
                     df.loc[row_ind, column].split()
                 )
 
-                # экранирование кавычек
-                if '"' in df.loc[row_ind, 'question']:
-                    df.loc[row_ind, 'question'] = df.loc[row_ind, 'question'].replace('"', r'\"')
-
         df = df.fillna(0)
         dfs.append(df)
 
