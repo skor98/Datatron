@@ -76,8 +76,7 @@ class CubeProcessor:
 
                 # после фильтрации по наличию данных можно выбрать лучший
                 # как с помощью классификатора, так и по умолчанию (то есть по скору)
-                if MODEL_CONFIG["enable_cube_clf"]:
-                    csl.best_answer_depending_on_cube(cube_data_list, correct_cube[0])
+                csl.best_answer_depending_on_cube(cube_data_list, correct_cube[0])
 
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list
