@@ -45,7 +45,7 @@ unit_lens = {
 anyunit = '|'.join(unit_lens.keys())
 unitcombo = r'(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
 
-points = r'(?:(?P<begin>начало|состояние|канун)|(?P<end>конец|итог|финал|окончание))'
+points = r'(?:(?P<begin>состояние|канун|старт)|(?P<end>конец|итог|финал|окончание))'
 
 current_re = r'(?:{} )?(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
 last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
