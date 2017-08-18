@@ -802,7 +802,7 @@ def get_look_also_question_by_num(message: str, num: int):
     message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
                for msg in message.split('\n')
                ]
-    
+
     return message[num]
 
 
