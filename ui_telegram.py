@@ -731,7 +731,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
 
     verbal_fb_list.append(verbal_fb['domain'])
 
-    if verbal_fb['measure'] != 'Значение':
+    if verbal_fb['measure'] != 'значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
     verbal_fb_list.extend('{}: {}'.format(
@@ -799,11 +799,10 @@ def get_look_also_question_by_num(message: str, num: int):
     """
     Возвращает запрос из смотри также под заданным номером
     """
-    num = str(num) + '.'
-    message = [msg.rsplit('(', 1)[0].replace(num, '')
+    message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
                for msg in message.split('\n')
-               if msg.startswith(num)]
-    return message[0]
+               ]
+    return message[num]
 
 
 def main_search_function_from_inside(message):

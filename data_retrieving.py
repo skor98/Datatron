@@ -283,7 +283,6 @@ class DataRetrieving:
                     MODEL_CONFIG["relevant_minfin_main_answer_threshold"]):
 
                 core_answer.status = True
-                core_answer.confidence = True
 
                 logging.info(
                     "Query_ID: {}\tMessage: Главный точный ответ - "
@@ -296,6 +295,7 @@ class DataRetrieving:
                       MODEL_CONFIG["minfin_main_answer_confidence_threshold"]):
 
                 core_answer.status = True
+                core_answer.confidence = False
 
                 logging.info(
                     "Query_ID: {}\tMessage: Главный возможный ответ - "

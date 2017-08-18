@@ -11,7 +11,7 @@ import json
 class CoreAnswer:
     def __init__(self, message='', error=''):
         self.user_request = ''
-        self.confidence = False
+        self.confidence = True
         self.status = False
         self.answer = None
         self.more_answers_order = ''

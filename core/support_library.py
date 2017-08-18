@@ -10,6 +10,7 @@ import json
 import datetime
 import requests
 import numpy
+import re
 
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_caption_for_measure
@@ -94,17 +95,22 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     для экспертной и обычной обратной связи
     """
 
-    # Разбиваем MDX-запрос на две части
-    left_part, right_part = mdx_query.split('(')
+    measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
+    cube_p = re.compile(r'(?<=FROM \[)\w*')
+    members_p = re.compile(r'(\[\w+\]\.\[[0-9-]*\])')
 
-    # Вытаскиваем меру из левой части
-    measure_value = left_part.split('}')[0].split('.')[1][1:-1]
+    measure_value = measure_p.search(mdx_query).group()
+    cube = cube_p.search(mdx_query).group()
 
-    # Собираем название измерения и его значение из второй
     dims_vals = []
-    for item in right_part[:-1].split(','):
-        item = item.split('.')
-        dims_vals.append({'dim': item[0][1:-1], 'val': item[1][1:-1]})
+    for member in members_p.findall(mdx_query):
+        member = member.split('.')
+        dims_vals.append(
+            {
+                'dim': member[0][1:-1],
+                'val': member[1][1:-1]
+            }
+        )
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [get_captions_for_dimensions(i['val']) for i in dims_vals]
