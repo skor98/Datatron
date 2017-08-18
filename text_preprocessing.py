@@ -17,8 +17,9 @@ import pymorphy2
 
 from model_manager import MODEL_CONFIG
 
-from core.parsers.time_parser import time_tp
 from core.parsers.syn_parser import syn_tp
+from core.parsers.num_parser import num_tp
+from core.parsers.time_parser import time_tp
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -52,8 +53,9 @@ class TextPreprocessing:
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
             delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
-            parse_dates=MODEL_CONFIG["parser_dates_default"],
             parse_syns=MODEL_CONFIG["parser_syns_default"],
+            parse_nums=MODEL_CONFIG["parser_nums_default"],
+            parse_time=MODEL_CONFIG["parser_time_default"],
     ):
         """Метод для нормализации текста"""
 
@@ -75,7 +77,9 @@ class TextPreprocessing:
         parser = None
         if parse_syns:
             parser += syn_tp
-        if parse_dates:
+        if parse_nums:
+            parser += num_tp
+        if parse_time:
             parser += time_tp
 
         # Парсинг всего

@@ -152,7 +152,8 @@ def get_query_examples(message):
         bot.send_message(
             message.chat.id,
             message_str,
-            parse_mode='Markdown'
+            parse_mode='Markdown',
+            reply_markup=see_more_buttons_dynamic(5)
         )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
@@ -501,7 +502,8 @@ def process_response(message, input_format='text', file_content=None):
             process_minfin_questions(
                 message,
                 result.answer,
-                input_format
+                result.confidence,
+                input_format,
             )
 
         extra_results = look_further(result)
@@ -575,22 +577,28 @@ def process_cube_questions(message, cube_result, request_id, input_format):
         )
 
 
-def process_minfin_questions(message, minfin_result, input_format):
+def process_minfin_questions(message, minfin_result, ans_confidence, input_format):
     is_input_text = (input_format == 'text')
 
     feedback_str = ('{user_request}*Запрос после обработки*'
-                    '\n`"{question}"`\n\n*Ответ*\n{answer}')
+                    '\n{confidence}`"{question}"`\n\n*Ответ*\n{answer}')
 
     user_request = ''
+    confidence = ''
+
     if not is_input_text:
         user_request = '*Ваш запрос*\n"{}"\n\n'.format(
             minfin_result.user_request
         )
 
+    if not ans_confidence:
+        confidence = 'Возможно вы имели в виду: '
+
     bot.send_message(
         message.chat.id,
         feedback_str.format(
             user_request=user_request,
+            confidence=confidence,
             question=minfin_result.question,
             answer=minfin_result.full_answer),
         parse_mode='Markdown',
@@ -664,7 +672,6 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     separator = ''
     expert_str = ''
     verbal_str = ''
-    time_data_relevance = ''
 
     pretty_feed = '*Запрос после обработки*\n`"{}"`'.format(
         cube_result.feedback['pretty_feedback']
@@ -680,14 +687,16 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
         separator = '\n'
         verbal_str = verbal_feedback(cube_result)
 
-    time_data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
+    data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
+    data_relevance = data_relevance if data_relevance else ''
+
     feedback = feedback_str.format(
         user_req=user_request,
         expert_fb=expert_str,
         separator=separator,
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
-        time_data_relevance=time_data_relevance,
+        time_data_relevance=data_relevance,
         query_id=request_id,
         pretty_feed=pretty_feed
     )
@@ -723,12 +732,12 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
 
     verbal_fb_list.append(verbal_fb['domain'])
 
-    if verbal_fb['measure'] != 'Значение':
+    if verbal_fb['measure'] != 'значение':
         verbal_fb_list.append('Мера: ' + verbal_fb['measure'].lower())
 
-    verbal_fb_list.extend('{}: {}'.format(item['dimension_caption'],
-                                          first_letter_lower(item['member_caption']))
-                          for item in verbal_fb['dims'])
+    verbal_fb_list.extend('{}: {}'.format(
+        item['dimension_caption'],
+        item['member_caption']) for item in verbal_fb['dims'])
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
@@ -770,34 +779,31 @@ def answer_to_look_also_format(answer):
             )
 
 
-def first_letter_lower(input_str):
-    """Первод первой буквы слова в нижний регистр"""
-
-    if not input_str:
-        return ""
-    return input_str[:1].lower() + input_str[1:]
-
-
 def see_more_buttons_dynamic(number_of_questions):
     """Динамическая клавиатура для смотри также"""
     buttons = []
     for i in range(1, number_of_questions + 1):
         buttons.append(
-            {'text': str(i), 'callback_data': 'look_also_' + str(i)}
+            {
+                'text': str(i),
+                'callback_data': 'look_also_' + str(i)
+            }
         )
 
-    return json.dumps({'inline_keyboard': [buttons]})
+    return json.dumps({
+        'inline_keyboard': [buttons]
+    })
 
 
 def get_look_also_question_by_num(message: str, num: int):
     """
     Возвращает запрос из смотри также под заданным номером
     """
-    num = str(num) + '.'
-    message = [msg.rsplit('(', 1)[0].replace(num, '')
+    message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
                for msg in message.split('\n')
-               if msg.startswith(num)]
-    return message[0]
+               ]
+
+    return message[num]
 
 
 def main_search_function_from_inside(message):

@@ -24,42 +24,46 @@ seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
 time_tp.add_many_subs({
-    'г': 'год',
     'мес': 'месяц',
     'кв': 'квартал',
-    'полугодие': 'семестр',
-    'полгода': 'семестр',
+    'семестр': 'полугодие',
+    'полгода': 'полугодие',
+})
+time_tp.add_many_pluses({
+    'г': 'год',
     'сейчас': 'этот месяц',
     'сегодня': 'этот месяц',
 })
 
+time_tp.add_simple_sub(r'([0-9]+)[-–—]([0-9]+)', r'\1 \2')
+
 unit_lens = {
     'год': 12,
-    'семестр': 6,
+    'полугодие': 6,
     'триместр': 4,
     'квартал': 3,
     'месяц': 1
 }
 anyunit = '|'.join(unit_lens.keys())
-unitcombo = '(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
+unitcombo = r'(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
 
-points = r'(?:(?P<begin>начало|состояние|канун) |(?P<end>конец|итог|финал|окончание) )'
+points = r'(?:(?P<begin>состояние|канун|старт)|(?P<end>конец|итог|финал|окончание))'
 
-current_re = r'{}?(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
-last_re = r'{}?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
-next_re = '{}?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points, anyunit)
+current_re = r'(?:{} )?(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
+last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
+next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points, anyunit)
 ago_re = r'(?P<interval>{}) назад'.format(unitcombo)
 later_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)| спустя)'.format(unitcombo)
 
-_dayformat = '(?P<day>[0-3]?[0-9])'
-_monthformat = '(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
-# _yearformat = r'(?P<year>(?:20)?[0-9][0-9])'
-dateformat_re = r'(?:{}|{} ){}'.format(
-    points, _dayformat, _monthformat)
+_dayformat = r'(?P<day>[0-3]?[0-9])'
+_monthformat = r'(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
+_yearformat = r'(?P<year>(?:19|20)[0-9][0-9])'
+dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
+    points, _dayformat, _monthformat, _yearformat)
 
-season_re = r'{}?(?P<season>{})'.format(points, anyseason)
+season_re = r'(?:{} )?(?P<season>{})'.format(points, anyseason)
 
-static_re = r'{}?(?P<num>0?[1-9]|1[012]) (?P<unit>{})'.format(points, anyunit)
+static_re = r'(?:{} )?(?P<num>[0-9]*[1-9][0-9]*) (?P<unit>{})'.format(points, anyunit)
 
 @time_tp.re_handler(current_re)
 def current_h(match):
@@ -145,8 +149,8 @@ def static_h(match):
     num = int(match.group('num'))
     begin = bool(match.group('begin'))
     newdate = get_static(unit, num, begin)
-    if newdate.year > 1000:
-        return match.group(0)
+    if unit_lens.get(unit, 1) == 12:
+        return date_to_text(newdate, nomonth=True)
     return date_to_text(newdate, noyear=True)
 
 
@@ -161,9 +165,10 @@ def date_h(match):
     if not begin:
         newday = match.group('day')
         begin = newday and int(newday) <= 15
-    newdate = datetime(month=newmonth, year=100, day=1)
+    newyear = max(min(int(match.group('year')), 3000), 1)
+    newdate = datetime(month=newmonth, year=newyear, day=1)
     newdate = process_units(newdate, 1, begin)
-    return date_to_text(newdate, noyear=True)
+    return date_to_text(newdate)
 
 @time_tp.re_handler(season_re)
 def season_h(match):
@@ -182,7 +187,15 @@ def process_units(date, u_len=1, begin=False):
 
 
 def date_to_text(date, noyear=False, nomonth=False):
-    res_year = None if noyear else str(date.year)
+    if noyear:
+        res_year = None
+    else:
+        res_year = date.year
+        if 60 <= res_year < 1000:
+            res_year += 1900
+        elif res_year < 1000:
+            res_year += 2000
+        res_year = str(res_year)
     res_month = None if nomonth else norm_months[date.month-1]
     return ' '.join(i for i in (res_month, res_year) if i is not None)
 
@@ -197,7 +210,8 @@ def mod_date(date, delta):
 def get_static(unit, num, begin=False):
     u_len = unit_lens.get(unit, 1)
     if u_len == 12:
-        return datetime(month=1, year=num, day=1)
+        year = max(min(num, 3000), 1)
+        return datetime(month=1, year=year, day=1)
     newmonth = max(min(u_len * num, 12), 1)
     newdate = datetime(month=newmonth, year=100, day=1)
     return process_units(newdate, u_len, begin)

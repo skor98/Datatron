@@ -17,12 +17,14 @@ from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeProcessor
 from core.minfin_docs_processing import MinfinProcessor
 from core.cube_classifier import CubeClassifier
+from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 
 from text_preprocessing import TextPreprocessing
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
 from model_manager import MODEL_CONFIG
+
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -96,7 +98,7 @@ class DataRetrieving:
         norm_user_request = text_proc.normalization(
             user_request,
             delete_question_words=False,
-            parse_dates=True
+            parse_time=True
         )
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
@@ -179,7 +181,39 @@ class DataRetrieving:
             reverse=True
         )
 
+        DataRetrieving._first_place_right_type(all_answers)
+
         return all_answers
+
+    @staticmethod
+    def _first_place_right_type(all_answers: list):
+
+        user_request = all_answers[0].user_request
+
+        clf = CubeOrMinfinClassifier.inst()
+        prediction = tuple(clf.predict_proba(user_request))[0]
+        ans_type = prediction[0].lower()
+
+        if all_answers[0].type != ans_type:
+            for elem in list(all_answers):
+                if elem.type == ans_type:
+                    all_answers.remove(elem)
+                    all_answers.insert(0, elem)
+
+                    logging.info(
+                        "Query_ID: {}\tMessage: Главный ответ был "
+                        "сменен на тип: {}".format(
+                            elem.request_id,
+                            ans_type
+                        )
+                    )
+
+                    break
+        else:
+            logging.info(
+                "Query_ID: {}\tMessage: Тип главного ответа совпадает с "
+                "типом из классификатора".format(all_answers[0].request_id)
+            )
 
     @staticmethod
     def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
@@ -198,6 +232,7 @@ class DataRetrieving:
             starting_from = 1
             if not core_answer.answer:
                 starting_from = 0
+                THRESHOLD -= 1
 
             DataRetrieving._process_more_answers(
                 core_answer,
@@ -244,11 +279,26 @@ class DataRetrieving:
         # Если главный ответ по минфину
         else:
             # фильтр по релевантности на минфин
-            if answers[0].get_score() >= MODEL_CONFIG["relevant_minfin_main_answer_threshold"]:
+            if (core_answer.answer.get_score() >=
+                    MODEL_CONFIG["relevant_minfin_main_answer_threshold"]):
+
                 core_answer.status = True
 
                 logging.info(
-                    "Query_ID: {}\tMessage: Главный ответ - "
+                    "Query_ID: {}\tMessage: Главный точный ответ - "
+                    "ответ по Минфину - {} - {}".format(
+                        request_id,
+                        core_answer.answer.get_score(),
+                        core_answer.answer.number
+                    ))
+            elif (core_answer.answer.get_score() >=
+                      MODEL_CONFIG["minfin_main_answer_confidence_threshold"]):
+
+                core_answer.status = True
+                core_answer.confidence = False
+
+                logging.info(
+                    "Query_ID: {}\tMessage: Главный возможный ответ - "
                     "ответ по Минфину - {} - {}".format(
                         request_id,
                         core_answer.answer.get_score(),

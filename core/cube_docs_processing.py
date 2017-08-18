@@ -12,7 +12,9 @@ from core.graph import Graph
 import core.support_library as csl
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
+from core.support_library import FunctionExecutionErrorNoMembers
 from model_manager import MODEL_CONFIG
+from config import SETTINGS
 
 import logs_helper  # pylint: disable=unused-import
 
@@ -40,6 +42,20 @@ class CubeProcessor:
 
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
+
+            if cube_data_list:
+                logging.info(
+                    "Query_ID: {}\tMessage: Собрано {} ответов "
+                    "по кубам".format(
+                        cube_data_list[0].request_id,
+                        len(cube_data_list)
+                    )
+                )
+            else:
+                logging.info(
+                    "Query_ID: {}\tMessage: Собрано 0 ответов "
+                    "по кубам".format(cube_data.request_id)
+                )
 
             if cube_data_list:
                 # доработка вариантов
@@ -71,7 +87,7 @@ class CubeProcessor:
 
             # фильтрация по наличие данных возможно только на этом этапе
             # когда собран MDX-запрос
-            if MODEL_CONFIG["enable_cube_data_existence_checking"]:
+            if SETTINGS.CHECK_CUBE_DATA_EXISTENCE:
                 csl.filter_cube_data_without_answer(cube_data_list)
 
                 # после фильтрации по наличию данных можно выбрать лучший
@@ -159,6 +175,18 @@ class CubeProcessor:
 
                 # добавление успешного результата прогона в лист
                 cube_data_list.append(cube_data_copy)
+            except FunctionExecutionErrorNoMembers as error:
+                # все равно добавление элемента список,
+                # так как есть еще есть дефолтные значения
+                cube_data_copy.tree_path = path
+                cube_data_list.append(cube_data_copy)
+
+                msg = error.args[0]
+                logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(
+                    cube_data_copy.request_id,
+                    path,
+                    msg['function'],
+                    msg['message']))
             except FunctionExecutionError as error:
                 msg = error.args[0]
                 logging.info('Query_ID: {}\tTree_path: {}\tMessage: {}-{}'.format(
@@ -195,7 +223,7 @@ class CubeProcessor:
         # Альтернативная версия выбора главного ответа
         csl.best_answer_depending_on_cube(cube_data_list, correct_cube)
 
-        if MODEL_CONFIG["enable_cube_data_existence_checking"]:
+        if SETTINGS.CHECK_CUBE_DATA_EXISTENCE:
             # так, как мы хотим, чтобы смотри также нормально работало
             # то при проверке на наличие данных придется проверять не первые три
             # запроса, а все; 5 запросов может быть мало
@@ -233,9 +261,10 @@ class CubeProcessor:
 
     @staticmethod
     def get_time_data_relevance(cube_answer):
-        # метод используется в нескольких местах
-        # 1. При формировании ответа для телеграма
-        # 2. При формировании ответа для клиента
+        """
+        Актуальность данных по кубам
+        """
+
         cubes_with_current_data = (
             'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
         )

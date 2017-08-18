@@ -94,7 +94,7 @@ class MinfinAnswer:
 
     def to_reduced_object(self):
         keys_to_return = (
-            'user_request'
+            'user_request',
             'type',
             'number',
             'question',

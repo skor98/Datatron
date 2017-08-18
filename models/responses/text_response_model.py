@@ -18,7 +18,7 @@ class TextResponseModel:
         self.document_links = None
         self.image_links = None
         self.http_ref_links = None
-        self.associated_quesions = None
+        self.associated_questions = None
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
