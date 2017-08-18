@@ -36,6 +36,13 @@ class TonitaParser(object):
         for origin in sub_dict:
             self.add_simple_sub(origin, sub_dict[origin])
 
+    def add_simple_plus(self, regexp, new=''):
+        self.re_handler(regexp, True)(new)
+
+    def add_many_pluses(self, new_dict):
+        for origin in new_dict:
+            self.add_simple_plus(origin, new_dict[origin])
+
     def __add__(self, other):
         if other is None:
             other = TonitaParser()
