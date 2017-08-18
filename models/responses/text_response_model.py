@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import json
 import logging
 from core.answer_object import CoreAnswer
@@ -8,7 +11,7 @@ from models.responses.link_model import LinkModel
 from models.responses.question_model import QuestionModel
 
 class TextResponseModel:
-# модель ответа клиенту
+    """Модель ответа клиенту"""
 
     def __init__(self):
         self.status = False
@@ -53,7 +56,7 @@ class TextResponseModel:
 
     @staticmethod
     def from_answer(response: CoreAnswer):
-        # формирование ответа для клиента
+        """Формирование ответа для клиента"""
         text_response = TextResponseModel()
         text_response.status = response.status
 
@@ -78,7 +81,7 @@ class TextResponseModel:
 
     @staticmethod
     def from_cube_answer(text_response, response: CubeAnswer):
-        # формирование ответа для клиента по ответу по кубу
+        """Формирование ответа для клиента по ответу по кубу"""
         pretty_feedback = response.answer.feedback.get('pretty_feedback')
         formatted_response = response.answer.formatted_response
 
@@ -99,7 +102,7 @@ class TextResponseModel:
 
     @staticmethod
     def from_minfin_answer(text_response, response: CubeAnswer):
-        # формирование ответа для клиента по ответу по минфину
+        """Формирование ответа для клиента по ответу по минфину"""
         if response.answer is not None:
             text_response.question = response.answer.question
             text_response.full_answer = response.answer.full_answer
@@ -112,7 +115,7 @@ class TextResponseModel:
 
     @staticmethod
     def get_associated_quesions(answer_order: str, cube_answer_list: list, minfin_answer_list: list):
-        # формирование блока associated_quesions
+        """Формирование блока associated_quesions"""
         associated_quesions_items = []
         minfin_answer_counter = 0
         cube_answer_counter = 0
@@ -133,32 +136,33 @@ class TextResponseModel:
 
     @staticmethod
     def get_document_links(response: CoreAnswer):
-        # формирование блока списка документов
-        if response.answer.document is not None:
-            document_links = []
-            document_link = LinkModel('document', response.answer.document_caption[0], response.answer.document[0])
-            document_links.append(document_link)
-        else:
+        """Формирование блока списка документов"""
+        if response.answer.document is None:
             return None
+
+        document_links = []
+        document_link = LinkModel('document', response.answer.document_caption[0], response.answer.document[0])
+        document_links.append(document_link)
+        return document_links
 
     @staticmethod
     def get_image_links(response: CoreAnswer):
-        # формирование блока списка изображений
-        if response.answer.picture is not None:
-            image_links = []
-            image_link = LinkModel('image', response.answer.picture_caption[0], response.answer.picture[0])
-            image_links.append(image_link)
-            return image_links
-        else:
+        """Формирование блока списка изображений"""
+        if response.answer.picture is None:
             return None
+
+        image_links = []
+        image_link = LinkModel('image', response.answer.picture_caption[0], response.answer.picture[0])
+        image_links.append(image_link)
+        return image_links
 
     @staticmethod
     def get_gttp_ref_links(response: CoreAnswer):
-        # формирование блока списка http ссылок
-        if response.answer.link is not None:
-            http_ref_links = []
-            http_ref_link = LinkModel('http_ref', response.answer.link_name[0], response.answer.link[0])
-            http_ref_links.append(http_ref_link)
-            return http_ref_links
-        else:
+        """Формирование блока списка http ссылок"""
+        if response.answer.link is None:
             return None
+
+        http_ref_links = []
+        http_ref_link = LinkModel('http_ref', response.answer.link_name[0], response.answer.link[0])
+        http_ref_links.append(http_ref_link)
+        return http_ref_links
