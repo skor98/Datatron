@@ -7,11 +7,7 @@ import math
 import uuid
 import subprocess
 import logging
-import math
 import pycurl
-import subprocess
-import sys
-import uuid
 from os import listdir, path
 
 import pandas as pd
