@@ -98,7 +98,7 @@ class DataRetrieving:
         norm_user_request = text_proc.normalization(
             user_request,
             delete_question_words=False,
-            parse_dates=True
+            parse_time=True
         )
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:

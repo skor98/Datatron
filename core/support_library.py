@@ -799,4 +799,4 @@ def get_pretty_feedback(cube_name, verbal_feedback):
         code[word_index] = val
         res += code + [context]
 
-    return ''.join(res)
+    return ''.join(w for w in res if w.strip())
