@@ -152,7 +152,8 @@ def get_query_examples(message):
         bot.send_message(
             message.chat.id,
             message_str,
-            parse_mode='Markdown'
+            parse_mode='Markdown',
+            reply_markup=see_more_buttons_dynamic(5)
         )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
@@ -789,10 +790,9 @@ def see_more_buttons_dynamic(number_of_questions):
             }
         )
 
-    return json.dumps(
-
-
-        {'inline_keyboard': [buttons]})
+    return json.dumps({
+        'inline_keyboard': [buttons]
+    })
 
 
 def get_look_also_question_by_num(message: str, num: int):
@@ -802,6 +802,7 @@ def get_look_also_question_by_num(message: str, num: int):
     message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
                for msg in message.split('\n')
                ]
+    
     return message[num]
 
 
