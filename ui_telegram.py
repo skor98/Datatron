@@ -46,7 +46,7 @@ def get_random_id(id_len=4):
     Генерируем случайную буквенно-цифровую последовательность из id_len символов
     """
     alphabet = string.ascii_lowercase + string.digits
-    return ''.join(random.choice(alphabet) for ind in range(id_len))
+    return ''.join(random.choice(alphabet) for _ in range(id_len))
 
 
 def send_log(message, log_kind, command_name):
@@ -59,20 +59,20 @@ def send_log(message, log_kind, command_name):
     if len(splitted_message) == 2 and splitted_message[1] == 'help':
         bot.send_message(
             message.chat.id,
-            "Для указания времени в минутах исползьуйте " +
+            "Для указания времени в минутах используйте " +
             "{} 15".format(command_name)
         )
         return
     else:
         try:
             time_delta = int(splitted_message[1])
-        except:
-            # Значение по умолчание: получает все логи
-            time_delta = 60 * 24 * 30  # Месяц
+        except (ValueError, IndexError):
+            # Значение по умолчание: день
+            time_delta = 60 * 24
 
     logs = logsRetriever.get_log(kind=log_kind, time_delta=time_delta)
     if logs:
-        rnd_str = get_random_id(4)
+        rnd_str = get_random_id()
         if not os.path.exists("tmp"):
             os.makedirs("tmp")
         path_to_log_file = os.path.join('tmp', '{}_{}_{}_{}.log'.format(
@@ -115,15 +115,17 @@ def send_welcome(message):
         )
 
         if not check_user_existence(message.chat.id):
-            try:
-                full_name = ' '.join([message.chat.first_name, message.chat.last_name])
-            except TypeError:
-                full_name = None
+            full_user_name = None
+            if message.chat.first_name and message.chat.last_name:
+                full_user_name = user_name_str.format(
+                    message.chat.first_name,
+                    message.chat.last_name
+                )
 
             create_user(
                 message.chat.id,
                 message.chat.username,
-                full_name
+                full_user_name
             )
     except Exception as err:
         catch_bot_exception(message, "/start", err)
@@ -146,12 +148,12 @@ def send_help(message):
 def get_query_examples(message):
     try:
         possible_queries = get_random_requests()
-        message_str = "Вы можете спросить:\n{}"
+        message_str = "Вы *можете спросить*:\n{}"
         possible_queries = ['- {}\n'.format(query) for query in possible_queries]
-        message_str = message_str.format(''.join(possible_queries))
+
         bot.send_message(
             message.chat.id,
-            message_str,
+            message_str.format(''.join(possible_queries)),
             parse_mode='Markdown',
             reply_markup=see_more_buttons_dynamic(5)
         )
@@ -204,8 +206,10 @@ def get_queries_logs(message):
             logs = logsRetriever.get_log(kind='queries', user_id=message.chat.id)
 
         if logs:
-            bot.send_message(message.chat.id, "Ваши запросы:\n")
-            bot.send_message(message.chat.id, logs)
+            send_very_long_message(
+                message.chat.id,
+                'Ваши запросы:\n' + logs
+            )
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
@@ -243,8 +247,10 @@ def get_all_queries_logs(message):
             logs = logsRetriever.get_log(kind='queries', user_id="all")
 
         if logs:
-            bot.send_message(message.chat.id, "Запросы от всех ползьователей:\n")
-            bot.send_message(message.chat.id, logs)
+            send_very_long_message(
+                message.chat.id,
+                'Запросы от всех пользователей:\n' + logs
+            )
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
@@ -285,7 +291,10 @@ def get_session_logs(message):
             logs = logsRetriever.get_log(kind='session', user_id=message.chat.id)
 
         if logs:
-            bot.send_message(message.chat.id, logs)
+            send_very_long_message(
+                message.chat.id,
+                'Логи вашей сессии:\n' + logs
+            )
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
     except Exception as err:
@@ -390,7 +399,7 @@ def what_type_handler(message):
 
 
 @bot.message_handler(content_types=['text'])
-def main_search_function_from_outside(message):
+def main_search_function(message):
     try:
         greets = MessengerManager.greetings(message.text.strip())
         if greets:
@@ -410,13 +419,19 @@ def voice_processing(message):
             file_info.file_path
         )
     )
-    process_response(message, input_format='voice', file_content=file_data.content)
+    process_response(
+        message, input_format='voice', file_content=file_data.content)
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
+    """Обработка inline-кнопок"""
+
     if call.data == 'intro_video':
-        bot.send_message(call.message.chat.id, 'https://youtu.be/swok2pcFtNI')
+        bot.send_message(
+            call.message.chat.id,
+            'https://youtu.be/swok2pcFtNI'
+        )
     elif call.data == 'correct_response':
         request_id = call.message.text.split()[-1]
         bot.answer_callback_query(
@@ -431,15 +446,16 @@ def callback_inline(call):
         ))
     elif call.data == 'incorrect_response':
         request_id = call.message.text.split()[-1]
-        logging.info('Query_ID: {}\tКорректность: {}'.format(
-            request_id,
-            '-'
-        ))
         bot.answer_callback_query(
             callback_query_id=call.id,
             show_alert=False,
             text=constants.MSG_USER_SAID_INCORRECT_ANSWER
         )
+
+        logging.info('Query_ID: {}\tКорректность: {}'.format(
+            request_id,
+            '-'
+        ))
     elif call.data == 'look_also_1':
         process_look_also_request(call, 1)
     elif call.data == 'look_also_2':
@@ -453,19 +469,28 @@ def callback_inline(call):
 
 
 def send_admin_messages():
+    """Безопасная отправка уведомлений администраторам"""
+
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
-        # Если бот не добавлен
         try:
             bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
-        except:
-            logging.critical("Админ {} недоступен для отправки сообщения!".format(admin_id))
+        except telebot.apihelper.ApiException:
+            logging.critical(
+                "Админ {} недоступен для отправки сообщения!".format(
+                    admin_id
+                )
+            )
 
 
 def process_response(message, input_format='text', file_content=None):
     request_id = str(uuid.uuid4())
-    user_name = user_name_str.format(
-        message.chat.first_name,
-        message.chat.last_name)
+
+    full_user_name = None
+    if message.chat.first_name and message.chat.last_name:
+        full_user_name = user_name_str.format(
+            message.chat.first_name,
+            message.chat.last_name
+        )
 
     bot.send_chat_action(message.chat.id, 'typing')
 
@@ -474,14 +499,14 @@ def process_response(message, input_format='text', file_content=None):
             message.text,
             'TG',
             message.chat.id,
-            user_name,
+            full_user_name,
             request_id
         )
     else:
         result = MessengerManager.make_voice_request(
             "TG",
             message.chat.id,
-            user_name,
+            full_user_name,
             request_id,
             bin_audio=file_content
         )
@@ -806,21 +831,6 @@ def get_look_also_question_by_num(message: str, num: int):
     return message[num]
 
 
-def main_search_function_from_inside(message):
-    """
-    Входная точка в систему для использования изнутри
-    """
-
-    try:
-        greets = MessengerManager.greetings(message.text)
-        if greets:
-            bot.send_message(message.chat.id, greets)
-        else:
-            process_response(message)
-    except Exception as err:
-        catch_bot_exception(message, "/text", err)
-
-
 def process_look_also_request(call, num: int):
     """
     Обработка см.также запросов по нажатию инлайн-кнопки
@@ -831,7 +841,7 @@ def process_look_also_request(call, num: int):
 
     call.message.text = look_also_req
 
-    main_search_function_from_inside(call.message)
+    main_search_function(call.message)
 
 
 def look_further(result):
@@ -869,6 +879,19 @@ def look_further(result):
         return look_also
     else:
         return []
+
+
+def send_very_long_message(chat_id, text, message_length=4000):
+    """Отправка сообщения длинее 4096 UTF-8 символов"""
+
+    while True:
+        text = text[:message_length]
+        text = text[message_length:]
+
+        bot.send_message(chat_id, text)
+
+        if not text:
+            break
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:

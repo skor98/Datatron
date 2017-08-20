@@ -23,8 +23,6 @@ def create_user(user_id, user_name, full_user_name):
         user_id=user_id,
         user_name=user_name,
         full_user_name=full_user_name,
-        expert_mode=0,
-        question_mode=0
     )
 
 
