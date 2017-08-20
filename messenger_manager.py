@@ -15,8 +15,8 @@ from speechkit import speech_to_text
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):
     """
-    Сохраняет пользователский запрос и в самих логах и в отделной
-    sqlite базе данных
+    Сохраняет пользовательский запрос как в самих логах,
+    так и в отделной sqlite базе данных
     """
     logging_str = (
         "Query_ID: {}\t" +
@@ -70,7 +70,10 @@ class MessengerManager:
         return MessengerManager._querying(text, request_id)
 
     @staticmethod
-    def make_voice_request(source, user_id, user_name, request_id, bin_audio=None, filename=None):
+    def make_voice_request(
+            source, user_id, user_name,
+            request_id, bin_audio=None, filename=None
+    ):
         """Универсальный API метод для обработки голосовых запросов
 
         :param source: источник (web, cmd, telegram, unity)
@@ -149,7 +152,6 @@ class MessengerManager:
     def _greetings(text):
         """Обработка приветов и вопрос из серии 'как дела?'"""
 
-        text = text.lower()
         for word in MessengerManager._simple_split(text):
             if word in constants.HELLO:
                 return random.choice(constants.HELLO_ANSWER)
