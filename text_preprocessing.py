@@ -24,7 +24,7 @@ from core.parsers.time_parser import time_tp
 
 from config import SETTINGS
 
-logging.getLogger("pymorphy2").setLevel(logging.ERROR) 
+logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
 class TextPreprocessing:
@@ -42,14 +42,12 @@ class TextPreprocessing:
         self.stop_words = set(stopwords.words(self.language))
         self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
-        
+
         if use_pymystem:
             self._init_pymystem()
         else:
             self._init_pymorphy()
-            
 
-    @lru_cache(maxsize=16384)
     def normalization(
             self,
             text,
@@ -67,7 +65,7 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
-        #text = TextPreprocessing._filter_yo(text)
+        # text = TextPreprocessing._filter_yo(text)
 
         # Токенизируем и лемматизируем
         tokens = self.lemmatize(text)
@@ -113,20 +111,29 @@ class TextPreprocessing:
             )
 
         return normalized_request
-    
+
     def _init_pymystem(self):
         self.morph = Mystem()
         self.morph.start()
+
+        @lru_cache(maxsize=8192)
         def _lem(s: str):
             lem = self.morph.lemmatize(s)
             return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+
         self.lemmatize = _lem
-        
+
     def _init_pymorphy(self):
         self.morph = MorphAnalyzer()
+
+        @lru_cache(maxsize=16384)
+        def _normal(w):
+            return self.morph.parse(w)[0].normal_form
+
         def _lem(s: str):
-            lem = [self.morph.parse(w)[0].normal_form for w in word_tokenize(s)]
+            lem = [_normal(w) for w in word_tokenize(s)]
             return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+
         self.lemmatize = _lem
 
     @staticmethod
