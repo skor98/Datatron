@@ -44,9 +44,9 @@ class TextPreprocessing:
         self.stop_words.update(set("подсказать также иной да нет -".split()))
         
         if use_pymystem:
-            self._init_pymystem
+            self._init_pymystem()
         else:
-            self._init_pymorphy
+            self._init_pymorphy()
             
 
     @lru_cache(maxsize=16384)
