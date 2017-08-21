@@ -13,6 +13,8 @@ from nltk.corpus import stopwords
 from nltk import FreqDist
 
 from pymystem3 import Mystem
+from pymorphy2 import MorphAnalyzer
+from nltk import word_tokenize
 
 from model_manager import MODEL_CONFIG
 
@@ -20,16 +22,7 @@ from core.parsers.syn_parser import syn_tp
 from core.parsers.num_parser import num_tp
 from core.parsers.time_parser import time_tp
 
-logging.getLogger("pymorphy2").setLevel(logging.ERROR)
-
-
-@lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
-def lemmatize(s):
-    lem = lemmatize.morph.lemmatize(s)
-    return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
-
-lemmatize.morph = Mystem()  # Лемматизатор
-lemmatize.morph.start()
+from config import SETTINGS
 
 
 class TextPreprocessing:
@@ -37,7 +30,7 @@ class TextPreprocessing:
     Класс для предварительной обработки текста
     """
 
-    def __init__(self, request_id=None, log=True):
+    def __init__(self, request_id=None, use_pymystem=SETTINGS.USE_PYMYSTEM, log=True):
         self.request_id = request_id
         self.log = log
         self.language = 'russian'
@@ -47,7 +40,14 @@ class TextPreprocessing:
         self.stop_words = set(stopwords.words(self.language))
         self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
+        
+        if use_pymystem:
+            self._init_pymystem
+        else:
+            self._init_pymorphy
+            
 
+    @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
     def normalization(
             self,
             text,
@@ -68,7 +68,7 @@ class TextPreprocessing:
         text = TextPreprocessing._filter_yo(text)
 
         # Токенизируем и лемматизируем
-        tokens = lemmatize(text)
+        tokens = self.lemmatize(text)
 
         # Генерация одного большого парсера
         parser = None
@@ -111,6 +111,21 @@ class TextPreprocessing:
             )
 
         return normalized_request
+    
+    def _init_pymystem(self):
+        self.morph = Mystem()
+        self.morph.start()
+        def _lem(s: str):
+            lem = self.morph.lemmatize(s)
+            return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+        self.lemmatize = _lem
+        
+    def _init_pymorphy(self):
+        self.morph = MorphAnalyzer()
+        def _lem(s: str):
+            lem = [self.morph.parse(w)[0].normal_form for w in word_tokenize(s)]
+            return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+        self.lemmatize = _lem
 
     @staticmethod
     def _filter_underscore(text: str):
@@ -131,11 +146,11 @@ class TextPreprocessing:
     @staticmethod
     def _filter_yo(text: str):
         """
-        Обработка неправильной нормализации слова "объем"
+        
         """
 
-        if 'ё' in text:
-            text = text.replace('ё', 'е')
+        if 'ё' in text.lower():
+            text = text.replace('ё', 'е').replace('Ё', 'Е')
 
         return text
 
