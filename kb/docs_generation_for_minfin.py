@@ -27,7 +27,6 @@ output_file = 'minfin_data_for_indexing.json'
 # Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
 
-
 def set_up_minfin_data(index_way='curl'):
     """
     Метод для создания и индексации в Apache Solr
@@ -59,9 +58,8 @@ def _refactor_data(data):
     Преобразование датафрейма в список объектов типа
     MinfinDocument
     """
-
-    # объекта класса, осуществляющего нормализацию
-    tp = TextPreprocessing(uuid.uuid4())
+    
+    request_id = uuid.uuid4()
 
     docs = []
     for row in data.itertuples():
@@ -71,33 +69,29 @@ def _refactor_data(data):
         doc.question = row.question
 
         # индексируемое поле
-        doc.lem_question = tp.normalization(
-            row.question,
+        doc.lem_question = TextPreprocessing(
             delete_digits=True,
             delete_question_words=False
-        )
+        )(row.question, request_id)
 
         doc.lem_question_len = len(doc.lem_question.split())
 
         doc.short_answer = row.short_answer
 
         # индексируемое поле
-        doc.lem_short_answer = tp.normalization(
-            row.short_answer,
+        doc.lem_short_answer = TextPreprocessing(
             delete_digits=True
-        )
+        )(row.short_answer, request_id)
         if row.full_answer:
             doc.full_answer = row.full_answer
-            doc.lem_full_answer = tp.normalization(
-                row.full_answer,
+            doc.lem_full_answer = TextPreprocessing(
                 delete_digits=True
-            )
+            )(row.full_answer)
 
-        lem_key_words = tp.normalization(
-            row.key_words,
+        lem_key_words = TextPreprocessing(
             delete_question_words=False,
             delete_repeatings=True
-        )
+        )(row.key_words, request_id)
 
         # индексируемое поле
         doc.lem_key_words = ' '.join(
@@ -107,11 +101,10 @@ def _refactor_data(data):
         synonym_questions = _get_manual_synonym_questions(doc.number)
         if synonym_questions:
             lem_synonym_questions = [
-                tp.normalization(
-                    question,
+                TextPreprocessing(
                     delete_digits=True,
                     delete_question_words=False
-                )
+                )(question, request_id)
                 for question in synonym_questions
                 ]
 

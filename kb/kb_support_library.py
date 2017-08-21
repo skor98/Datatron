@@ -13,6 +13,11 @@ import kb.kb_db_creation as dbc
 from text_preprocessing import TextPreprocessing
 from config import SETTINGS, TEST_PATH_RESULTS
 
+TPP = TextPreprocessing(
+    delete_digits=True,
+    delete_question_words=True
+)
+
 
 def get_caption_for_measure(cube_value, cube_name):
     """
@@ -180,15 +185,9 @@ def create_cube_lem_key_words():
     ключевых слов, составленных методологами
     """
 
-    text_processor = TextPreprocessing()
-
     for item in dbc.Cube.select():
         if item.key_words:
-            lem_key_words = text_processor.normalization(
-                item.key_words,
-                delete_digits=True,
-                delete_question_words=True
-            )
+            lem_key_words = TPP(item.key_words)
 
             query = (dbc.Cube
                      .update(lem_key_words=lem_key_words)
@@ -203,15 +202,9 @@ def create_measure_lem_key_words():
     Формирование нормализованных ключевых слов к мерам
     """
 
-    text_processor = TextPreprocessing()
-
     for item in dbc.Measure.select():
         if item.key_words:
-            lem_key_words = text_processor.normalization(
-                item.key_words,
-                delete_digits=True,
-                delete_question_words=True
-            )
+            lem_key_words = TPP(item.key_words)
 
             query = (dbc.Measure
                      .update(lem_key_words=lem_key_words)
@@ -226,15 +219,9 @@ def create_dimension_lem_key_words():
     Формирование нормализованных ключевых слов к измерениям
     """
 
-    text_processor = TextPreprocessing()
-
     for item in dbc.Dimension.select():
         if item.key_words:
-            lem_key_words = text_processor.normalization(
-                item.key_words,
-                delete_digits=True,
-                delete_question_words=True
-            )
+            lem_key_words = TPP(item.key_words)
 
             query = (dbc.Dimension
                      .update(lem_key_words=lem_key_words)
