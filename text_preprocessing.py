@@ -65,7 +65,6 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
-        # text = TextPreprocessing._filter_yo(text)
 
         # Токенизируем и лемматизируем
         tokens = self.lemmatize(text)
@@ -127,7 +126,10 @@ class TextPreprocessing:
 
         @lru_cache(maxsize=16384)
         def _normal(w):
-            return self.morph.parse(w)[0].normal_form
+            res = self.morph.parse(w)[0].normal_form
+            if 'ё' in res:
+                res = res.replace('ё', 'е')
+            return res
 
         def _lem(s: str):
             lem = [_normal(w) for w in word_tokenize(s)]
@@ -149,15 +151,6 @@ class TextPreprocessing:
 
         if '%' in text:
             text = text.replace('%', ' процент')
-        return text
-
-    @staticmethod
-    def _filter_yo(text: str):
-        """Обработка буквы ё"""
-
-        if 'ё' in text.lower():
-            text = text.replace('ё', 'е').replace('Ё', 'Е')
-
         return text
 
     @staticmethod
