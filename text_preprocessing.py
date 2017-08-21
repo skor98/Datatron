@@ -32,8 +32,7 @@ class TextPreprocessing:
     Класс для предварительной обработки текста
     """
 
-    def __init__(self, request_id=None, use_pymystem=SETTINGS.USE_PYMYSTEM, log=True):
-        self.request_id = request_id
+    def __init__(self, use_pymystem=SETTINGS.USE_PYMYSTEM, log=True):
         self.log = log
         self.language = 'russian'
 
@@ -51,6 +50,7 @@ class TextPreprocessing:
     def normalization(
             self,
             text,
+            request_id=None,
             delete_digits=MODEL_CONFIG["normalization_delete_digits_default"],
             delete_question_words=MODEL_CONFIG["normalization_delete_question_words_default"],
             delete_repeatings=MODEL_CONFIG["normalization_delete_repeatings_default"],
@@ -105,7 +105,7 @@ class TextPreprocessing:
         if self.log:
             logging.info(
                 "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
-                    self.request_id, normalized_request
+                    request_id, normalized_request
                 )
             )
 

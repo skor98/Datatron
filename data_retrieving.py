@@ -27,6 +27,7 @@ from model_manager import MODEL_CONFIG
 
 import logs_helper  # pylint: disable=unused-import
 
+PREPROC = TextPreprocessing()
 
 class DataRetrieving:
     """
@@ -92,13 +93,11 @@ class DataRetrieving:
     def _preprocess_user_request(user_request: str, request_id: str):
         """Предобработка запроса пользователя"""
 
-        text_proc = TextPreprocessing(request_id)
-
         # нормализация запроса пользователя
-        norm_user_request = text_proc.normalization(
+        norm_user_request = PREPROC.normalization(
             user_request,
-            delete_question_words=False,
-            parse_time=True
+            request_id=request_id,
+            delete_question_words=False
         )
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
