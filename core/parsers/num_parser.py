@@ -95,7 +95,7 @@ def literal_num_h(match):
     for idx in ('i', 'x', 'xi', 'c', 'm'):
         res += revdict.get(match.group(idx), 0)
     m_num = match.group('m_num')
-    if m_num:
+    if m_num is not None:
         m_num = m_num.replace(',', '.')
         if m_num.isnumeric():
             res += 1000 * int(m_num)
@@ -103,7 +103,7 @@ def literal_num_h(match):
             res += int(1000 * float(m_num))
         else:
             res += 1000 * revdict.get(m_num, 1)
-    if match.group('minus'):
+    if match.group('minus') is not None:
         res *= -1
     return str(res)
 
@@ -111,7 +111,7 @@ def literal_num_h(match):
 @num_tp.re_handler(bignum_re)
 def bugnum_h(match):
     deg = revdict.get(match.group('deg'), 1)
-    if match.group('minus'):
+    if match.group('minus') is not None:
         deg *= -1
     num = match.group('num').replace(',', '.')
     if num.isnumeric():

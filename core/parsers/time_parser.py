@@ -44,15 +44,23 @@ unit_lens = {
 anyunit = '|'.join(unit_lens.keys())
 unitcombo = r'(?:(?:\d+ )?(?:{}) ?)+'.format(anyunit)
 
-begin_re = r''
-points_re = r'(?P<point>(?P<begin>состояние на|канун|старт)|(?P<end>конец|итог|финал|окончание))'.format(begin_re)
+begin_kw = ('состояние на', 'канун', 'старт')
+end_kw = ('конец', 'итог', 'финал', 'окончание')
+
+points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw), '|'.join(end_kw))
+multipoints_re = r'(?:(?:{p}) )+({p})'.format(p='|'.join(begin_kw + end_kw))
+
+time_tp.add_simple(multipoints_re, r'\1', False)
 
 current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
-last_kw = ('прошлый', 'прошлое', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
+last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
+next_kw = ('следующий', 'будущ(?:ий|ее)', 'грядущий', 'наступающий', 'завтрашний')
 
-current_re = r'(?:{p} )?(?(point)({c})?|({c})) (?P<unit>{u})'.format(p=points_re, c='|'.join(current_kw), u=anyunit)
-last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:{}) (?P<unit>{})'.format(points_re, '|'.join(last_kw), anyunit)
-next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points_re, anyunit)
+current_re = r'(?P<current>(?(point)(?:{c})?|(?:{c})))'.format(c='|'.join(current_kw))
+last_re = r'(?P<last>(?:поза[- ]?)*(?:{}))'.format('|'.join(last_kw))
+next_re = r'(?P<next>(?:после[- ]?)*(?:{}))'.format('|'.join(next_kw))
+rel_re = r'(?:{} )?(?:{}|{}|{}) (?P<unit>{})'.format(points_re, current_re, last_re, next_re, anyunit)
+
 interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(unitcombo)
 
 _dayformat = r'(?P<day>[0-3]?\d)'
@@ -67,32 +75,21 @@ static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re, anyun
 
 statmonth_re = r'{} (?P<month>{})'.format(points_re, anymonth)
 
-@time_tp.re_handler(current_re)
-def current_h(match):
+@time_tp.re_handler(rel_re)
+def rel_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
-    begin = bool(match.group('begin'))
-    newdate = process_units(datetime.today(), u_len, begin)
-    return date_to_text(newdate, nomonth=(u_len == 12))
-
-
-@time_tp.re_handler(last_re)
-def last_h(match):
-    u_len = unit_lens.get(match.group('unit'), 1)
-    sum_len = u_len * len(match.group('pref').split('з'))
-    begin = bool(match.group('begin'))
-    newdate = mod_date(datetime.today(), -sum_len)
+    begin = match.group('begin') is not None
+    newdate = datetime.today()
+    last, next_ = match.group('last', 'next')
+    if last is not None:
+        sum_len = u_len * (last.count('поза') + 1)
+        newdate = mod_date(newdate, -sum_len)
+    elif next_ is not None:
+        sum_len = u_len * (next_.count('после') + 1)
+        newdate = mod_date(newdate, sum_len)
     newdate = process_units(newdate, u_len, begin)
-    return date_to_text(newdate, nomonth=(u_len == 12))
-
-
-@time_tp.re_handler(next_re)
-def next_h(match):
-    u_len = unit_lens.get(match.group('unit'), 1)
-    sum_len = u_len * len(match.group('pref').split('з'))
-    begin = bool(match.group('begin'))
-    newdate = mod_date(datetime.today(), sum_len)
-    newdate = process_units(newdate, u_len, begin)
-    return date_to_text(newdate, nomonth=(u_len == 12))
+    nomonth = u_len == 12 and match.group('point') is None
+    return date_to_text(newdate, nomonth=nomonth)
 
 
 @time_tp.re_handler(interval_re)
@@ -113,7 +110,7 @@ def interval_h(match):
 
     if not u_lens:
         return match.group(0)
-    if match.group('ago'):
+    if match.group('ago') is not None:
         sum_len *= -1
     newdate = mod_date(datetime.today(), sum_len)
     if len(u_lens) == 1:
@@ -126,18 +123,17 @@ def interval_h(match):
 def static_h(match):
     u_len = unit_lens.get(match.group('unit'), 1)
     num = int(match.group('num'))
-    begin = bool(match.group('begin'))
-    end = bool(match.group('end'))
+    begin = match.group('begin') is not None
     newdate = get_static(u_len, num, begin)
     noyear = u_len != 12
-    nomonth = not noyear and not begin and not end
+    nomonth = not noyear and not begin and match.group('end') is None
     return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
 
 
 @time_tp.re_handler(statmonth_re)
 def statmonth_h(match):
     num = norm_months.index(match.group('month')) + 1
-    begin = bool(match.group('begin'))
+    begin = match.group('begin') is not None
     newdate = get_static(1, num, begin)
     return date_to_text(newdate, noyear=True)
 
@@ -149,7 +145,7 @@ def date_h(match):
         newmonth = max(min(int(newmonth), 12), 1)
     else:
         newmonth = norm_months.index(newmonth) + 1
-    begin = bool(match.group('begin'))
+    begin = match.group('begin') is not None
     if not begin:
         newday = match.group('day')
         begin = newday and int(newday) <= 15
@@ -162,7 +158,7 @@ def date_h(match):
 @time_tp.re_handler(season_re)
 def season_h(match):
     num = seasons.index(match.group('season')) + 1
-    begin = bool(match.group('begin'))
+    begin = match.group('begin') is not None
     newdate = get_static(3, num, begin)
     newdate = mod_date(newdate, -1)
     return date_to_text(newdate, noyear=True)

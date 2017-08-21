@@ -23,10 +23,10 @@ from core.parsers.time_parser import time_tp
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
+@lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
 def lemmatize(s):
     lem = lemmatize.morph.lemmatize(s)
     return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
-
 
 lemmatize.morph = Mystem()  # Лемматизатор
 lemmatize.morph.start()
@@ -48,7 +48,6 @@ class TextPreprocessing:
         self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
 
-    @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
     def normalization(
             self,
             text,
@@ -66,7 +65,7 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
-        # text = TextPreprocessing._filter_volume(text)
+        text = TextPreprocessing._filter_yo(text)
 
         # Токенизируем и лемматизируем
         tokens = lemmatize(text)
@@ -130,13 +129,13 @@ class TextPreprocessing:
         return text
 
     @staticmethod
-    def _filter_volume(text: str):
+    def _filter_yo(text: str):
         """
         Обработка неправильной нормализации слова "объем"
         """
 
-        if 'объем' in text:
-            text = text.replace('объем', 'объём')
+        if 'ё' in text:
+            text = text.replace('ё', 'е')
 
         return text
 

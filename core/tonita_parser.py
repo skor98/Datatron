@@ -24,18 +24,20 @@ class TonitaParser(object):
             regexp = r'(?<!\w){}(?!\w)'.format(regexp)
         cond_re = re.compile(regexp, re.IGNORECASE)
         def _decorate(func):
-            if preserve_old:
-                def _newfunc(m): return ' '.join([m.group(0), str(func(m))])
+            if isinstance(func, str):
+                _sub = func
+            elif preserve_old:
+                def _sub(m): return ' '.join([m.group(0), str(func(m))])
             else:
-                def _newfunc(m): return str(func(m))
-            _wrapped = partial(cond_re.sub, _newfunc)
+                def _sub(m): return str(func(m))
+            _wrapped = partial(cond_re.sub, _sub)
             self.actions.append(_wrapped)
             return _wrapped
 
         return _decorate
     
     def add_simple(self, regexp, sub='', preserve_old=False):
-        self.re_handler(regexp, preserve_old)(func=lambda m: sub)
+        self.re_handler(regexp, preserve_old)(sub)
         
     def add_many(self, sub_dict, preserve_old=False):
         for origin in sub_dict:
