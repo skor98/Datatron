@@ -163,3 +163,4 @@ class TextResponseModel:
             return http_ref_links
         else:
             return None
+

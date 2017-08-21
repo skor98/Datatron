@@ -58,6 +58,30 @@ def get_jaccard(a: set, b: set):
     return len(a.intersection(b)) / len(a.union(b))
 
 
+class AccuracyScoreHelper():
+    """Инкапсулирует вычисление точности (accuracy)."""
+    def __init__(self):
+        self._trues = 0
+        self._falses = 0
+
+    def add_true(self):
+        self._trues += 1
+
+    def add_false(self):
+        self._falses += 1
+
+    def add(self, val: bool):
+        """Добавляет True или False в заивисимости от значения val"""
+        if val:
+            self.add_true()
+        else:
+            self.add_false()
+
+    def get_score(self):
+        total = self._trues + self._falses
+        return float(self._trues) / total
+
+
 class QualityTester:
     """
     Содержит в себе логику запуска непосредственно тестов и вычисления общих метрик.
@@ -388,11 +412,8 @@ class CubeTester(BaseTester):
     ):
         super().__init__(percentiles, is_need_logging)
 
-        self._only_cube_wrongs = 0
-        self._only_cube_trues = 0
-
-        self._only_measure_wrongs = 0
-        self._only_measure_trues = 0
+        self._only_cube = AccuracyScoreHelper()
+        self._only_measure = AccuracyScoreHelper()
 
         self._members_jaccard = 0
 
@@ -405,34 +426,6 @@ class CubeTester(BaseTester):
     def get_wrong_minfins(self):
         """Возвращает число результатов, когда мы нашли минфин вместо куба"""
         return self._wrong_minfins
-
-    def _add_true_only_cube(self):
-        """Добавляет ещё один ложный не результат определения ТОЛЬКО куба"""
-        self._only_cube_trues += 1
-
-    def get_trues_only_cube(self):
-        """Возвращает число ложный результатов ТОЛЬКО по определению куба"""
-        return self._only_cube_trues
-
-    def _add_wrong_only_cube(self):
-        """Добавляет ещё один истинный не результат определения ТОЛЬКО куба"""
-        self._only_cube_wrongs += 1
-
-    def get_wrongs_only_cube(self):
-        """Возвращает число истинных результатов ТОЛЬКО по определению куба"""
-        return self._only_cube_wrongs
-
-    def _add_true_only_measure(self):
-        """Добавляет ещё один ложный не результат определения ТОЛЬКО меры"""
-        self._only_measure_trues += 1
-
-    def get_trues_only_measure(self):
-        """Возвращает число ложный результатов ТОЛЬКО по определению меры"""
-        return self._only_measure_trues
-
-    def _add_wrong_only_measure(self):
-        """Добавляет ещё один истинный не результат определения ТОЛЬКО меры"""
-        self._only_measure_wrongs += 1
 
     def _add_members_jackard(self, val):
         """Добавляет ещё одно расстояние Жаккара у внутренней сумме по измерениям"""
@@ -484,13 +477,11 @@ class CubeTester(BaseTester):
         """
         res = super().get_results()
 
-        total = self.get_trues() + self.get_wrongs()
-
         # Точность ТОЛЬКО по определению куба
-        res["onlycubeAcc"] = self.get_trues_only_cube() / total
+        res["onlycubeAcc"] = self._only_cube.get_score()
 
         # Точность ТОЛЬКО по определению МЕРЫ
-        res["onlymeasureAcc"] = self.get_trues_only_measure() / total
+        res["onlymeasureAcc"] = self._only_measure.get_score()
 
         # Средняя мера Жаккарда по измерениям. Чем ближе к 1, тем лучше
         res["onlymembersJacc"] = self.get_members_jaccard()
@@ -569,16 +560,10 @@ class CubeTester(BaseTester):
         )
 
         measure_equal = (q1_measure == q2_measure)
-        if measure_equal:
-            self._add_true_only_measure()
-        else:
-            self._add_wrong_only_measure()
+        self._only_measure.add(measure_equal)
 
         cube_equal = (q1_cube == q2_cube)
-        if cube_equal:
-            self._add_true_only_cube()
-        else:
-            self._add_wrong_only_cube()
+        self._only_cube.add(cube_equal)
 
         # игнорирование порядка элементов измерений
         members_equal = (q1_members == q2_members)
@@ -602,13 +587,11 @@ class MinfinTester(BaseTester):
 
         # Только для не idk запросов, т.е. тех, которые возвращают что-то
         # для них порог не учитывается, т.к. не имеет смысла
-        self._trues_known = 0
-        self._wrongs_known = 0
+        self._known = AccuracyScoreHelper()
 
         # Результаты, в которых не учитывается скор, что позволит
         # отложить его выбор
-        self._trues_no_score = 0
-        self._wrongs_no_score = 0
+        self._no_score = AccuracyScoreHelper()
 
         self._threshold_confidences = []
 
@@ -621,38 +604,6 @@ class MinfinTester(BaseTester):
     def get_wrong_cubes(self):
         """Возвращает число результатов, когда мы нашли куб вместо минфина"""
         return self._wrong_cubes
-
-    def _add_true_known(self):
-        """Добавляет ещё один истинный не idk результат"""
-        self._trues_known += 1
-
-    def get_trues_known(self):
-        """Возвращает число истинных не idk результатов"""
-        return self._trues_known
-
-    def _add_wrong_known(self):
-        """Добавляет результат, ответ которого был неправильный не idk"""
-        self._wrongs_known += 1
-
-    def get_wrongs_known(self):
-        """Возвращает число ошибочных не idk результатов"""
-        return self._wrongs_known
-
-    def _add_true_no_score(self):
-        """Добавляет ещё один истинный результат без учёта скора"""
-        self._trues_no_score += 1
-
-    def get_trues_no_score(self):
-        """Возвращает число истинных результатов без учёта скора"""
-        return self._trues_no_score
-
-    def _add_wrong_no_score(self):
-        """Добавляет результат, ответ которого был неправильный без учёта скора"""
-        self._wrongs_no_score += 1
-
-    def get_wrongs_no_score(self):
-        """Возвращает число ошибочных результатов без учёта скора"""
-        return self._wrongs_no_score
 
     def _add_threshold_confidence(self, val: float):
         self._threshold_confidences.append(val)
@@ -682,13 +633,10 @@ class MinfinTester(BaseTester):
         res["MTC"] = safe_mean(self.get_threshold_confidences())
 
         # Точность без учёта скора
-        total_no_score = self.get_trues_no_score() + self.get_wrongs_no_score()
-        res["noscoreAcc"] = self.get_trues_no_score() / total_no_score
+        res["noscoreAcc"] = self._no_score.get_score()
 
         # Точность без учёта idk тестов
-        total_no_idk = self.get_trues_known() + self.get_wrongs_known()
-        res["noIdkAcc"] = self.get_trues_known() / total_no_idk
-        res["noIdkTotal"] = total_no_idk  # для проверки значимости
+        res["noIdkAcc"] = self._known.get_score()
 
         # Какая часть неверных результатов из-за того, что ответ по кубу
         res["wrongCube"] = self.get_wrong_cubes() / self.get_wrongs()
@@ -700,15 +648,14 @@ class MinfinTester(BaseTester):
 
         if question_id:
             # не idk запрос
-            self._add_wrong_known()
+            self._known.add_false()
 
     def process_wrong(self, idx, req, question_id, system_answer):
-
         super().process_wrong(idx, req, question_id, system_answer)
 
         if question_id:
             # не idk запрос
-            self._add_wrong_known()
+            self._known.add_false()
 
         try:
             if system_answer["answer"]["type"] == "cube":
@@ -740,7 +687,7 @@ class MinfinTester(BaseTester):
 
         if question_id:
             # не idk запрос
-            self._add_true_known()
+            self._known.add_true()
 
     def _check_result(self, idx, req, question_id, system_answer):
         response = system_answer['answer']
@@ -786,7 +733,7 @@ class MinfinTester(BaseTester):
             # получили совпадение, при этом
             # в таком случае, мы не могли получить idk,
             # значит варианты, когда должны были вернуть idk не учитываются
-            self._add_true_no_score()
+            self._no_score.add_true()
 
             if self._threshold < system_answer['answer']['score']:
                 ars = '{q_id} + {score} Запрос "{req}" отрабатывает корректно'
@@ -803,7 +750,7 @@ class MinfinTester(BaseTester):
                 self.add_text_result(ars)
                 self.process_wrong(idx, req, question_id, system_answer)
         else:
-            self._add_wrong_no_score()
+            self._no_score.add_false()
             ars = (
                 '{q_id} - {score} Запрос "{req}" отрабатывает некорректно ' +
                 '(должны получать:{q_id}, получаем:{fl})'
