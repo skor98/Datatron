@@ -19,8 +19,6 @@ from copy import deepcopy
 
 from peewee import fn
 
-from nltk.corpus import stopwords
-
 import numpy as np
 
 from sklearn.preprocessing import StandardScaler
@@ -31,17 +29,15 @@ from sklearn.model_selection import KFold, ParameterGrid
 from sklearn.svm import SVC
 
 from kb.kb_db_creation import Member
-from text_preprocessing import get_normal_form
+from text_preprocessing import TextPreprocessing
 from config import DATA_PATH
 from model_manager import MODEL_CONFIG, save_default_model
 import logs_helper
 
-STOP_WORDS = set(stopwords.words("russian"))
-STOP_WORDS.update(set("подсказать также иной да нет -".split()))
+PREPROC = TextPreprocessing(log=True)
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
-YEARS_RE = re.compile(r"\s(\d\d(\d\d)?)\s")
-WORDS_NO_PROCESS = {"текущийгод", "нетекущийгод"}
+YEARS_RE = re.compile(r"(?<!\w)(\d\d(\d\d)?)(?!\w)")
 
 
 class BaseTextClassifier():
@@ -438,16 +434,18 @@ def preprocess(s: str):
     Возвращает массив токенов по строке
     Переопределение не предполагается, но возможно на уровне модуля
     """
+    s = PREPROC.normalization(
+        s,
+        delete_digits=False,
+        delete_question_words=False,
+        delete_repeatings=False,
+        parse_syns=True,
+        parse_nums=True,
+        parse_time=True,
+    )
     s = s.replace("2017", "текущийгод")
-    s = s.replace("17", "текущийгод")
-    s = YEARS_RE.sub(" нетекущийгод ", s + " ")
-    res = set(map(
-        lambda x: get_normal_form(x) if x not in WORDS_NO_PROCESS else x,
-        filter(
-            lambda x: x not in STOP_WORDS,
-            WORDS_RE.findall(s.lower())
-        )
-    ))
+    s = YEARS_RE.sub("нетекущийгод", s)
+    res = set(WORDS_RE.findall(s))
     for terr in get_territories():
         if terr.issubset(res):
             res = res.difference(terr)

@@ -11,9 +11,8 @@ from functools import lru_cache
 
 from nltk.corpus import stopwords
 from nltk import FreqDist
-import nltk
 
-import pymorphy2
+from pymystem3 import Mystem
 
 from model_manager import MODEL_CONFIG
 
@@ -24,12 +23,13 @@ from core.parsers.time_parser import time_tp
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
-@lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
-def get_normal_form(s):
-    return get_normal_form.morph.parse(s)[0].normal_form
+def lemmatize(s):
+    lem = lemmatize.morph.lemmatize(s)
+    return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
 
 
-get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
+lemmatize.morph = Mystem()  # Лемматизатор
+lemmatize.morph.start()
 
 
 class TextPreprocessing:
@@ -37,8 +37,9 @@ class TextPreprocessing:
     Класс для предварительной обработки текста
     """
 
-    def __init__(self, request_id=None):
+    def __init__(self, request_id=None, log=True):
         self.request_id = request_id
+        self.log = log
         self.language = 'russian'
 
         # TODO: что делать с вопросительными словами?
@@ -47,6 +48,7 @@ class TextPreprocessing:
         self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
 
+    @lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
     def normalization(
             self,
             text,
@@ -66,12 +68,8 @@ class TextPreprocessing:
         text = TextPreprocessing._filter_underscore(text)
         # text = TextPreprocessing._filter_volume(text)
 
-        # Токенизируем
-        tokens = nltk.word_tokenize(text.lower())
-        tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
-
-        # Лемматизация
-        tokens = [get_normal_form(t) for t in tokens]
+        # Токенизируем и лемматизируем
+        tokens = lemmatize(text)
 
         # Генерация одного большого парсера
         parser = None
@@ -84,7 +82,7 @@ class TextPreprocessing:
 
         # Парсинг всего
         if parser is not None:
-            tokens = parser(' '.join(tokens)).split(' ')
+            tokens = parser(tokens)
 
         # Убираем цифры
         if delete_digits:
@@ -106,11 +104,12 @@ class TextPreprocessing:
 
         normalized_request = ' '.join(tokens)
 
-        logging.info(
-            "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
-                self.request_id, normalized_request
+        if self.log:
+            logging.info(
+                "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
+                    self.request_id, normalized_request
+                )
             )
-        )
 
         return normalized_request
 

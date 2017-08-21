@@ -17,25 +17,22 @@ norm_months = [
     'май', 'июнь', 'июль', 'август',
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
-time_tp.add_many_subs({m[:3]: m for m in norm_months if len(m) > 3})
+time_tp.add_many({m[:3]: m for m in norm_months if len(m) > 3})
 anymonth = '|'.join(norm_months)
 
 seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
-time_tp.add_many_subs({
+time_tp.add_many({
     'мес': 'месяц',
     'кв': 'квартал',
     'семестр': 'полугодие',
     'полгода': 'полугодие',
-})
-time_tp.add_many_pluses({
     'г': 'год',
-    'сейчас': 'этот месяц',
     'сегодня': 'этот месяц',
 })
 
-time_tp.add_simple_sub(r'([0-9]+)[-–—]([0-9]+)', r'\1 \2')
+time_tp.add_simple(r'(20|19)\d{2}', 'год', True)
 
 unit_lens = {
     'год': 12,
@@ -45,25 +42,30 @@ unit_lens = {
     'месяц': 1
 }
 anyunit = '|'.join(unit_lens.keys())
-unitcombo = r'(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
+unitcombo = r'(?:(?:\d+ )?(?:{}) ?)+'.format(anyunit)
 
-points = r'(?:(?P<begin>состояние|канун|старт)|(?P<end>конец|итог|финал|окончание))'
+begin_re = r''
+points_re = r'(?P<point>(?P<begin>состояние на|канун|старт)|(?P<end>конец|итог|финал|окончание))'.format(begin_re)
 
-current_re = r'(?:{} )?(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
-last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
-next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points, anyunit)
-ago_re = r'(?P<interval>{}) назад'.format(unitcombo)
-later_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)| спустя)'.format(unitcombo)
+current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
+last_kw = ('прошлый', 'прошлое', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
 
-_dayformat = r'(?P<day>[0-3]?[0-9])'
+current_re = r'(?:{p} )?(?(point)({c})?|({c})) (?P<unit>{u})'.format(p=points_re, c='|'.join(current_kw), u=anyunit)
+last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:{}) (?P<unit>{})'.format(points_re, '|'.join(last_kw), anyunit)
+next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points_re, anyunit)
+interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(unitcombo)
+
+_dayformat = r'(?P<day>[0-3]?\d)'
 _monthformat = r'(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
-_yearformat = r'(?P<year>(?:19|20)[0-9][0-9])'
+_yearformat = r'(?P<year>(?:19|20)\d\d)'
 dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
-    points, _dayformat, _monthformat, _yearformat)
+    points_re, _dayformat, _monthformat, _yearformat)
 
-season_re = r'(?:{} )?(?P<season>{})'.format(points, anyseason)
+season_re = r'(?:{} )?(?P<season>{})'.format(points_re, anyseason)
 
-static_re = r'(?:{} )?(?P<num>[0-9]*[1-9][0-9]*) (?P<unit>{})'.format(points, anyunit)
+static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re, anyunit)
+
+statmonth_re = r'{} (?P<month>{})'.format(points_re, anymonth)
 
 @time_tp.re_handler(current_re)
 def current_h(match):
@@ -93,8 +95,8 @@ def next_h(match):
     return date_to_text(newdate, nomonth=(u_len == 12))
 
 
-@time_tp.re_handler(ago_re)
-def ago_h(match):
+@time_tp.re_handler(interval_re)
+def interval_h(match):
     words = match.group('interval').split(' ')
     sum_len = 0
     u_lens = []
@@ -111,31 +113,8 @@ def ago_h(match):
 
     if not u_lens:
         return match.group(0)
-    newdate = mod_date(datetime.today(), -sum_len)
-    if len(u_lens) == 1:
-        newdate = process_units(newdate, u_lens[0])
-        return date_to_text(newdate, nomonth=(u_lens[0] == 12))
-    return date_to_text(newdate)
-
-
-@time_tp.re_handler(later_re)
-def later_h(match):
-    words = match.group('interval').split(' ')
-    sum_len = 0
-    u_lens = []
-    coeff = 1
-    for word in words:
-        if word.isnumeric():
-            coeff = int(word)
-        else:
-            u_len = unit_lens.get(word, 0)
-            if u_len != 0:
-                u_lens.append(u_len)
-            sum_len += u_len * coeff
-            coeff = 1
-
-    if not u_lens:
-        return match.group(0)
+    if match.group('ago'):
+        sum_len *= -1
     newdate = mod_date(datetime.today(), sum_len)
     if len(u_lens) == 1:
         newdate = process_units(newdate, u_lens[0])
@@ -145,12 +124,21 @@ def later_h(match):
 
 @time_tp.re_handler(static_re)
 def static_h(match):
-    unit = match.group('unit')
+    u_len = unit_lens.get(match.group('unit'), 1)
     num = int(match.group('num'))
     begin = bool(match.group('begin'))
-    newdate = get_static(unit, num, begin)
-    if unit_lens.get(unit, 1) == 12:
-        return date_to_text(newdate, nomonth=True)
+    end = bool(match.group('end'))
+    newdate = get_static(u_len, num, begin)
+    noyear = u_len != 12
+    nomonth = not noyear and not begin and not end
+    return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
+
+
+@time_tp.re_handler(statmonth_re)
+def statmonth_h(match):
+    num = norm_months.index(match.group('month')) + 1
+    begin = bool(match.group('begin'))
+    newdate = get_static(1, num, begin)
     return date_to_text(newdate, noyear=True)
 
 
@@ -174,7 +162,7 @@ def date_h(match):
 def season_h(match):
     num = seasons.index(match.group('season')) + 1
     begin = bool(match.group('begin'))
-    newdate = get_static('квартал', num, begin)
+    newdate = get_static(3, num, begin)
     newdate = mod_date(newdate, -1)
     return date_to_text(newdate, noyear=True)
 
@@ -207,11 +195,11 @@ def mod_date(date, delta):
     return datetime(year=newyear, month=newmonth, day=1)
 
 
-def get_static(unit, num, begin=False):
-    u_len = unit_lens.get(unit, 1)
+def get_static(u_len, num, begin=False):
     if u_len == 12:
         year = max(min(num, 3000), 1)
-        return datetime(month=1, year=year, day=1)
-    newmonth = max(min(u_len * num, 12), 1)
-    newdate = datetime(month=newmonth, year=100, day=1)
+        newdate = datetime(month=1, year=year, day=1)
+    else:
+        newmonth = max(min(u_len * num, 12), 1)
+        newdate = datetime(month=newmonth, year=100, day=1)
     return process_units(newdate, u_len, begin)
