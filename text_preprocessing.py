@@ -116,7 +116,6 @@ class TextPreprocessing:
         self.morph = Mystem()
         self.morph.start()
 
-        @lru_cache(maxsize=8192)
         def _lem(s: str):
             lem = self.morph.lemmatize(s)
             return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
