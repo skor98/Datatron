@@ -11,9 +11,10 @@ from functools import lru_cache
 
 from nltk.corpus import stopwords
 from nltk import FreqDist
-import nltk
 
-import pymorphy2
+from pymystem3 import Mystem
+from pymorphy2 import MorphAnalyzer
+from nltk import word_tokenize
 
 from model_manager import MODEL_CONFIG
 
@@ -21,15 +22,9 @@ from core.parsers.syn_parser import syn_tp
 from core.parsers.num_parser import num_tp
 from core.parsers.time_parser import time_tp
 
+from config import SETTINGS
+
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
-
-
-@lru_cache(maxsize=16384)  # на самом деле, 8192 почти достаточно
-def get_normal_form(s):
-    return get_normal_form.morph.parse(s)[0].normal_form
-
-
-get_normal_form.morph = pymorphy2.MorphAnalyzer()  # Лемматизатор
 
 
 class TextPreprocessing:
@@ -37,8 +32,9 @@ class TextPreprocessing:
     Класс для предварительной обработки текста
     """
 
-    def __init__(self, request_id=None):
+    def __init__(self, request_id=None, use_pymystem=SETTINGS.USE_PYMYSTEM, log=True):
         self.request_id = request_id
+        self.log = log
         self.language = 'russian'
 
         # TODO: что делать с вопросительными словами?
@@ -46,6 +42,11 @@ class TextPreprocessing:
         self.stop_words = set(stopwords.words(self.language))
         self.stop_words -= {'не', 'такой'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
+
+        if use_pymystem:
+            self._init_pymystem()
+        else:
+            self._init_pymorphy()
 
     def normalization(
             self,
@@ -64,14 +65,10 @@ class TextPreprocessing:
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
         text = TextPreprocessing._filter_underscore(text)
-        # text = TextPreprocessing._filter_volume(text)
+        # text = TextPreprocessing._filter_yo(text)
 
-        # Токенизируем
-        tokens = nltk.word_tokenize(text.lower())
-        tokens = filter(lambda t: re.fullmatch(r'\W*', t) is None, tokens)
-
-        # Лемматизация
-        tokens = [get_normal_form(t) for t in tokens]
+        # Токенизируем и лемматизируем
+        tokens = self.lemmatize(text)
 
         # Генерация одного большого парсера
         parser = None
@@ -84,7 +81,7 @@ class TextPreprocessing:
 
         # Парсинг всего
         if parser is not None:
-            tokens = parser(' '.join(tokens)).split(' ')
+            tokens = parser(tokens)
 
         # Убираем цифры
         if delete_digits:
@@ -106,13 +103,37 @@ class TextPreprocessing:
 
         normalized_request = ' '.join(tokens)
 
-        logging.info(
-            "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
-                self.request_id, normalized_request
+        if self.log:
+            logging.info(
+                "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
+                    self.request_id, normalized_request
+                )
             )
-        )
 
         return normalized_request
+
+    def _init_pymystem(self):
+        self.morph = Mystem()
+        self.morph.start()
+
+        def _lem(s: str):
+            lem = self.morph.lemmatize(s)
+            return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+
+        self.lemmatize = _lem
+
+    def _init_pymorphy(self):
+        self.morph = MorphAnalyzer()
+
+        @lru_cache(maxsize=16384)
+        def _normal(w):
+            return self.morph.parse(w)[0].normal_form
+
+        def _lem(s: str):
+            lem = [_normal(w) for w in word_tokenize(s)]
+            return list(filter(lambda t: re.fullmatch(r'\W*', t) is None, lem))
+
+        self.lemmatize = _lem
 
     @staticmethod
     def _filter_underscore(text: str):
@@ -131,13 +152,11 @@ class TextPreprocessing:
         return text
 
     @staticmethod
-    def _filter_volume(text: str):
-        """
-        Обработка неправильной нормализации слова "объем"
-        """
+    def _filter_yo(text: str):
+        """Обработка буквы ё"""
 
-        if 'объем' in text:
-            text = text.replace('объем', 'объём')
+        if 'ё' in text.lower():
+            text = text.replace('ё', 'е').replace('Ё', 'Е')
 
         return text
 

@@ -884,14 +884,10 @@ def look_further(result):
 def send_very_long_message(chat_id, text, message_length=4000):
     """Отправка сообщения длинее 4096 UTF-8 символов"""
 
-    while True:
-        text = text[:message_length]
+    while text:
+        bot.send_message(chat_id, text[:message_length])
+
         text = text[message_length:]
-
-        bot.send_message(chat_id, text)
-
-        if not text:
-            break
 
 
 if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:

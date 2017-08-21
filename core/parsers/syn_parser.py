@@ -10,7 +10,7 @@ from core.tonita_parser import TonitaParser
 
 syn_tp = TonitaParser()
 
-syn_tp.add_many_subs({
+syn_tp.add_many({
     'россия': 'РФ',
     'российский федерация': 'РФ',
     'россиюшка': 'РФ',
@@ -20,7 +20,7 @@ syn_tp.add_many_subs({
     'держава': 'РФ',
 })
 
-syn_tp.add_many_subs({
+syn_tp.add_many({
     'министерство финансы': 'Минфин',
     'мф': 'Минфин',
     'гос': 'государственный',
