@@ -23,6 +23,7 @@ anymonth = '|'.join(norm_months)
 seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
+# TODO: сейчас/сегодня - надо подумать
 time_tp.add_many_subs({
     'мес': 'месяц',
     'кв': 'квартал',
@@ -50,8 +51,10 @@ unitcombo = r'(?:(?:[0-9]+ )?(?:{}) ?)+'.format(anyunit)
 points = r'(?:(?P<begin>состояние|канун|старт)|(?P<end>конец|итог|финал|окончание))'
 
 current_re = r'(?:{} )?(?:текущий|нынешний|этот?|сегодняшний) (?P<unit>{})'.format(points, anyunit)
-last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(points, anyunit)
-next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(points, anyunit)
+last_re = r'(?:{} )?(?P<pref>(?:поза[- ]?)*)(?:прошл(?:ый|ое)|предыдущий|прошедший|минувший|вчерашний) (?P<unit>{})'.format(
+    points, anyunit)
+next_re = r'(?:{} )?(?P<pref>(?:после[- ]?)*)(следующий|будущ(?:ий|ее)|грядущий|наступающий|завтрашний) (?P<unit>{})'.format(
+    points, anyunit)
 ago_re = r'(?P<interval>{}) назад'.format(unitcombo)
 later_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)| спустя)'.format(unitcombo)
 
@@ -64,6 +67,7 @@ dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
 season_re = r'(?:{} )?(?P<season>{})'.format(points, anyseason)
 
 static_re = r'(?:{} )?(?P<num>[0-9]*[1-9][0-9]*) (?P<unit>{})'.format(points, anyunit)
+
 
 @time_tp.re_handler(current_re)
 def current_h(match):
@@ -170,6 +174,7 @@ def date_h(match):
     newdate = process_units(newdate, 1, begin)
     return date_to_text(newdate)
 
+
 @time_tp.re_handler(season_re)
 def season_h(match):
     num = seasons.index(match.group('season')) + 1
@@ -196,7 +201,7 @@ def date_to_text(date, noyear=False, nomonth=False):
         elif res_year < 1000:
             res_year += 2000
         res_year = str(res_year)
-    res_month = None if nomonth else norm_months[date.month-1]
+    res_month = None if nomonth else norm_months[date.month - 1]
     return ' '.join(i for i in (res_month, res_year) if i is not None)
 
 

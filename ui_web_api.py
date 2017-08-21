@@ -266,7 +266,7 @@ class TextQueryV2(Resource):
     def get_data(self):
         text_query = TextQuery()
         answer = text_query.get_data()
-        result = TextResponseModel.from_answer(answer)
+        result = TextResponseModel.form_answer(answer)
         return result
 
 

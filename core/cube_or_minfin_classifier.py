@@ -8,9 +8,11 @@
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN
 import logs_helper
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+
 # pylint: disable=invalid-name
 
 CONFIG_PREFIX = "model_cube_or_minfin_clf"
+
 
 class CubeOrMinfinClassifier(BaseTextClassifier):
     """
@@ -20,6 +22,7 @@ class CubeOrMinfinClassifier(BaseTextClassifier):
     """
 
     __instance = None
+
     @staticmethod
     def inst(is_train=False, params=None):
         """Реализует Синглтон"""

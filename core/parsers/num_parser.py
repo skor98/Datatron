@@ -67,7 +67,8 @@ for num in numdict:
 
 def _anything(start=0, end=10000):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
-    
+
+
 _thousands_re = r'(?:(?P<m_num>{}) тысяча|(?P<m>{}))'.format(_anything(1, 20), _anything(1000, 9001))
 _hundreds_re = r'(?P<c>{})'.format(_anything(100, 901))
 _teen_re = r'(?P<xi>{})'.format(_anything(10, 20))
@@ -75,7 +76,10 @@ _tens_re = r'(?P<x>{})'.format(_anything(20, 91))
 _ones_re = r'(?P<i>{})'.format(_anything(1, 10))
 _zero_re = r'(?P<zero>{})'.format('|'.join(numdict[0]))
 
-literal_num_re = r'(?:(?P<sign>плюс|минус)?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(_thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re, _zero_re)
+literal_num_re = r'(?:(?P<sign>плюс|минус)?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(_thousands_re,
+                                                                                                     _hundreds_re,
+                                                                                                     _teen_re, _tens_re,
+                                                                                                     _ones_re, _zero_re)
 
 
 @num_tp.re_handler(literal_num_re)
@@ -109,6 +113,7 @@ def roman_h(match):
 
 
 bignum_re = r'(?P<num>[0-9.,]*[0-9]) ?(?P<deg>[MKМК]|[KК][KК])'
+
 
 @num_tp.re_handler(bignum_re)
 def bugnum_h(match):

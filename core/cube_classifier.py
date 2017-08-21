@@ -9,18 +9,20 @@ import re
 from config import TEST_PATH_CUBE
 import logs_helper
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+
 # pylint: disable=invalid-name
 
 CONFIG_PREFIX = "model_cube_clf"
 
+
 class CubeClassifier(BaseTextClassifier):
     """
     Класс, который обеспечивает взаимодействие с ML-trained моделью
-    По умолчанию загружается из файлов с моделью
-    Синглтон! Singleton!
+    По умолчанию загружается из файлов с моделью Синглтон! Singleton!
     """
 
     __instance = None
+
     @staticmethod
     def inst(is_train=False, params=None):
         """Реализует Синглтон"""
