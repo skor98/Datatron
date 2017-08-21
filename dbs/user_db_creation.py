@@ -22,7 +22,7 @@ class BaseModel(Model):
 class User(BaseModel):
     user_id = IntegerField()
     user_name = CharField(null=True)
-    full_user_name = CharField()
+    full_user_name = CharField(null=True)
 
 
 class Feedback(BaseModel):

@@ -158,6 +158,7 @@ def date_h(match):
     newdate = process_units(newdate, 1, begin)
     return date_to_text(newdate)
 
+
 @time_tp.re_handler(season_re)
 def season_h(match):
     num = seasons.index(match.group('season')) + 1
@@ -184,7 +185,7 @@ def date_to_text(date, noyear=False, nomonth=False):
         elif res_year < 1000:
             res_year += 2000
         res_year = str(res_year)
-    res_month = None if nomonth else norm_months[date.month-1]
+    res_month = None if nomonth else norm_months[date.month - 1]
     return ' '.join(i for i in (res_month, res_year) if i is not None)
 
 

@@ -7,8 +7,9 @@ from core.minfin_docs_processing import MinfinAnswer
 from models.responses.link_model import LinkModel
 from models.responses.question_model import QuestionModel
 
+
 class TextResponseModel:
-# модель ответа клиенту
+    # модель ответа клиенту
 
     def __init__(self):
         self.status = False
@@ -41,7 +42,7 @@ class TextResponseModel:
             keys_to_return = keys_to_return + ('image_links',)
 
         if self.http_ref_links is not None:
-                keys_to_return = keys_to_return + ('http_ref_links',)
+            keys_to_return = keys_to_return + ('http_ref_links',)
 
         result_dict = {key: getattr(self, key, None) for key in keys_to_return}
 
@@ -52,7 +53,7 @@ class TextResponseModel:
         ).encode("utf-8")
 
     @staticmethod
-    def from_answer(response: CoreAnswer):
+    def form_answer(response: CoreAnswer):
         # формирование ответа для клиента
         text_response = TextResponseModel()
         text_response.status = response.status
@@ -68,16 +69,16 @@ class TextResponseModel:
 
         if isinstance(response.answer, CubeAnswer):
             logging.info('ответ по кубу')
-            TextResponseModel.from_cube_answer(text_response, response)
+            TextResponseModel.form_cube_answer(text_response, response)
 
         if isinstance(response.answer, MinfinAnswer):
             logging.info('ответ по минфину')
-            TextResponseModel.from_minfin_answer(text_response, response)
+            TextResponseModel.form_minfin_answer(text_response, response)
 
         return text_response
 
     @staticmethod
-    def from_cube_answer(text_response, response: CubeAnswer):
+    def form_cube_answer(text_response, response: CubeAnswer):
         # формирование ответа для клиента по ответу по кубу
         pretty_feedback = response.answer.feedback.get('pretty_feedback')
         formatted_response = response.answer.formatted_response
@@ -98,7 +99,7 @@ class TextResponseModel:
         return text_response
 
     @staticmethod
-    def from_minfin_answer(text_response, response: CubeAnswer):
+    def form_minfin_answer(text_response, response: CubeAnswer):
         # формирование ответа для клиента по ответу по минфину
         if response.answer is not None:
             text_response.question = response.answer.question

@@ -48,6 +48,7 @@ class BaseTextClassifier():
     Необходимо переопределить префикс для сохранения в настройках
     """
     KFOLD_PARTS = 10
+
     def __init__(self, is_train, params):
         """
         Если is_train==True, то тренировка модели, а потом её сохранение
@@ -90,12 +91,12 @@ class BaseTextClassifier():
 
         # (ИНДЕКС_КУБА, вероятность) -> сортируем -> (ИМЯ_КУБА, вероятность)
         return map(lambda x: (self._ind_to_class[x[0]], x[1]),
-            sorted(
-                list(enumerate(res.tolist())),
-                key=lambda x: x[1],
-                reverse=True
-            )
-        )
+                   sorted(
+                       list(enumerate(res.tolist())),
+                       key=lambda x: x[1],
+                       reverse=True
+                   )
+                   )
 
     def train(self):
         """Полностью инкапсулирует обучение модели"""
@@ -213,7 +214,7 @@ def select_best_model(data, ind_to_class, kfolds: int, config_prefix: str):
             })),
             "GB": (GradientBoostingClassifier, ParameterGrid({
                 "learning_rate": [0.3, 0.1],
-                "n_estimators":  [100, 240, 400],
+                "n_estimators": [100, 240, 400],
                 "max_depth": [1, 2, 3]
             })),
             "SVM": (SVC, ParameterGrid({
@@ -419,6 +420,7 @@ def _prepare_test_data(data):
 
     return X, Y, words_to_ind, scaler
 
+
 def get_folder_lines(test_path):
     """Генератор непустых строчек из файлов в указанной папке"""
     for file_name in os.listdir(test_path):
@@ -428,6 +430,7 @@ def get_folder_lines(test_path):
                 if not line:
                     continue
                 yield line
+
 
 def preprocess(s: str):
     """
@@ -453,6 +456,7 @@ def preprocess(s: str):
             break
 
     return tuple(res)
+
 
 def get_territories():
     """Возвращает территории, которые хранятся в базе. Кешируется"""
@@ -486,5 +490,6 @@ def get_territories():
     get_territories.territories = territories
 
     return get_territories.territories
+
 
 get_territories.territories = None

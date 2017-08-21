@@ -12,8 +12,8 @@ import re
 from functools import partial
 from collections import Iterable
 
+
 class TonitaParser(object):
-    
     def __init__(self, sub_dict=None):
         self.actions = []
         if sub_dict is not None:
@@ -31,6 +31,7 @@ class TonitaParser(object):
             _wrapped = partial(cond_re.sub, _newfunc)
             self.actions.append(_wrapped)
             return _wrapped
+
         return _decorate
     
     def add_simple(self, regexp, sub='', preserve_old=False):
