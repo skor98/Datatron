@@ -35,6 +35,7 @@ from model_manager import MODEL_CONFIG, save_default_model
 import logs_helper
 
 TPP = TextPreprocessing(
+    log=False,
     delete_digits=False,
     delete_question_words=False,
     delete_repeatings=False,
