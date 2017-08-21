@@ -34,7 +34,7 @@ from config import DATA_PATH
 from model_manager import MODEL_CONFIG, save_default_model
 import logs_helper
 
-PREPROC = TextPreprocessing(log=True)
+PREPROC = TextPreprocessing(log=False)
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
 YEARS_RE = re.compile(r"(?<!\w)(\d\d(\d\d)?)(?!\w)")
