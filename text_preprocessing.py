@@ -137,6 +137,10 @@ class TextPreprocessing(object):
 
     @staticmethod
     def _pymorphy_lem(text: str):
+        for ch in ('«', '»', '“', '„'):
+            if ch in text:
+                text = text.replace(ch, '')
+
         return TextPreprocessing._filter_words(
             map(
                 TextPreprocessing._pymorphy_normal,

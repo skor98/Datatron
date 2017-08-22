@@ -29,4 +29,4 @@
 Исполнение расходов консолидированного бюджета субъекта Ярославской области:SELECT {[Measures].[FACT_BGYEAR]}  ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-10],[BGLEVELS].[09-12],[TERRITORIES].[08-20670])
 Доходы консолидированных бюджетов районов Ярославской области:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-1],[BGLEVELS].[09-5],[TERRITORIES].[08-20670])
 Исполнение доходов бюджетов поселений Ярославской области в текущем финансовом году:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-1],[BGLEVELS].[09-6],[TERRITORIES].[08-20670])
-Поступления по НДФЛ в бюджеты городских округов Ярославской области:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-6],[BGLEVELS].[09-15],[TERRITORIES].[08-20670])
+Поступления по НДФЛ в бюджеты городских поселений Ярославской области:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-6],[BGLEVELS].[09-15],[TERRITORIES].[08-20670])
