@@ -139,6 +139,7 @@ class TextResponseModel:
             document_links = []
             document_link = LinkModel('document', response.answer.document_caption[0], response.answer.document[0])
             document_links.append(document_link)
+            return document_links
         else:
             return None
 
@@ -163,4 +164,3 @@ class TextResponseModel:
             return http_ref_links
         else:
             return None
-
