@@ -176,7 +176,7 @@ def date_to_text(date, noyear=False, nomonth=False):
         res_year = None
     else:
         res_year = date.year
-        if 60 <= res_year < 1000:
+        if 60 <= res_year < 100:
             res_year += 1900
         elif res_year < 1000:
             res_year += 2000

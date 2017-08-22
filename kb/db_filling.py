@@ -8,6 +8,7 @@ import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
 
+TPP = TextPreprocessing()
 
 class KnowledgeBaseSupport:
     def __init__(self, data_source_file, db_file):
@@ -75,7 +76,7 @@ class KnowledgeBaseSupport:
             data = file.read()
         cube_metadata = json.loads(data)
 
-        tp = TextPreprocessing('Filling dbs')
+        request_id = 'Filling dbs'
 
         for item in cube_metadata:
             cube_data_set = DataSet()
@@ -87,7 +88,7 @@ class KnowledgeBaseSupport:
 
             for measure in item['measures']:
                 cube_data_set.measures.append({'full_value': measure['caption'],
-                                               'lem_index_value': tp.normalization(measure['caption']),
+                                               'lem_index_value': TPP(measure['caption'], request_id),
                                                'cube_value': measure['name']})
             for element in item['cube_elements']:
                 dim_name = element['hierarchyName'].upper()
@@ -95,7 +96,7 @@ class KnowledgeBaseSupport:
                     cube_data_set.dimensions[dim_name] = []
 
                 # игнорирование "не указанных", "не определенных" параметров
-                normalized_elem = tp.normalization(element['caption'])
+                normalized_elem = TPP(element['caption'], request_id)
                 if not [item for item in ('неуказанный', 'не определить') if item in normalized_elem]:
                     cube_data_set.dimensions[dim_name].append({
                         'full_value': element['caption'],

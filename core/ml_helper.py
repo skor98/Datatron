@@ -34,10 +34,18 @@ from config import DATA_PATH
 from model_manager import MODEL_CONFIG, save_default_model
 import logs_helper
 
-PREPROC = TextPreprocessing(log=False)
+TPP = TextPreprocessing(
+    log=False,
+    delete_digits=False,
+    delete_question_words=False,
+    delete_repeatings=False,
+    parse_syns=True,
+    parse_nums=True,
+    parse_time=True,
+)
 
 WORDS_RE = re.compile("[а-яёА-ЯЁ]+")  # Регулярное выражение для выбора слов
-YEARS_RE = re.compile(r"(?<!\w)(\d\d(\d\d)?)(?!\w)")
+YEARS_RE = re.compile(r"(?<!\w)(\d{4}) год(?!\w)")
 
 
 class BaseTextClassifier():
@@ -437,15 +445,7 @@ def preprocess(s: str):
     Возвращает массив токенов по строке
     Переопределение не предполагается, но возможно на уровне модуля
     """
-    s = PREPROC.normalization(
-        s,
-        delete_digits=False,
-        delete_question_words=False,
-        delete_repeatings=False,
-        parse_syns=True,
-        parse_nums=True,
-        parse_time=True,
-    )
+    s = TPP(s)
     s = s.replace("2017", "текущийгод")
     s = YEARS_RE.sub("нетекущийгод", s)
     res = set(WORDS_RE.findall(s))
