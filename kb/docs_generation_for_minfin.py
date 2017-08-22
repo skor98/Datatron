@@ -76,13 +76,10 @@ def _refactor_data(data):
         doc.lem_question_len = len(doc.lem_question.split())
 
         doc.short_answer = row.short_answer
-
         # индексируемое поле
         doc.lem_short_answer = TextPreprocessing()(row.short_answer, request_id)
 
-        if row.full_answer:
-            doc.full_answer = row.full_answer
-            doc.lem_full_answer = TextPreprocessing()(row.full_answer)
+        doc.full_answer = row.full_answer
 
         lem_key_words = TextPreprocessing(
             delete_question_words=False,
@@ -107,7 +104,8 @@ def _refactor_data(data):
             lem_extra_key_words = set(' '.join(lem_synonym_questions).split())
 
             # добавление уникальных слов и длинного ответа
-            lem_extra_key_words.union(set(doc.lem_full_answer.split()))
+            lem_full_answer = TextPreprocessing()(row.full_answer)
+            lem_extra_key_words.union(set(lem_full_answer.split()))
 
             # удаление уже используемых слов lem_key_words, lem_short_answer
             lem_extra_key_words -= set(doc.lem_key_words.split())
@@ -384,7 +382,6 @@ class MinfinDocument:
         self.lem_question_len = 0
         self.lem_extra_key_words = None
         self.lem_short_answer = ''
-        self.lem_full_answer = None
         self.lem_key_words = ''
         self.link_name = None
         self.link = None

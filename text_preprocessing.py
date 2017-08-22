@@ -50,6 +50,11 @@ class TextPreprocessing(object):
         self.stop_words -= {'не', 'такой', 'сейчас'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
 
+        # удаление технических терминов
+        self.stop_words.update(set(
+            "bifb years marks kif bglevels kdgroups rzpr months territories".split()
+        ))
+
         for param in ('delete_digits', 'delete_question_words', 'delete_repeatings',
                       'parse_syns', 'parse_nums', 'parse_time', 'use_pymystem'):
             if param in kwargs:

@@ -175,6 +175,18 @@ def format_numerical(number: float):
     return res
 
 
+def format_minus_plus_response(cube_answer, formatted_value: str):
+    """Обработка плюса и минуса в ответе"""
+
+    if ('25-20' in cube_answer.mdx_query or
+                '03-19' in cube_answer.mdx_query):
+        if '-' in formatted_value:
+            formatted_value = formatted_value.replace('-', 'дефицит ')
+        else:
+            formatted_value = 'профицит ' + formatted_value
+    return formatted_value
+
+
 def process_server_response(cube_answer, response: requests):
     """
     Работа над ответом по кубу: получение данных и обработка ответа
@@ -208,7 +220,7 @@ def process_server_response(cube_answer, response: requests):
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
         logging.error(
-            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
+            "Query ID: {}\tMessage: Был создан MDX-запрос с некорректными параметрами {}".format(
                 cube_answer.request_id,
                 response.get('message', '')
             ))
@@ -218,10 +230,23 @@ def process_server_response(cube_answer, response: requests):
         cube_answer.status = False
         cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
         cube_answer.response = None
+        logging.info(
+            "Query ID: {}\tMessage: Данных по запросу нет".format(
+                cube_answer.request_id
+            ))
+
         return
-        # В остальных случаях, то есть когда все хорошо
+    # В остальных случаях, то есть когда все хорошо
     else:
-        return float(response["cells"][0][0]["value"])
+        value = float(response["cells"][0][0]["value"])
+
+        logging.info(
+            "Query ID: {}\tMessage: Ответ на MDX-запрос -  {}".format(
+                cube_answer.request_id,
+                value
+            ))
+
+        return value
 
 
 def check_mdx_returns_data(response: requests):
@@ -266,7 +291,10 @@ def process_cube_answer(cube_answer, value):
     # Добавление форматированного результата
     # Если формат для меры - 0, что означает число
     if not value_format:
-        formatted_value = format_numerical(value)
+        formatted_value = format_minus_plus_response(
+            cube_answer,
+            format_numerical(value)
+        )
         cube_answer.formatted_response = formatted_value
     # Если формат для меры - 1, что означает процент
     elif value_format == 1:
@@ -404,7 +432,8 @@ def score_cube_question(cube_data: CubeData):
         cube_data.score['sum'] = (
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
             max_member_score if max_member_score else 0 +
-            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+                                                      MODEL_CONFIG[
+                                                          "measure_weight_in_sum_scoring_model"] * measure_score
         )
 
     # получение скоринг-модели
