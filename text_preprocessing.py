@@ -111,8 +111,7 @@ class TextPreprocessing(object):
 
         return normalized_request
     
-    def __call__(self, text, request_id=None):
-        return self.normalize(text, request_id)
+    __call__ = normalize
 
     mystem = Mystem()
     mystem.start()
