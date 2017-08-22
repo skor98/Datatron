@@ -31,6 +31,7 @@ class TextResponseModel:
             'question',
             'full_answer',
             'short_answer',
+            'time_data_relevance',
             'associated_quesions',
         )
 
