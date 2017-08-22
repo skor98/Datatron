@@ -714,6 +714,10 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 
     data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
     data_relevance = data_relevance if data_relevance else ''
+    if data_relevance:
+        data_relevance = '\nАктуальность данных: *{}*'.format(
+            data_relevance
+        )
 
     feedback = feedback_str.format(
         user_req=user_request,
