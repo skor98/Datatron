@@ -73,7 +73,6 @@ class TextPreprocessing(object):
 
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
-        text = TextPreprocessing._filter_underscore(text)
 
         # Токенизируем и лемматизируем
         tokens = self.lemmatize(text)
@@ -118,7 +117,7 @@ class TextPreprocessing(object):
     
     @staticmethod
     def _filter_words(wordlist: list):
-        return filter(lambda t: re.fullmatch(r'\W*', t) is None, wordlist)
+        return filter(lambda t: re.fullmatch(r'[_\W]*', t) is None, wordlist)
 
     @staticmethod
     def _pymystem_lem(text: str):
@@ -141,7 +140,9 @@ class TextPreprocessing(object):
         return TextPreprocessing._filter_words(
             map(
                 TextPreprocessing._pymorphy_normal,
-                word_tokenize(text)
+                word_tokenize(   
+                    TextPreprocessing._filter_underscore(text)
+                )
             )
         )
     
@@ -174,7 +175,7 @@ class TextPreprocessing(object):
         """Обработка процента"""
 
         if '%' in text:
-            text = text.replace('%', ' процент')
+            text = text.replace('%', ' процент ')
         return text
 
     @staticmethod
