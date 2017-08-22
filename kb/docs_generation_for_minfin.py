@@ -70,7 +70,6 @@ def _refactor_data(data):
 
         # индексируемое поле
         doc.lem_question = TextPreprocessing(
-            delete_digits=True,
             delete_question_words=False
         )(row.question, request_id)
 
@@ -79,14 +78,11 @@ def _refactor_data(data):
         doc.short_answer = row.short_answer
 
         # индексируемое поле
-        doc.lem_short_answer = TextPreprocessing(
-            delete_digits=True
-        )(row.short_answer, request_id)
+        doc.lem_short_answer = TextPreprocessing()(row.short_answer, request_id)
+
         if row.full_answer:
             doc.full_answer = row.full_answer
-            doc.lem_full_answer = TextPreprocessing(
-                delete_digits=True
-            )(row.full_answer)
+            doc.lem_full_answer = TextPreprocessing()(row.full_answer)
 
         lem_key_words = TextPreprocessing(
             delete_question_words=False,
@@ -102,7 +98,6 @@ def _refactor_data(data):
         if synonym_questions:
             lem_synonym_questions = [
                 TextPreprocessing(
-                    delete_digits=True,
                     delete_question_words=False
                 )(question, request_id)
                 for question in synonym_questions

@@ -47,7 +47,7 @@ class TextPreprocessing(object):
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
         self.stop_words = set(stopwords.words(self.language))
-        self.stop_words -= {'не', 'такой'}
+        self.stop_words -= {'не', 'такой', 'сейчас'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
         
         for param in ('delete_digits', 'delete_question_words', 'delete_repeatings',
@@ -111,8 +111,7 @@ class TextPreprocessing(object):
 
         return normalized_request
     
-    def __call__(self, text, request_id=None):
-        return self.normalize(text, request_id)
+    __call__ = normalize
 
     mystem = Mystem()
     mystem.start()
