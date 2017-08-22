@@ -271,7 +271,7 @@ class CubeProcessor:
 
         time_data_relevance = None
         if cube_answer.feedback['formal']['cube'] in cubes_with_current_data:
-            time_data_relevance = '\nАктуальность данных: *03.08.2017*'
+            time_data_relevance = '03.08.2017'
 
         return time_data_relevance
 
