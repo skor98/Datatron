@@ -31,7 +31,7 @@ class TextPreprocessing(object):
     """
     Класс для предварительной обработки текста
     """
-    
+
     delete_digits = MODEL_CONFIG["normalization_delete_digits_default"]
     delete_question_words = MODEL_CONFIG["normalization_delete_question_words_default"]
     delete_repeatings = MODEL_CONFIG["normalization_delete_repeatings_default"]
@@ -49,17 +49,17 @@ class TextPreprocessing(object):
         self.stop_words = set(stopwords.words(self.language))
         self.stop_words -= {'не', 'такой', 'сейчас'}
         self.stop_words.update(set("подсказать также иной да нет -".split()))
-        
+
         for param in ('delete_digits', 'delete_question_words', 'delete_repeatings',
                       'parse_syns', 'parse_nums', 'parse_time', 'use_pymystem'):
             if param in kwargs:
                 setattr(self, param, kwargs[param])
-                
+
         if self.use_pymystem:
             self.lemmatize = TextPreprocessing._pymystem_lem
         else:
             self.lemmatize = TextPreprocessing._pymorphy_lem
-        
+
         self._tonita_parser = TextPreprocessing._make_tonita_parser(
             self.parse_syns,
             self.parse_nums,
@@ -109,12 +109,12 @@ class TextPreprocessing(object):
             )
 
         return normalized_request
-    
+
     __call__ = normalize
 
     mystem = Mystem()
     mystem.start()
-    
+
     @staticmethod
     def _filter_words(wordlist: list):
         return filter(lambda t: re.fullmatch(r'[_\W]*', t) is None, wordlist)
@@ -126,7 +126,7 @@ class TextPreprocessing(object):
         )
 
     morph = MorphAnalyzer()
-    
+
     @staticmethod
     @lru_cache(maxsize=16384)
     def _pymorphy_normal(word: str):
@@ -140,18 +140,16 @@ class TextPreprocessing(object):
         return TextPreprocessing._filter_words(
             map(
                 TextPreprocessing._pymorphy_normal,
-                word_tokenize(   
-                    TextPreprocessing._filter_underscore(text)
-                )
+                word_tokenize(TextPreprocessing._filter_underscore(text))
             )
         )
-    
+
     @staticmethod
     @lru_cache(maxsize=64)
     def _make_tonita_parser(
-        parse_syns,
-        parse_nums,
-        parse_time,
+            parse_syns,
+            parse_nums,
+            parse_time,
     ):
         parser = None
         if parse_syns:
