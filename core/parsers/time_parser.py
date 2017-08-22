@@ -32,7 +32,11 @@ time_tp.add_many({
     'сегодня': 'этот месяц',
 })
 
-time_tp.add_simple(r'(20|19)\d{2}', 'год', True)
+time_tp.add_simple(
+    r'(?<!год )(?:2\d|19)\d{2}(?! год)',
+    'год',
+    preserve_old=True,
+)
 
 unit_lens = {
     'год': 12,
@@ -50,7 +54,7 @@ end_kw = ('конец', 'итог', 'финал', 'окончание')
 points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw), '|'.join(end_kw))
 multipoints_re = r'(?:(?:{p}) )+({p})'.format(p='|'.join(begin_kw + end_kw))
 
-time_tp.add_simple(multipoints_re, r'\1', False)
+time_tp.add_simple(multipoints_re, r'\1')
 
 current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
 last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
@@ -65,7 +69,7 @@ interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P
 
 _dayformat = r'(?P<day>[0-3]?\d)'
 _monthformat = r'(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
-_yearformat = r'(?P<year>(?:19|20)\d\d)'
+_yearformat = r'(?P<year>(?:19|2\d)\d{2})(?: год)?'
 dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
     points_re, _dayformat, _monthformat, _yearformat)
 
@@ -180,7 +184,7 @@ def date_to_text(date, noyear=False, nomonth=False):
             res_year += 1900
         elif res_year < 1000:
             res_year += 2000
-        res_year = str(res_year)
+        res_year = ' '.join([str(res_year), 'год'])
     res_month = None if nomonth else norm_months[date.month - 1]
     return ' '.join(i for i in (res_month, res_year) if i is not None)
 

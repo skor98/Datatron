@@ -23,25 +23,29 @@ class TonitaParser(object):
         if separate_word:
             regexp = r'(?<!\w){}(?!\w)'.format(regexp)
         cond_re = re.compile(regexp, re.IGNORECASE)
-        def _decorate(func):
-            if isinstance(func, str):
-                _sub = func
+        def _decorate(sub):
+            if not callable(sub):
+                if not isinstance(sub, str):
+                    sub = str(sub)
+                if preserve_old:
+                    _repl = ' '.join([r'\g<0>' , sub])
+                else:
+                    _repl = sub
             elif preserve_old:
-                def _sub(m): return ' '.join([m.group(0), str(func(m))])
+                def _repl(m): return ' '.join([m.group(0), str(sub(m))])
             else:
-                def _sub(m): return str(func(m))
-            _wrapped = partial(cond_re.sub, _sub)
+                def _repl(m): return str(sub(m))
+            _wrapped = partial(cond_re.sub, _repl)
             self.actions.append(_wrapped)
             return _wrapped
-
         return _decorate
     
-    def add_simple(self, regexp, sub='', preserve_old=False):
-        self.re_handler(regexp, preserve_old)(sub)
+    def add_simple(self, regexp, sub='', *args, **kwargs):        
+        self.re_handler(regexp, *args, **kwargs)(sub)
         
-    def add_many(self, sub_dict, preserve_old=False):
+    def add_many(self, sub_dict, *args, **kwargs):
         for origin in sub_dict:
-            self.add_simple(origin, sub_dict[origin], preserve_old)
+            self.add_simple(origin, sub_dict[origin], *args, **kwargs)
 
     def __add__(self, other):
         if other is None:
