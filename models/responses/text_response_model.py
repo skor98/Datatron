@@ -84,12 +84,12 @@ class TextResponseModel:
         # формирование ответа для клиента по ответу по кубу
         pretty_feedback = response.answer.feedback.get('pretty_feedback')
         if pretty_feedback is not None:
-            text_response.short_answer = pretty_feedback
-            text_response.full_answer = pretty_feedback
+            text_response.question = pretty_feedback
 
         formatted_response = response.answer.formatted_response
         if formatted_response is not None:
-            text_response.question = formatted_response
+            text_response.short_answer = formatted_response
+            text_response.full_answer = formatted_response
 
         time_data_relevance = CubeProcessor.get_time_data_relevance(response.answer)
         if time_data_relevance is not None:
