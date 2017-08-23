@@ -371,6 +371,9 @@ def _prepare_test_data(data):
     2. Как только встречается фильтрованное слово в токенах, то соотв. элемент инкементируется
     """
 
+    # Показывает порог отсечения редких слов. Довольно сильно влияет на алгоритм
+    WORD_SIGNIFICANCE_THRESHOLD = 4
+
     all_freqs = Counter()
     for line in data:
         for word in line[0]:
@@ -379,14 +382,14 @@ def _prepare_test_data(data):
     logging.info("Всего {} слова. Из них значимых {}".format(
         len(all_freqs),
         len(list(filter(
-            lambda x: all_freqs[x] >= 3,
+            lambda x: all_freqs[x] >= WORD_SIGNIFICANCE_THRESHOLD,
             all_freqs.keys()
         )))
     ))
 
     # Отображение фильтрованных слов в индексы
     words_to_ind = {}
-    for ind, word in enumerate(filter(lambda x: all_freqs[x] >= 3, all_freqs)):
+    for ind, word in enumerate(filter(lambda x: all_freqs[x] >= WORD_SIGNIFICANCE_THRESHOLD, all_freqs)):
         words_to_ind[word] = ind
 
     # вот тут могло получиться так, что какие-то два примера стали одинаковыми
@@ -453,6 +456,14 @@ def preprocess(s: str):
         if terr.issubset(res):
             res = res.difference(terr)
             res.add("члентерритория")
+            break
+
+    # ToDo: Конечно, надо бы написать какой-нибудь модуль с синонимами, но пока излишне
+    fb_members = [{"фб"}, {"федеральный", "бюджет"}, {"фед", "бюджет"}, {"федбюджет"}]
+    for fb in fb_members:
+        if fb.issubset(res):
+            res = res.difference(fb)
+            res.add("членфедбюджет")
             break
 
     return tuple(res)

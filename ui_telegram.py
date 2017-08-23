@@ -20,11 +20,11 @@ from flask import Flask, request, abort
 import constants
 from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
-from dbs.query_db import get_random_requests
 from dbs.user_support_library import check_user_existence
 from dbs.user_support_library import create_feedback
 from dbs.user_support_library import create_user
 from dbs.user_support_library import get_feedbacks
+from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import text_to_speech
@@ -147,7 +147,7 @@ def send_help(message):
 @bot.message_handler(commands=['idea'])
 def get_query_examples(message):
     try:
-        possible_queries = get_random_requests()
+        possible_queries = get_good_queries(count=5)
         message_str = "Вы *можете спросить*:\n{}"
         possible_queries = ['- {}\n'.format(query) for query in possible_queries]
 
@@ -714,6 +714,10 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
 
     data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
     data_relevance = data_relevance if data_relevance else ''
+    if data_relevance:
+        data_relevance = '\nАктуальность данных: *{}*'.format(
+            data_relevance
+        )
 
     feedback = feedback_str.format(
         user_req=user_request,

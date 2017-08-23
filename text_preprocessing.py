@@ -24,47 +24,89 @@ from core.parsers.time_parser import time_tp
 
 from config import SETTINGS
 
+# этот импорт убирать нельзя, иначе полетит логгирование
+import logs_helper  # pylint: disable=unused-import
+
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
+def mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
 
 class TextPreprocessing(object):
     """
     Класс для предварительной обработки текста
     """
-    
-    delete_digits = MODEL_CONFIG["normalization_delete_digits_default"]
-    delete_question_words = MODEL_CONFIG["normalization_delete_question_words_default"]
-    delete_repeatings = MODEL_CONFIG["normalization_delete_repeatings_default"]
-    parse_syns = MODEL_CONFIG["parser_syns_default"]
-    parse_nums = MODEL_CONFIG["parser_nums_default"]
-    parse_time = MODEL_CONFIG["parser_time_default"]
-    use_pymystem = SETTINGS.USE_PYMYSTEM
 
-    def __init__(self, log=True, **kwargs):
+    default_params = {
+        'delete_digits': mc_get("normalization_delete_digits_default"),
+        'delete_question_words': mc_get("normalization_delete_question_words_default"),
+        'delete_repeatings': mc_get("normalization_delete_repeatings_default"),
+        'parse_syns': mc_get("parser_syns_default"),
+        'parse_nums': mc_get("parser_nums_default"),
+        'parse_time': mc_get("parser_time_default"),
+    }
+
+    default_use_pymystem = getattr(SETTINGS, 'USE_PYMYSTEM', False)
+
+    language = 'russian'
+
+    question_words = set('кто что это где для зачем какой'.split())
+
+    default_stop_words = set(stopwords.words(language)).difference(
+        'не такой сейчас'.split(),
+        question_words
+    ).union(
+        'подсказать также иной да нет'.split()
+    )
+
+    def __init__(self, log=True, use_pymystem=None, **kwargs):
         self.log = log
-        self.language = 'russian'
 
         # TODO: что делать с вопросительными словами?
         # Базовый набор стоп-слов
-        self.stop_words = set(stopwords.words(self.language))
-        self.stop_words -= {'не', 'такой'}
-        self.stop_words.update(set("подсказать также иной да нет -".split()))
-        
-        for param in ('delete_digits', 'delete_question_words', 'delete_repeatings',
-                      'parse_syns', 'parse_nums', 'parse_time', 'use_pymystem'):
-            if param in kwargs:
-                setattr(self, param, kwargs[param])
-                
+        self.stop_words = TextPreprocessing.default_stop_words
+
+        self.params = TextPreprocessing.default_params.copy()
+        for param in kwargs:
+            val = kwargs[param]
+            if param in self.params and isinstance(val, bool):
+                self.params[param] = val
+
+        self.active_param_names =  [p for p in self.params if self.params[p]]
+
+        if use_pymystem is not None:
+            self.use_pymystem = bool(use_pymystem)
+        else:
+            self.use_pymystem = TextPreprocessing.default_use_pymystem
+
         if self.use_pymystem:
             self.lemmatize = TextPreprocessing._pymystem_lem
+            TextPreprocessing.mystem.start()
+            self.lemmatizer_name = 'pymystem'
         else:
             self.lemmatize = TextPreprocessing._pymorphy_lem
-        
-        self._tonita_parser = TextPreprocessing._make_tonita_parser(
+            self.lemmatizer_name = 'pymorphy/nltk'
+
+        self.tonita_parser = TextPreprocessing._make_tonita_parser(
             self.parse_syns,
             self.parse_nums,
             self.parse_time,
         )
+
+        if self.log:
+            logging.info(
+                'Предобработка текста ведётся через {}; активные фильтры - {}'.format(
+                    self.lemmatizer_name,
+                    ', '.join(self.active_param_names)
+                )
+            )
+
+
+    def __getattr__(self, attr):
+        res = self.params.get(attr, None)
+        if res is not None:
+            return res
+        raise AttributeError
+
 
     def normalize(self, text, request_id=None):
         """Метод для нормализации текста"""
@@ -73,14 +115,13 @@ class TextPreprocessing(object):
 
         # Применение фильтров
         text = TextPreprocessing._filter_percent(text)
-        text = TextPreprocessing._filter_underscore(text)
 
         # Токенизируем и лемматизируем
         tokens = self.lemmatize(text)
 
         # Парсинг всего
-        if self._tonita_parser is not None:
-            tokens = self._tonita_parser(tokens)
+        if self.tonita_parser is not None:
+            tokens = self.tonita_parser(tokens)
 
         # Убираем цифры
         if self.delete_digits:
@@ -88,10 +129,10 @@ class TextPreprocessing(object):
 
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
-        stop_words = set(self.stop_words)
-        if not self.delete_question_words:
-            delete_stop_words_set = set(['кто', 'что', 'это', 'где', 'для', 'зачем', 'какой'])
-            stop_words = stop_words - delete_stop_words_set
+        if self.delete_question_words:
+            stop_words = self.stop_words.union(TextPreprocessing.question_words)
+        else:
+            stop_words = self.stop_words
 
         # Убираем стоп-слова
         tokens = filter(lambda t: t not in stop_words, tokens)
@@ -105,33 +146,36 @@ class TextPreprocessing(object):
         if self.log:
             logging.info(
                 "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
-                    request_id, normalized_request
+                    request_id,
+                    normalized_request
                 )
             )
 
         return normalized_request
-    
-    def __call__(self, text, request_id=None):
-        return self.normalize(text, request_id)
+
+    __call__ = normalize
+
+    _noword_re = re.compile(r'[_\W]*')
+
+    @staticmethod
+    def _filter_words(words: list):
+        return filter(lambda t: TextPreprocessing._noword_re.fullmatch(t) is None, words)
 
     mystem = Mystem()
-    mystem.start()
-    
-    @staticmethod
-    def _filter_words(wordlist: list):
-        return filter(lambda t: re.fullmatch(r'\W*', t) is None, wordlist)
 
     @staticmethod
     def _pymystem_lem(text: str):
-        return TextPreprocessing._filter_words(
+        return list(TextPreprocessing._filter_words(
             TextPreprocessing.mystem.lemmatize(text)
-        )
+        ))
 
     morph = MorphAnalyzer()
-    
+    _stripper_re = re.compile(r'(^)?[_\W]*(?(1)|$)')
+
     @staticmethod
     @lru_cache(maxsize=16384)
     def _pymorphy_normal(word: str):
+        word = TextPreprocessing._stripper_re.sub('', word)
         res = TextPreprocessing.morph.parse(word)[0].normal_form
         if 'ё' in res:
             res = res.replace('ё', 'е')
@@ -139,19 +183,19 @@ class TextPreprocessing(object):
 
     @staticmethod
     def _pymorphy_lem(text: str):
-        return TextPreprocessing._filter_words(
-            map(
-                TextPreprocessing._pymorphy_normal,
-                word_tokenize(text)
+        return list(map(
+            TextPreprocessing._pymorphy_normal,
+            TextPreprocessing._filter_words(
+                word_tokenize(TextPreprocessing._filter_underscore(text))
             )
-        )
-    
+        ))
+
     @staticmethod
     @lru_cache(maxsize=64)
     def _make_tonita_parser(
-        parse_syns,
-        parse_nums,
-        parse_time,
+            parse_syns,
+            parse_nums,
+            parse_time,
     ):
         parser = None
         if parse_syns:
@@ -175,7 +219,7 @@ class TextPreprocessing(object):
         """Обработка процента"""
 
         if '%' in text:
-            text = text.replace('%', ' процент')
+            text = text.replace('%', ' процент ')
         return text
 
     @staticmethod

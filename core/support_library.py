@@ -9,7 +9,6 @@ import logging
 import json
 import datetime
 import requests
-import numpy
 import re
 
 from kb.kb_support_library import get_cube_caption
@@ -169,10 +168,45 @@ def format_numerical(number: float):
     else:
         res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
 
-    res += ' руб.'
     logging.debug("Сконвертировали {} в {}".format(number, res))
 
     return res
+
+
+def format_minus_plus_response(cube_answer, formatted_value: str):
+    """Обработка плюса и минуса в ответе"""
+
+    new_formatted_value = formatted_value
+
+    if ('25-20' in cube_answer.mdx_query or
+                '03-19' in cube_answer.mdx_query):
+        if '-' in formatted_value:
+            new_formatted_value = formatted_value.replace('-', 'дефицит ')
+        else:
+            new_formatted_value = 'профицит ' + formatted_value
+
+        logging.debug("Сконвертировали {} в {}".format(
+            formatted_value, new_formatted_value)
+        )
+
+    return new_formatted_value
+
+
+def format_dollars_rubles(cube_answer, formatted_value: str):
+    """Добавление руб./долларов США"""
+
+    new_formatted_value = formatted_value
+    if any(cube_value in cube_answer.mdx_query for cube_value in
+           ('33-1', '33-2', '33-3', '33-4', '33-5', '33-6', '33-8', '33-20')):
+        new_formatted_value = '$' + formatted_value
+    else:
+        new_formatted_value = formatted_value + ' руб.'
+
+    logging.debug("Сконвертировали {} в {}".format(
+        formatted_value, new_formatted_value)
+    )
+
+    return new_formatted_value
 
 
 def process_server_response(cube_answer, response: requests):
@@ -208,7 +242,7 @@ def process_server_response(cube_answer, response: requests):
         cube_answer.message = ERROR_GENERAL
         cube_answer.response = response
         logging.error(
-            "Query ID: {}\tError: Был создан MDX-запрос с некорректными параметрами {}".format(
+            "Query ID: {}\tMessage: Был создан MDX-запрос с некорректными параметрами {}".format(
                 cube_answer.request_id,
                 response.get('message', '')
             ))
@@ -218,10 +252,23 @@ def process_server_response(cube_answer, response: requests):
         cube_answer.status = False
         cube_answer.message = ERROR_NULL_DATA_FOR_SUCH_REQUEST
         cube_answer.response = None
+        logging.info(
+            "Query ID: {}\tMessage: Данных по запросу нет".format(
+                cube_answer.request_id
+            ))
+
         return
-        # В остальных случаях, то есть когда все хорошо
+    # В остальных случаях, то есть когда все хорошо
     else:
-        return float(response["cells"][0][0]["value"])
+        value = float(response["cells"][0][0]["value"])
+
+        logging.info(
+            "Query ID: {}\tMessage: Ответ на MDX-запрос -  {}".format(
+                cube_answer.request_id,
+                value
+            ))
+
+        return value
 
 
 def check_mdx_returns_data(response: requests):
@@ -266,7 +313,15 @@ def process_cube_answer(cube_answer, value):
     # Добавление форматированного результата
     # Если формат для меры - 0, что означает число
     if not value_format:
-        formatted_value = format_numerical(value)
+        formatted_value = format_minus_plus_response(
+            cube_answer,
+            format_numerical(value)
+        )
+
+        formatted_value = format_dollars_rubles(
+            cube_answer,
+            formatted_value
+        )
         cube_answer.formatted_response = formatted_value
     # Если формат для меры - 1, что означает процент
     elif value_format == 1:
@@ -389,13 +444,13 @@ def score_cube_question(cube_data: CubeData):
         Сумма скора куба, среднего скора элементов измерений и меры
         """
 
-        avg_member_score = 0
+        max_member_score = 0
 
         cube_score = cube_data.selected_cube['score']
         members_score = [member['score'] for member in cube_data.members]
 
         if members_score:
-            avg_member_score = numpy.mean(members_score)
+            max_member_score = max(members_score)
 
         measure_score = 0
         if cube_data.selected_measure:
@@ -403,8 +458,9 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = (
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
-            avg_member_score if avg_member_score else 0 +
-            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+            max_member_score if max_member_score else 0 +
+                                                      MODEL_CONFIG[
+                                                          "measure_weight_in_sum_scoring_model"] * measure_score
         )
 
     # получение скоринг-модели

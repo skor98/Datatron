@@ -20,6 +20,7 @@ class TextResponseModel:
         self.image_links = None
         self.http_ref_links = None
         self.associated_questions = None
+        self.time_data_relevance = ''
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
@@ -30,6 +31,7 @@ class TextResponseModel:
             'question',
             'full_answer',
             'short_answer',
+            'time_data_relevance',
             'associated_quesions',
         )
 
@@ -81,20 +83,17 @@ class TextResponseModel:
     def form_cube_answer(text_response, response: CubeAnswer):
         # формирование ответа для клиента по ответу по кубу
         pretty_feedback = response.answer.feedback.get('pretty_feedback')
-        formatted_response = response.answer.formatted_response
-
         if pretty_feedback is not None:
-            answer = "Datatron понял ваш запрос как '{}'".format(pretty_feedback)
+            text_response.question = pretty_feedback
 
+        formatted_response = response.answer.formatted_response
         if formatted_response is not None:
-            answer = "{}\nОтвет: {}".format(answer, formatted_response)
+            text_response.short_answer = formatted_response
+            text_response.full_answer = formatted_response
 
         time_data_relevance = CubeProcessor.get_time_data_relevance(response.answer)
         if time_data_relevance is not None:
-            answer = "{}{}".format(answer, time_data_relevance)
-
-        text_response.short_answer = answer
-        text_response.full_answer = answer
+            text_response.time_data_relevance = time_data_relevance
 
         return text_response
 
@@ -139,6 +138,7 @@ class TextResponseModel:
             document_links = []
             document_link = LinkModel('document', response.answer.document_caption[0], response.answer.document[0])
             document_links.append(document_link)
+            return document_links
         else:
             return None
 
@@ -163,4 +163,3 @@ class TextResponseModel:
             return http_ref_links
         else:
             return None
-

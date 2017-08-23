@@ -29,6 +29,7 @@ import logs_helper  # pylint: disable=unused-import
 
 TPP = TextPreprocessing(delete_question_words=False)
 
+
 class DataRetrieving:
     """
     Модуль связывающие в себе результаты работы Apache Solr,
