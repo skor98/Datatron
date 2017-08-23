@@ -38,6 +38,8 @@ class CubeProcessor:
         cube_data_list = []
 
         if cube_data:
+            csl.manage_years(cube_data)
+
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
