@@ -24,6 +24,9 @@ from core.parsers.time_parser import time_tp
 
 from config import SETTINGS
 
+# этот импорт убирать нельзя, иначе полетит логгирование
+import logs_helper  # pylint: disable=unused-import
+
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 def mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
