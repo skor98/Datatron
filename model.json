@@ -22,7 +22,7 @@
     "model_cube_or_minfin_clf_type": "SVM",
     "normalization_delete_digits_default": false,
     "normalization_delete_question_words_default": true,
-    "normalization_delete_repeatings_default": false,
+    "normalization_delete_repeatings_default": true,
     "parser_nums_default": true,
     "parser_syns_default": true,
     "parser_time_default": true,

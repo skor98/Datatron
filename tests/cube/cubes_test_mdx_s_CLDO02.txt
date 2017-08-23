@@ -1,1 +1,4 @@
 ﻿Дефицит бюджета Московской области:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19100])
+Плановый дефицит Московской области:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])
+Плановый дефицит Московской области оперативные данные:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])
+Плановый дефицит Московской области в этом году:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])

@@ -178,8 +178,9 @@ def format_minus_plus_response(cube_answer, formatted_value: str):
 
     new_formatted_value = formatted_value
 
-    if ('25-20' in cube_answer.mdx_query or
-                '03-19' in cube_answer.mdx_query):
+    # для куба CLDO02 и CLDO01
+    if any(cube_value in cube_answer.mdx_query for cube_value in
+           ('25-20', '03-19')):
         if '-' in formatted_value:
             new_formatted_value = formatted_value.replace('-', 'дефицит ')
         else:
@@ -188,6 +189,18 @@ def format_minus_plus_response(cube_answer, formatted_value: str):
         logging.debug("Сконвертировали {} в {}".format(
             formatted_value, new_formatted_value)
         )
+    # для куба FSYR01
+    elif 'FSYR01' in cube_answer.mdx_query:
+        if any(cube_value in cube_answer.mdx_query for cube_value in
+               ('03-5', '03-6')):
+            if '-' in formatted_value:
+                new_formatted_value = formatted_value.replace('-', 'профицит ')
+            else:
+                new_formatted_value = 'дефицит ' + formatted_value
+
+            logging.debug("Сконвертировали {} в {}".format(
+                formatted_value, new_formatted_value)
+            )
 
     return new_formatted_value
 

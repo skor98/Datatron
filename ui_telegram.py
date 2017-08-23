@@ -692,7 +692,7 @@ def process_minfin_questions(message, minfin_result, ans_confidence, input_forma
 def form_feedback(message, request_id, cube_result, user_request_notification=False):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nQuery\_ID: {query_id}'
+        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nID зароса: {query_id}'
     )
     separator = ''
     expert_str = ''

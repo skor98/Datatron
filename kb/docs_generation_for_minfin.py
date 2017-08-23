@@ -27,6 +27,7 @@ output_file = 'minfin_data_for_indexing.json'
 # Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
 
+
 def set_up_minfin_data(index_way='curl'):
     """
     Метод для создания и индексации в Apache Solr
@@ -58,7 +59,7 @@ def _refactor_data(data):
     Преобразование датафрейма в список объектов типа
     MinfinDocument
     """
-    
+
     request_id = uuid.uuid4()
 
     docs = []
@@ -82,8 +83,7 @@ def _refactor_data(data):
         doc.full_answer = row.full_answer
 
         lem_key_words = TextPreprocessing(
-            delete_question_words=False,
-            delete_repeatings=True
+            delete_question_words=False
         )(row.key_words, request_id)
 
         # индексируемое поле
@@ -100,16 +100,18 @@ def _refactor_data(data):
                 for question in synonym_questions
                 ]
 
-            # уникальные слова по синонимичным запросам
-            lem_extra_key_words = set(' '.join(lem_synonym_questions).split())
+            lem_full_answer = TextPreprocessing()(row.full_answer)
 
             # добавление уникальных слов и длинного ответа
-            lem_full_answer = TextPreprocessing()(row.full_answer)
-            lem_extra_key_words.union(set(lem_full_answer.split()))
+            lem_extra_key_words = (
+                set(' '.join(lem_synonym_questions).split()) |
+                set(lem_full_answer.split())
+            )
 
             # удаление уже используемых слов lem_key_words, lem_short_answer
             lem_extra_key_words -= set(doc.lem_key_words.split())
             lem_extra_key_words -= set(doc.lem_short_answer.split())
+            lem_extra_key_words -= set(lem_key_words.split())
             lem_extra_key_words = ' '.join(lem_extra_key_words)
 
             # индексируемое поле
