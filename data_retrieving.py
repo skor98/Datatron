@@ -177,7 +177,8 @@ class DataRetrieving:
             reverse=True
         )
 
-        DataRetrieving._first_place_right_type(all_answers)
+        if all_answers:
+            DataRetrieving._first_place_right_type(all_answers)
 
         return all_answers
 

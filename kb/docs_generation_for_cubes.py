@@ -143,9 +143,6 @@ class CubeDocsGeneration:
         # 4-цифренные года: 2007 - current_year
         years = [str(i) for i in range(2007, current_year + 1)]
 
-        # 1-2-цифренные года: 7 - 17
-        years.extend([str(i) for i in range(7, current_year - 1999)])
-
         # создание документов нужной структуры
         for year in years:
             year_values.append(

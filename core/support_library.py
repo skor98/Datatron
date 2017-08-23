@@ -355,22 +355,6 @@ def process_cube_answer(cube_answer, value):
         ))
 
 
-def manage_years(cube_data: CubeData):
-    """Обработка лет из 1 и 2 цифр"""
-
-    # проверка на наличие измерения года
-    if cube_data.year_member:
-        year = cube_data.year_member['cube_value']
-
-        # обработка лет из 1 и 2 цифр
-        if int(year) < 2006:
-            if int(year) < 10:
-                year = '0' + year
-            year = str(datetime.datetime.strptime(year, '%y').year)
-
-            cube_data.year_member['cube_value'] = year
-
-
 def check_if_year_is_current(cube_data: CubeData):
     """Проверка на то, что год в данных является текущим годом"""
 
