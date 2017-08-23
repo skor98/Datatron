@@ -5,6 +5,9 @@
 Поддерживающие скрипты к базе знаний
 """
 
+import re
+import logging
+import random
 import pandas as pd
 from os import listdir, path
 
@@ -12,6 +15,8 @@ import kb.kb_db_creation as dbc
 
 from text_preprocessing import TextPreprocessing
 from config import SETTINGS, TEST_PATH_RESULTS
+
+import logs_helper  # pylint: disable=unused-import
 
 TPP = TextPreprocessing(
     delete_digits=True,
@@ -286,24 +291,45 @@ def read_minfin_data():
     return files, dfs
 
 
-def get_correct_cube_questions():
+def get_good_queries(count=0):
     """
-    Получение списка корректных запросов по кубам
-    из последнего прогона тестов
+    Возвращает успешные вопросы по кубам и минфину в перемешанном виде.
+    Если count == 0, то возвращает все успешные запросы
     """
 
-    questions = []
+    if not get_good_queries.queries:
+        good_cube_query_re = re.compile(r"\d*\.\s+\+\s+(.+)")
+        good_mifin_query_re = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает корректно')
+        get_good_queries.queries = []
 
-    files = [elem for elem in listdir(TEST_PATH_RESULTS) if
-             (
-                 elem.endswith('.txt') and elem.startswith('cube')
-             )]
+        test_paths = listdir(TEST_PATH_RESULTS)
+        try:
+            latest_cube_path = max(filter(lambda x: x.startswith("cube"), test_paths))
+        except ValueError:
+            logging.error("Нет тестов по кубам!")
 
-    with open(path.join(TEST_PATH_RESULTS, max(files)), 'r', encoding='utf-8') as file:
-        for line in file:
-            line = line.split('\t')
-            if len(line) > 1:
-                if line[1] == '+':
-                    questions.append(line[2].strip())
+        get_good_queries.queries += good_cube_query_re.findall(open(
+            path.join(TEST_PATH_RESULTS, latest_cube_path),
+            encoding="utf-8"
+        ).read())
 
-    return questions
+        try:
+            latest_mifin_path = max(filter(lambda x: x.startswith("minfin"), test_paths))
+        except ValueError:
+            logging.error("Нет тестов по минфину!")
+
+        get_good_queries.queries += good_mifin_query_re.findall(open(
+            path.join(TEST_PATH_RESULTS, latest_mifin_path),
+            encoding="utf-8"
+        ).read())
+
+        # А теперь поставим везде заглавной первую букву
+        for ind, val in enumerate(get_good_queries.queries):
+            get_good_queries.queries[ind] = val[0].upper() + val[1:]
+
+    if count == 0 or count > len(get_good_queries.queries):
+        count = len(get_good_queries.queries)
+    return random.sample(get_good_queries.queries, count)
+
+
+get_good_queries.queries = None

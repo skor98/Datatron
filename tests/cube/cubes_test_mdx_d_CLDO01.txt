@@ -1,4 +1,4 @@
-Процент исполнения федерального бюджета по доходам в текущем году:SELECT {[MEASURES].[PFPERCENTYR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-1])
+﻿Процент исполнения федерального бюджета по доходам в текущем году:SELECT {[MEASURES].[PFPERCENTYR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-1])
 Доходы федерального бюджета Российской Федерации по оперативным данным 2017 года:SELECT {[MEASURES].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-1]) 
 Доходы федерального бюджета в текущем финансовом году:SELECT {[MEASURES].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-1]) 
 Покажите сумму доходов ФБ в 2017 году:SELECT {[MEASURES].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-1]) 
@@ -31,3 +31,5 @@
 Запланированная сумма средств в федеральном бюджете на контрактуемые расходы на текущий финансовый год:SELECT {[MEASURES].[PLANONYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-10])
 Запланированная сумма расходов в федеральном бюджете на 2017 год на выплаты персоналу:SELECT{[MEASURES].[PLANONYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-9])
 План на текущий финансовый год по привлечению внешних источников финансирования дефицита федерального бюджета:SELECT {[MEASURES].[PLANONYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-29])
+Объем выделенных средств из фед.бюджета в % к ввп:SELECT {[Measures].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-19])
+Сальдо федерального бюджета в процентах к ввп:SELECT {[Measures].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-21])

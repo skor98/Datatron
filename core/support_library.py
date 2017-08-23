@@ -9,7 +9,6 @@ import logging
 import json
 import datetime
 import requests
-import numpy
 import re
 
 from kb.kb_support_library import get_cube_caption
@@ -169,7 +168,6 @@ def format_numerical(number: float):
     else:
         res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
 
-    res += ' руб.'
     logging.debug("Сконвертировали {} в {}".format(number, res))
 
     return res
@@ -178,13 +176,37 @@ def format_numerical(number: float):
 def format_minus_plus_response(cube_answer, formatted_value: str):
     """Обработка плюса и минуса в ответе"""
 
+    new_formatted_value = formatted_value
+
     if ('25-20' in cube_answer.mdx_query or
                 '03-19' in cube_answer.mdx_query):
         if '-' in formatted_value:
-            formatted_value = formatted_value.replace('-', 'дефицит ')
+            new_formatted_value = formatted_value.replace('-', 'дефицит ')
         else:
-            formatted_value = 'профицит ' + formatted_value
-    return formatted_value
+            new_formatted_value = 'профицит ' + formatted_value
+
+        logging.debug("Сконвертировали {} в {}".format(
+            formatted_value, new_formatted_value)
+        )
+
+    return new_formatted_value
+
+
+def format_dollars_rubles(cube_answer, formatted_value: str):
+    """Добавление руб./долларов США"""
+
+    new_formatted_value = formatted_value
+    if any(cube_value in cube_answer.mdx_query for cube_value in
+           ('33-1', '33-2', '33-3', '33-4', '33-5', '33-6', '33-8', '33-20')):
+        new_formatted_value = '$' + formatted_value
+    else:
+        new_formatted_value = formatted_value + ' руб.'
+
+    logging.debug("Сконвертировали {} в {}".format(
+        formatted_value, new_formatted_value)
+    )
+
+    return new_formatted_value
 
 
 def process_server_response(cube_answer, response: requests):
@@ -294,6 +316,11 @@ def process_cube_answer(cube_answer, value):
         formatted_value = format_minus_plus_response(
             cube_answer,
             format_numerical(value)
+        )
+
+        formatted_value = format_dollars_rubles(
+            cube_answer,
+            formatted_value
         )
         cube_answer.formatted_response = formatted_value
     # Если формат для меры - 1, что означает процент
