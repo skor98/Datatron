@@ -458,6 +458,14 @@ def preprocess(s: str):
             res.add("члентерритория")
             break
 
+    # ToDo: Конечно, надо бы написать какой-нибудь модуль с синонимами, но пока излишне
+    fb_members = [{"фб"}, {"федеральный", "бюджет"}, {"фед", "бюджет"}, {"федбюджет"}]
+    for fb in fb_members:
+        if fb.issubset(res):
+            res = res.difference(fb)
+            res.add("членфедбюджет")
+            break
+
     return tuple(res)
 
 
