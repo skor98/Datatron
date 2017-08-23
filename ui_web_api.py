@@ -6,9 +6,7 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
-from os import path, makedirs, listdir
-import re
-import random
+from os import path, makedirs
 import logging
 from uuid import uuid4
 import json
@@ -19,15 +17,19 @@ from flask_restful import reqparse, abort, Api, Resource
 
 from messenger_manager import MessengerManager
 from kb.kb_support_library import read_minfin_data
-import logs_helper  # pylint: disable=unused-import
+from kb.kb_support_library import get_good_queries
+
 from logs_helper import time_with_message
-from config import SETTINGS, TEST_PATH_RESULTS
+from config import SETTINGS
+
+import logs_helper
 
 from models.responses.text_response_model import TextResponseModel
 
 from utils.resource_helper import ResourceHelper
 
 
+# pylint: disable=unused-import
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
 
@@ -48,6 +50,7 @@ def get_minfin_data():
             indent=4
         ).encode("utf-8")
     return get_minfin_data.data
+
 
 get_minfin_data.data = None
 
@@ -75,47 +78,6 @@ def _read_minfin_data():
             data["question"].tolist()
         )
     )
-
-
-def get_good_queries(count=0):
-    """
-    Возвращает успешные вопросы по кубам и минфину в перемешанном виде.
-    Если count == 0, то возвращает все успешные запросы
-    """
-
-    if not get_good_queries.queries:
-        good_cube_query_re = re.compile(r"\d*\.\s+\+\s+(.+)")
-        good_mifin_query_re = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает корректно')
-        get_good_queries.queries = []
-
-        test_paths = listdir(TEST_PATH_RESULTS)
-        try:
-            latest_cube_path = max(filter(lambda x: x.startswith("cube"), test_paths))
-        except ValueError:
-            logging.error("Нет тестов по кубам!")
-        get_good_queries.queries += good_cube_query_re.findall(open(
-            path.join(TEST_PATH_RESULTS, latest_cube_path),
-            encoding="utf-8"
-        ).read())
-
-        try:
-            latest_mifin_path = max(filter(lambda x: x.startswith("minfin"), test_paths))
-        except ValueError:
-            logging.error("Нет тестов по минфину!")
-        get_good_queries.queries += good_mifin_query_re.findall(open(
-            path.join(TEST_PATH_RESULTS, latest_mifin_path),
-            encoding="utf-8"
-        ).read())
-
-        # А теперь поставим везде заглавной первую букву
-        for ind, val in enumerate(get_good_queries.queries):
-            get_good_queries.queries[ind] = val[0].upper() + val[1:]
-
-    if count == 0 or count > len(get_good_queries.queries):
-        count = len(get_good_queries.queries)
-    return random.sample(get_good_queries.queries, count)
-
-get_good_queries.queries = None
 
 
 def is_valid_api_key(api_key):

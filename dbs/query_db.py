@@ -6,14 +6,11 @@
 """
 
 import datetime
-import pandas as pd
 
 from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 
 from config import QUERY_DB_PATH
 from model_manager import MODEL_CONFIG
-from kb.kb_support_library import read_minfin_data
-from kb.kb_support_library import get_correct_cube_questions
 
 _database = SqliteDatabase(QUERY_DB_PATH)
 
@@ -89,45 +86,4 @@ def get_queries(user_id, time_delta):
     return tuple(["{} {}: {}".format(row.date, row.user_id, row.query) for row in db_res])
 
 
-def get_random_requests(num=5):
-    """N рандомных запросов по кубам и Минфину"""
-
-    def get_queries_from_db():
-        """Чтение 5 рандобных запросов из БД"""
-
-        user_requests = []
-        query = (UserQuery
-                 .select(UserQuery.query)
-                 .order_by(fn.Random())
-                 .distinct()
-                 .limit(num))
-
-        for elem in query:
-            user_requests.append(elem.query)
-        return user_requests
-
-    def get_queries_from_files():
-        """Чтение всех вопросов по Минфину"""
-
-        # чтение данных по минфину
-        _, dfs = read_minfin_data()
-        minfin_data = pd.concat(dfs)
-        data = minfin_data['question'].tolist()
-
-        # чтение данных по кубу
-        data.append(get_correct_cube_questions())
-
-        return pd.DataFrame(data)
-
-    if get_random_requests.data is None:
-        if MODEL_CONFIG["enable_idea_command_from_db"]:
-            return get_queries_from_db()
-        else:
-            get_random_requests.data = get_queries_from_files()
-            return get_random_requests.data[0].sample(num).tolist()
-
-    return get_random_requests.data[0].sample(num).tolist()
-
-
-get_random_requests.data = None
 _is_inited = False
