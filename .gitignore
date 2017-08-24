@@ -231,3 +231,9 @@ tests/minfin/minfin_test_auto*.txt
 kb/ts*
 
 kb/knowledge_base\.db-journal
+
+\.settings/
+
+\.project
+
+\.pydevproject

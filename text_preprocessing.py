@@ -5,28 +5,24 @@
 Работа с текстом: нормализация, частотное распределение
 """
 
-import logging
-import re
 from functools import lru_cache
+import logging
 
-from nltk.corpus import stopwords
 from nltk import FreqDist
-
-from pymystem3 import Mystem
+from nltk.corpus import stopwords
 from pymorphy2 import MorphAnalyzer
-from nltk import word_tokenize
+import uuid
 
 from model_manager import MODEL_CONFIG
+from nlp import nlp_utils
+from nlp.parsers.num_parser import num_tp
+from nlp.parsers.syn_parser import syn_tp
+from nlp.parsers.time_parser import time_tp
 
-from core.parsers.syn_parser import syn_tp
-from core.parsers.num_parser import num_tp
-from core.parsers.time_parser import time_tp
-
-from config import SETTINGS
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
-def mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
+def _mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
 
 class TextPreprocessing(object):
     """
@@ -34,15 +30,14 @@ class TextPreprocessing(object):
     """
 
     default_params = {
-        'delete_digits': mc_get("normalization_delete_digits_default"),
-        'delete_question_words': mc_get("normalization_delete_question_words_default"),
-        'delete_repeatings': mc_get("normalization_delete_repeatings_default"),
-        'parse_syns': mc_get("parser_syns_default"),
-        'parse_nums': mc_get("parser_nums_default"),
-        'parse_time': mc_get("parser_time_default"),
+        'delete_digits': _mc_get("normalization_delete_digits_default"),
+        'delete_question_words': _mc_get("normalization_delete_question_words_default"),
+        'delete_repeatings': _mc_get("normalization_delete_repeatings_default"),
+        'parse_syns': _mc_get("parser_syns_default"),
+        'parse_nums': _mc_get("parser_nums_default"),
+        'parse_time': _mc_get("parser_time_default"),
     }
 
-    default_use_pymystem = getattr(SETTINGS, 'USE_PYMYSTEM', False)
 
     language = 'russian'
 
@@ -55,11 +50,13 @@ class TextPreprocessing(object):
         'подсказать также иной да нет'.split()
     )
 
-    def __init__(self, log=True, use_pymystem=None, **kwargs):
+
+    def __init__(self, log=True, label='NULL', **kwargs):
         self.log = log
 
-        # TODO: что делать с вопросительными словами?
-        # Базовый набор стоп-слов
+        self.label = label.upper()
+        self.uid = str(uuid.uuid4()).split('-')[0]
+
         self.stop_words = TextPreprocessing.default_stop_words
 
         self.params = TextPreprocessing.default_params.copy()
@@ -68,57 +65,29 @@ class TextPreprocessing(object):
             if param in self.params and isinstance(val, bool):
                 self.params[param] = val
 
-        self.active_param_names =  [p for p in self.params if self.params[p]]
-
-        if use_pymystem is not None:
-            self.use_pymystem = bool(use_pymystem)
-        else:
-            self.use_pymystem = TextPreprocessing.default_use_pymystem
-
-        if self.use_pymystem:
-            self.lemmatize = TextPreprocessing._pymystem_lem
-            TextPreprocessing.mystem.start()
-            self.lemmatizer_name = 'pymystem'
-        else:
-            self.lemmatize = TextPreprocessing._pymorphy_lem
-            self.lemmatizer_name = 'pymorphy/nltk'
-
-        self.tonita_parser = TextPreprocessing._make_tonita_parser(
-            self.parse_syns,
-            self.parse_nums,
-            self.parse_time,
-        )
+        self.lemmatize = TextPreprocessing._pymorphy_lem
+        self.lemmatizer_name = 'pymorphy/nltk'
 
         if self.log:
             logging.info(
-                'Предобработка текста ведётся через {}; активные фильтры - {}'.format(
-                    self.lemmatizer_name,
-                    ', '.join(self.active_param_names)
-                )
+                self.setup_str.replace('] П', '] Препроцессор создан, п')
             )
 
 
-    def __getattr__(self, attr):
-        res = self.params.get(attr, None)
-        if res is not None:
-            return res
-        raise AttributeError
-
-
-    def normalize(self, text, request_id=None):
+    def normalize(self, text, request_id='<NoID>'):
         """Метод для нормализации текста"""
 
         # TODO: обработка направильного спеллинга
 
-        # Применение фильтров
-        text = TextPreprocessing._filter_percent(text)
+        # Фильтруем важные символы
+        text = TextPreprocessing._filter_symbols(text)
 
         # Токенизируем и лемматизируем
         tokens = self.lemmatize(text)
 
         # Парсинг всего
-        if self.tonita_parser is not None:
-            tokens = self.tonita_parser(tokens)
+        if self.combined_parser is not None:
+            tokens = self.combined_parser(tokens)
 
         # Убираем цифры
         if self.delete_digits:
@@ -127,7 +96,7 @@ class TextPreprocessing(object):
         # Если вопросительные слова и другие частицы не должны быть
         # удалены из запроса, так как отражают его смысл
         if self.delete_question_words:
-            stop_words = self.stop_words.union(TextPreprocessing.question_words)
+            stop_words = self.stop_words.union(self.question_words)
         else:
             stop_words = self.stop_words
 
@@ -142,37 +111,63 @@ class TextPreprocessing(object):
 
         if self.log:
             logging.info(
-                "Query_ID: {}\tMessage: Запрос после нормализации: {}".format(
+                "Query_ID: {}\tMessage: [TextPP #{}] Запрос после нормализации: {}".format(
                     request_id,
+                    self.uid,
                     normalized_request
                 )
             )
 
         return normalized_request
 
+
     __call__ = normalize
 
-    _noword_re = re.compile(r'[_\W]*')
 
-    @staticmethod
-    def _filter_words(words: list):
-        return filter(lambda t: TextPreprocessing._noword_re.fullmatch(t) is None, words)
 
-    mystem = Mystem()
+    @property
+    def combined_parser(self):
+        return TextPreprocessing._make_tonita_parser(
+            self.parse_syns,
+            self.parse_nums,
+            self.parse_time,
+        )
 
-    @staticmethod
-    def _pymystem_lem(text: str):
-        return list(TextPreprocessing._filter_words(
-            TextPreprocessing.mystem.lemmatize(text)
-        ))
+
+    @property
+    def u_name(self):
+        return ''.join(['#', self.label, self.uid])
+
+
+    @property
+    def active_params(self):
+        return tuple([p for p in self.params if self.params[p]])
+
+
+    @property
+    def setup_str(self):
+        af_str = 'дополнительные фильтры неактивны'
+        if self.active_params:
+            af_str = 'активные фильтры — {}'.format(', '.join(self.active_params))
+        return '[TextPP {}]\tПараметры:\tNLP ведётся через {};\t{}'.format(
+            self.u_name,
+            self.lemmatizer_name,
+            af_str
+        )
+
+
+    def __getattr__(self, attr):
+        res = self.params.get(attr, None)
+        if res is not None:
+            return res
+        raise AttributeError
+
 
     morph = MorphAnalyzer()
-    _stripper_re = re.compile(r'(^)?[_\W]*(?(1)|$)')
 
     @staticmethod
     @lru_cache(maxsize=16384)
     def _pymorphy_normal(word: str):
-        word = TextPreprocessing._stripper_re.sub('', word)
         res = TextPreprocessing.morph.parse(word)[0].normal_form
         if 'ё' in res:
             res = res.replace('ё', 'е')
@@ -182,9 +177,7 @@ class TextPreprocessing(object):
     def _pymorphy_lem(text: str):
         return list(map(
             TextPreprocessing._pymorphy_normal,
-            TextPreprocessing._filter_words(
-                word_tokenize(TextPreprocessing._filter_underscore(text))
-            )
+            nlp_utils.advanced_tokenizer(text, False, False)
         ))
 
     @staticmethod
@@ -204,19 +197,18 @@ class TextPreprocessing(object):
         return parser
 
     @staticmethod
-    def _filter_underscore(text: str):
-        """Обработка нижнего подчеркивания"""
-
-        if '_' in text:
-            text = text.replace('_', ' ')
-        return text
-
-    @staticmethod
-    def _filter_percent(text: str):
-        """Обработка процента"""
-
-        if '%' in text:
-            text = text.replace('%', ' процент ')
+    def _filter_symbols(text: str):
+        """Обработка символов, несущих смысловую нагрузку"""
+        symbols = {
+            '%': 'процент',
+            '$': 'доллар',
+            '€': 'евро',
+            '£': 'фунт стерлинглв',
+            '₽': 'рубль',
+        }
+        for symb, repl in symbols.items():
+            if symb in text:
+                text = text.replace(symb, ' {} '.format(repl))
         return text
 
     @staticmethod

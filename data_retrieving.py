@@ -27,14 +27,14 @@ from model_manager import MODEL_CONFIG
 
 import logs_helper  # pylint: disable=unused-import
 
-TPP = TextPreprocessing(delete_question_words=False)
-
 
 class DataRetrieving:
     """
     Модуль связывающие в себе результаты работы Apache Solr,
     и классов обработки его выдачи - CubeProcessor и MinfinProcessor
     """
+    
+    TPP = TextPreprocessing(delete_question_words=False)
 
     @staticmethod
     def get_data(user_request: str, request_id: str):
@@ -95,7 +95,7 @@ class DataRetrieving:
         """Предобработка запроса пользователя"""
 
         # нормализация запроса пользователя
-        norm_user_request = TPP(user_request, request_id)
+        norm_user_request = DataRetrieving.TPP(user_request, request_id)
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
             norm_user_request = DataRetrieving._set_user_request(
