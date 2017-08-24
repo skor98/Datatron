@@ -1,8 +1,11 @@
 import json
 import logging
+
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeAnswer, CubeProcessor
 from core.minfin_docs_processing import MinfinAnswer
+
+from enums.recognition_accuracy import RecognitionAccuracy
 
 from models.responses.link_model import LinkModel
 from models.responses.question_model import QuestionModel
@@ -21,6 +24,7 @@ class TextResponseModel:
         self.http_ref_links = None
         self.associated_questions = None
         self.time_data_relevance = ''
+        self.recognition_accuracy = RecognitionAccuracy.zero.name
 
     def toJSON(self):
         return json.dumps(self, default=lambda obj: obj.__dict__, indent=4, ensure_ascii=False)
@@ -33,6 +37,7 @@ class TextResponseModel:
             'short_answer',
             'time_data_relevance',
             'associated_quesions',
+            'recognition_accuracy',
         )
 
         # если есть списки документов, изображений или ссылок,
@@ -55,7 +60,7 @@ class TextResponseModel:
         ).encode("utf-8")
 
     @staticmethod
-    def form_answer(response: CoreAnswer):
+    def from_answer(response: CoreAnswer):
         # формирование ответа для клиента
         text_response = TextResponseModel()
         text_response.status = response.status
@@ -65,6 +70,12 @@ class TextResponseModel:
             response.more_cube_answers,
             response.more_minfin_answers
         )
+
+        recognition_accuracy = TextResponseModel.get_recognition_accuracy(
+            response.status,
+            response.confidence)
+
+        text_response.recognition_accuracy = recognition_accuracy.name
 
         if response.answer is None:
             return text_response
@@ -163,3 +174,13 @@ class TextResponseModel:
             return http_ref_links
         else:
             return None
+
+    @staticmethod
+    def get_recognition_accuracy(status, confidence):
+        recognition_accuracy = RecognitionAccuracy.zero
+        if status == True and confidence == False:
+            recognition_accuracy = RecognitionAccuracy.medium
+        if status == True and confidence == True:
+            recognition_accuracy = RecognitionAccuracy.high
+
+        return recognition_accuracy
