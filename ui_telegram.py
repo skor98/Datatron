@@ -148,7 +148,7 @@ def send_help(message):
 def get_query_examples(message):
     try:
         possible_queries = get_good_queries(count=5)
-        message_str = "Вы *можете спросить*:\n{}"
+        message_str = "Вы *можете спросить*\n{}"
         possible_queries = ['- {}\n'.format(query) for query in possible_queries]
 
         bot.send_message(
@@ -208,7 +208,7 @@ def get_queries_logs(message):
         if logs:
             send_very_long_message(
                 message.chat.id,
-                'Ваши запросы:\n' + logs
+                'Ваши вопросы:\n' + logs
             )
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
@@ -249,7 +249,7 @@ def get_all_queries_logs(message):
         if logs:
             send_very_long_message(
                 message.chat.id,
-                'Запросы от всех пользователей:\n' + logs
+                'Вопросы от всех пользователей:\n' + logs
             )
         else:
             bot.send_message(message.chat.id, constants.MSG_LOG_HISTORY_IS_EMPTY)
@@ -544,7 +544,7 @@ def process_response(message, input_format='text', file_content=None):
     else:
         user_request = ''
         if input_format != 'text':
-            user_request = '*Ваш запрос*\n"{}"\n\n'
+            user_request = '*Ваш вопрос*\n"{}"\n\n'
             user_request = user_request.format(result.user_request)
 
         bot.send_message(
@@ -587,10 +587,10 @@ def process_cube_questions(message, cube_result, request_id, input_format):
     else:
         user_request = ''
         if not is_input_text:
-            user_request = '*Ваш запрос*\n"{}"\n\n'
+            user_request = '*Ваш вопрос*\n"{}"\n\n'
             user_request = user_request.format(cube_result.feedback['user_request'])
 
-        feedback = '{}\n*Запрос после обработки*\n`"{}"`\n\n'.format(
+        feedback = '{}\n*Вопрос после обработки*\n`"{}"`\n\n'.format(
             verbal_feedback(cube_result),
             cube_result.feedback['pretty_feedback']
         )
@@ -605,19 +605,18 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 def process_minfin_questions(message, minfin_result, ans_confidence, input_format):
     is_input_text = (input_format == 'text')
 
-    feedback_str = ('{user_request}*Вопрос после обработки*'
-                    '\n{confidence}`"{question}"`\n\n*Ответ*\n{answer}')
+    feedback_str = '{user_request}{confidence}`"{question}"`\n\n*Ответ*\n{answer}'
 
     user_request = ''
-    confidence = ''
+    confidence = '*Вопрос после обработки*\n'
 
     if not is_input_text:
-        user_request = '*Ваш запрос*\n"{}"\n\n'.format(
+        user_request = '*Ваш вопрос*\n"{}"\n\n'.format(
             minfin_result.user_request
         )
 
     if not ans_confidence:
-        confidence = 'Возможно вы хотели спросить: '
+        confidence = 'Возможно, вы хотели спросить: '
 
     bot.send_message(
         message.chat.id,
@@ -698,13 +697,13 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     expert_str = ''
     verbal_str = ''
 
-    pretty_feed = '*Запрос после обработки*\n`"{}"`'.format(
+    pretty_feed = '*Вопрос после обработки*\n`"{}"`'.format(
         cube_result.feedback['pretty_feedback']
     )
 
     user_request = ''
     if user_request_notification:
-        user_request = '*Ваш запрос*\n"{}"\n\n'
+        user_request = '*Ваш вопрос*\n"{}"\n\n'
         user_request = user_request.format(cube_result.feedback['user_request'])
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -783,10 +782,7 @@ def loof_also_for_cube(cube_result):
             cube_result.get_score()
         )
     else:
-        look_also_str = '{} ({})'.format(
-            feedback,
-            '*База знаний*',
-        )
+        look_also_str = '{}'.format(feedback)
 
     return look_also_str
 
@@ -802,14 +798,12 @@ def answer_to_look_also_format(answer):
                 answer.score
             )
         else:
-            return '{} ({})'.format(
-                answer.question,
-                "*Минфин*"
-            )
+            return '{}'.format(answer.question)
 
 
 def see_more_buttons_dynamic(number_of_questions):
     """Динамическая клавиатура для смотри также"""
+
     buttons = []
     for i in range(1, number_of_questions + 1):
         buttons.append(
