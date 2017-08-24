@@ -113,6 +113,6 @@ def _func_with_match(func, match):
     if asp.varargs is not None:
         args.extend([match.group(0)] + list(match.groups()))
 
-    args = [int(a) if a.isnumeric() else a for a in args]
+    args = [int(a) if isinstance(a, str) and a.isnumeric() else a for a in args]
 
     return str(func(*args, **kwargs))

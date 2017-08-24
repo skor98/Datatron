@@ -129,7 +129,7 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         'user_request': user_request
     }
 
-    feedback['pretty_feedback'] = BackFeeder(
+    feedback['pretty_feedback'] = BackFeeder.fb_to_phrase(
         cube,
         feedback['verbal']
     )

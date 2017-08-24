@@ -11,14 +11,11 @@ from nlp.phrase_processor import Phrase
 
 
 class BackFeeder(object):
-
     @staticmethod
     def fb_to_phrase(cube, verbal_feedback):
         mask = getattr(CubeMasks, cube)
         prepr_feedback = BackFeeder._preprocess_fb(verbal_feedback)
         return BackFeeder._make_phrase(mask, prepr_feedback)
-
-    __call__ = fb_to_phrase
 
     @staticmethod
     def _preprocess_fb(verbal_feedback):
@@ -48,7 +45,6 @@ class BackFeeder(object):
             res['месгод'] = res.get('месяц')
 
         return {key: Phrase(res[key]) for key in res if res[key] is not None}
-
 
     @staticmethod
     def _make_phrase(mask, prepr_feedback):
@@ -84,13 +80,13 @@ class BackFeeder(object):
             res.extend(code + [context])
 
         res = ''.join(w for w in res if w)
-        res = nlp_utils.re_strip(BackFeeder._make_phrase.lstrip_re, res, sides='l')
+        res = nlp_utils.re_strip(BackFeeder.lstrip_re, res, sides='l')
         res = nlp_utils.clean_double_spaces(res)
         if res[0].islower():
             res = res[0].upper() + res[1:]
         return res
 
-    _make_phrase.lstrip_re = re.compile(r'([\W_]*)')
+    lstrip_re = re.compile(r'([\W_]*)')
 
 
 class CubeMasks(object):
