@@ -7,22 +7,19 @@
 
 from functools import lru_cache
 import logging
-
-from nltk import FreqDist
-from nltk.corpus import stopwords
-from pymorphy2 import MorphAnalyzer
-import uuid
-
+import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
+from nltk import FreqDist
+from nltk.corpus import stopwords
+from pymorphy2 import MorphAnalyzer
+import uuid
 
 
 # этот импорт убирать нельзя, иначе полетит логгирование
-import logs_helper  # pylint: disable=unused-import
-
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 def _mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
@@ -152,7 +149,7 @@ class TextPreprocessing(object):
         af_str = 'дополнительные фильтры неактивны'
         if self.active_params:
             af_str = 'активные фильтры — {}'.format(', '.join(self.active_params))
-        return '[TextPP {}]\tПараметры:\tNLP ведётся через {};\t{}'.format(
+        return '[TextPP {}] Параметры: NLP ведётся через {}; {}'.format(
             self.u_name,
             self.lemmatizer_name,
             af_str

@@ -6,9 +6,8 @@ Created on Mon Jul 24 13:13:08 2017
 @author: larousse
 """
 
-from pymorphy2 import MorphAnalyzer
-
 from nlp import nlp_utils
+from pymorphy2 import MorphAnalyzer
 
 
 class Word(object):
