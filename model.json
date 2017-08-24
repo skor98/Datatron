@@ -1,5 +1,4 @@
 {
-    "use_local_file_processing_for_minfin": false,
     "best_cube_data_threshold": 5,
     "cube_answers_scoring_model": "sum",
     "cube_boosting_threshold": 25,
@@ -27,9 +26,10 @@
     "parser_nums_default": true,
     "parser_syns_default": true,
     "parser_time_default": true,
-    "relevant_minfin_main_answer_threshold": 20,
+    "relevant_minfin_main_answer_threshold": 0,
     "repetition_num_for_short_request": 2,
     "short_request_threshold": 4,
     "solr_documents_to_return": 200,
-    "tree_k_path_threshold": 10
+    "tree_k_path_threshold": 10,
+    "use_local_file_processing_for_minfin": true
 }

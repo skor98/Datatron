@@ -30,7 +30,8 @@ from config import WRONG_AUTO_MINFIN_TESTS_FILE
 from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
 import logs_helper
-from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
+from model_manager import MODEL_CONFIG
+from model_manager import save_default_model, set_default_model, restore_default_model
 
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -403,7 +404,7 @@ class BaseTester:
         if not MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             if isinstance(self, MinfinTester):
                 bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
-                should_get_number = re.compile(r'должны получать:(\d+\.\d+)')
+                should_get_number = re.compile(r'должны получать:(\d+(\.\d+)+)')
 
                 type_of_test = 0
                 only_wrong_manual_tests = {}
@@ -855,6 +856,12 @@ def _main():
         help='Отключает логгирование во время тестирования',
     )
 
+    parser.add_argument(
+        "--turn-on-mwat",
+        action='store_true',
+        help='Включает тестирование с учетом неверных авто-тестов по минфину'
+    )
+
     args = parser.parse_args()
 
     # Если аргументов не было, то тестируем как обычно
@@ -862,11 +869,22 @@ def _main():
         args.cube = True
         args.minfin = True
 
+    if args.turn_on_mwat:
+        MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+        save_default_model(MODEL_CONFIG)
+    else:
+        MODEL_CONFIG["use_local_file_processing_for_minfin"] = False
+        save_default_model(MODEL_CONFIG)
+
     score, results = get_results(
         need_cube=args.cube,
         need_minfin=args.minfin,
         write_logs=not args.no_logs
     )
+
+    MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+    save_default_model(MODEL_CONFIG)
+
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
     with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:

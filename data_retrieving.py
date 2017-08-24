@@ -53,9 +53,8 @@ class DataRetrieving:
         if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
             user_request = user_request.lower().replace('?', '')
-            DataRetrieving._exact_minfin_answer_number = (
-                minfin_auto_wrong_tests.get(user_request, 0)
-            )
+            correct_answer_num = minfin_auto_wrong_tests.get(user_request, 0)
+            DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
@@ -251,9 +250,22 @@ class DataRetrieving:
                     all_answers.remove(answer)
                     all_answers.insert(0, answer)
 
+                    if answer.get_score() < MODEL_CONFIG["relevant_minfin_main_answer_threshold"]:
+                        score = MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+
+                        logging.info(
+                            "Query_ID: {}\tMessage: Score был увеличен с {} до {}".format(
+                                all_answers[0].request_id,
+                                answer.get_score(),
+                                score
+                            )
+                        )
+
+                        answer.score = score
+
                     logging.info(
                         "Query_ID: {}\tMessage: Главный ответ был сменен на основе"
-                        "логов некорректных автоматических тестов".format(
+                        " логов некорректных автоматических тестов".format(
                             all_answers[0].request_id
                         )
                     )
