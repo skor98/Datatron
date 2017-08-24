@@ -69,6 +69,8 @@ TEST_PATH_RESULTS = fixed_path(path.join("tests", "results"))
 
 DATA_PATH = fixed_path("data")
 
+WRONG_AUTO_MINFIN_TESTS_FILE = 'wrong_auto_minfin_tests.txt'
+
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
 DATETIME_FORMAT = "{} {}".format(DATE_FORMAT, TIME_FORMAT)

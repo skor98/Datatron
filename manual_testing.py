@@ -26,6 +26,7 @@ import uuid
 
 from config import DATETIME_FORMAT, LOG_LEVEL
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
+from config import WRONG_AUTO_MINFIN_TESTS_FILE
 from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
 import logs_helper
@@ -411,7 +412,7 @@ class BaseTester:
                             question = questions[0].lower().replace('?', '')
                             only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
 
-            log_filename = path.join(TEST_PATH_RESULTS, 'minfin_auto_wrong.txt')
+            log_filename = path.join(TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
             with open(log_filename, 'w', encoding='utf-8') as file_out:
                 file_out.write(json.dumps(only_wrong_manual_tests))
 

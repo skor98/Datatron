@@ -26,6 +26,7 @@ import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
 from config import TEST_PATH_RESULTS
+from config import WRONG_AUTO_MINFIN_TESTS_FILE
 
 
 class DataRetrieving:
@@ -35,6 +36,7 @@ class DataRetrieving:
     """
 
     TPP = TextPreprocessing(label='DATRET', delete_question_words=False)
+    exact_minfin_answer_number = 0
 
     @staticmethod
     def get_data(user_request: str, request_id: str):
@@ -42,6 +44,13 @@ class DataRetrieving:
 
         core_answer = CoreAnswer()
         core_answer.user_request = user_request
+
+        if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+            minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
+            user_request = user_request.lower().replace('?', '')
+            DataRetrieving.exact_minfin_answer_number = (
+                minfin_auto_wrong_tests.get(user_request, 0)
+            )
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
@@ -91,18 +100,18 @@ class DataRetrieving:
         return core_answer
 
     @staticmethod
-    def _read_minfin_auto_wrong_questions():
-        if not DataRetrieving._read_minfin_auto_wrong_questions.data:
+    def _minfin_auto_wrong_questions():
+        if not DataRetrieving._minfin_auto_wrong_questions.data:
             minfin_wrong_auto_tests_file = path.join(
-                TEST_PATH_RESULTS, 'minfin_auto_wrong.txt'
+                TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
             )
 
             with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
                 minfin_wrong_auto_tests_file.data = json.loads(file.read())
 
-        return DataRetrieving._read_minfin_auto_wrong_questions.data
+        return DataRetrieving._minfin_auto_wrong_questions.data
 
-    _read_minfin_auto_wrong_questions.data = None
+    _minfin_auto_wrong_questions.data = None
 
     @staticmethod
     def _preprocess_user_request(user_request: str, request_id: str):
@@ -194,6 +203,9 @@ class DataRetrieving:
         if all_answers:
             DataRetrieving._first_place_right_type(all_answers)
 
+            if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+                DataRetrieving._first_place_exact_minfin_answer(all_answers)
+
         return all_answers
 
     @staticmethod
@@ -227,7 +239,23 @@ class DataRetrieving:
             )
 
     @staticmethod
-    def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
+    def _first_place_exact_minfin_answer(all_answers: list):
+        if DataRetrieving.exact_minfin_answer_number:
+            for answer in list(all_answers):
+                if (answer['number'] ==
+                        DataRetrieving.exact_minfin_answer_number):
+                    all_answers.remove(answer)
+                    all_answers.insert(0, answer)
+
+                    logging.info(
+                        "Query_ID: {}\tMessage: Главный ответ был сменен на основе"
+                        "логов некорректных автоматических тестов".format(
+                            all_answers[0].request_id
+                        )
+                    )
+
+    @staticmethod
+    def _format_core_answer(answers: list, request_id: str, core_answer: CoreAnswer):
         """Формирование структуры финального ответа"""
 
         # Предельное количество "смотри также"
