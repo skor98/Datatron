@@ -27,6 +27,7 @@ from dbs.user_support_library import get_feedbacks
 from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
+from speechkit import SpeechException
 from speechkit import text_to_speech, speech_to_text
 from core.cube_classifier import CubeClassifier
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
@@ -404,6 +405,7 @@ def main_search_function(message):
         pers_answer = MessengerManager.personalization(message.text)
 
         if pers_answer:
+            bot.send_chat_action(message.chat.id, 'typing')
             bot.send_message(
                 message.chat.id,
                 pers_answer,
@@ -425,8 +427,23 @@ def voice_processing(message):
         )
     )
 
-    process_response(
-        message, input_format='voice', file_content=file_data.content)
+    try:
+        if file_data.content:
+            text = speech_to_text(bin_audio=file_data.content)
+    except SpeechException:
+        bot.send_message(message.chat.id, constants.ERROR_CANNOT_UNDERSTAND_VOICE)
+
+    pers_answer = MessengerManager.personalization(text)
+    if pers_answer:
+        bot.send_chat_action(message.chat.id, 'upload_audio')
+        bot.send_voice(
+            message.chat.id,
+            text_to_speech(pers_answer)
+        )
+    else:
+        # TODO: подумать о том, как избежать двойной конвертации
+        process_response(
+            message, input_format='voice', file_content=file_data.content)
 
 
 @bot.callback_query_handler(func=lambda call: True)

@@ -105,11 +105,15 @@ def read_chunks(chunk_size, bin_data):
 def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=True, as_audio=False):
     """Преобразования текста в речь"""
 
+    # Удаление специальных символов из Markdown
+    for ch in ('*', '_'):
+        if ch in text:
+            text = text.replace(ch, '')
+
     # Если ответ имеет процентный формат, то замени процент
     text = text.replace('%', 'процентов')
 
-    # Если используется + (экранированный для Solr)
-    # для указания ударения
+    # Если используется + для указания ударения
     text = text.replace('\\+', '+')
 
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
