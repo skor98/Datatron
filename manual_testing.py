@@ -31,7 +31,6 @@ from logs_helper import string_to_log_level
 import logs_helper
 from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
 
-
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
 
@@ -62,6 +61,7 @@ def get_jaccard(a: set, b: set):
 
 class AccuracyScoreHelper():
     """Инкапсулирует вычисление точности (accuracy)."""
+
     def __init__(self):
         self._trues = 0
         self._falses = 0
@@ -253,7 +253,7 @@ class BaseTester:
         """
         raise NotImplementedError
 
-    def write_log(self, time_to_write):
+    def write_log(self):
         """
         Записывает логи в файл. Используется старая реализация
         """
@@ -264,10 +264,6 @@ class BaseTester:
 
         file_name = file_name.format(
             datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT),
-            self.get_trues(),
-            self.get_wrongs(),
-            self.get_errors(),
-            time_to_write
         )
 
         if not path.exists(TEST_PATH_RESULTS):
@@ -394,7 +390,31 @@ class BaseTester:
                     self.add_time(time_for_request.total_seconds())
 
         time_delta = time.time() - start_time
-        self.write_log(int(time_delta))
+        self.write_log()
+
+        if isinstance(self, MinfinTester):
+            bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
+            should_get_number = re.compile(r'должны получать:(\d+\.\d+)')
+
+            type_of_test = 0
+            only_wrong_manual_tests = {}
+
+            for res in self._text_results:
+                if 'manual' in res:
+                    type_of_test = 0
+                elif 'auto' in res:
+                    type_of_test = 1
+                else:
+                    if type_of_test:
+                        questions = bad_mifin_query.findall(res)
+                        if questions:
+                            question = questions[0].lower().replace('?', '')
+                            only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
+
+            log_filename = path.join(TEST_PATH_RESULTS, 'minfin_auto_wrong.txt')
+            with open(log_filename, 'w', encoding='utf-8') as file_out:
+                file_out.write(json.dumps(only_wrong_manual_tests))
+
         logging.info("{} takes {} seconds".format(self.__class__.__name__, time_delta))
 
         restore_default_model()  # Возвращаем данные модели

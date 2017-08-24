@@ -6,6 +6,8 @@
 """
 
 import logging
+from os import path
+import json
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
@@ -23,6 +25,7 @@ from core.support_library import send_request_to_server
 import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
+from config import TEST_PATH_RESULTS
 
 
 class DataRetrieving:
@@ -86,6 +89,20 @@ class DataRetrieving:
             )
 
         return core_answer
+
+    @staticmethod
+    def _read_minfin_auto_wrong_questions():
+        if not DataRetrieving._read_minfin_auto_wrong_questions.data:
+            minfin_wrong_auto_tests_file = path.join(
+                TEST_PATH_RESULTS, 'minfin_auto_wrong.txt'
+            )
+
+            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
+                minfin_wrong_auto_tests_file.data = json.loads(file.read())
+
+        return DataRetrieving._read_minfin_auto_wrong_questions.data
+
+    _read_minfin_auto_wrong_questions.data = None
 
     @staticmethod
     def _preprocess_user_request(user_request: str, request_id: str):
