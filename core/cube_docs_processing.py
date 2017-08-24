@@ -263,15 +263,16 @@ class CubeProcessor:
         Актуальность данных по кубам
         """
 
-        cubes_with_current_data = (
-            'CLDO01', 'INDO01', 'EXDO01', 'CLDO02'
-        )
+        date_of_update = '16.08.2017'
+        updates = {
+            'CLMR02': '01.08.2017',
+            'CLDO01': date_of_update,
+            'CLDO02': date_of_update,
+            'INDO01': date_of_update,
+            'EXDO01': date_of_update
+        }
 
-        time_data_relevance = None
-        if cube_answer.feedback['formal']['cube'] in cubes_with_current_data:
-            time_data_relevance = '16.08.2017'
-
-        return time_data_relevance
+        return updates.get(cube_answer.feedback['formal']['cube'], None)
 
 
 class CubeAnswer:

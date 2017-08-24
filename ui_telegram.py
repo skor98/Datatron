@@ -27,7 +27,7 @@ from dbs.user_support_library import get_feedbacks
 from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
-from speechkit import text_to_speech
+from speechkit import text_to_speech, speech_to_text
 from core.cube_classifier import CubeClassifier
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 from core.cube_docs_processing import CubeProcessor
@@ -401,9 +401,10 @@ def what_type_handler(message):
 @bot.message_handler(content_types=['text'])
 def main_search_function(message):
     try:
-        greets = MessengerManager.greetings(message.text.strip())
-        if greets:
-            bot.send_message(message.chat.id, greets)
+        pers_answer = MessengerManager.personalization(message.text)
+
+        if pers_answer:
+            bot.send_message(message.chat.id, pers_answer)
         else:
             process_response(message)
     except Exception as err:
@@ -419,6 +420,7 @@ def voice_processing(message):
             file_info.file_path
         )
     )
+
     process_response(
         message, input_format='voice', file_content=file_data.content)
 

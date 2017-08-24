@@ -109,17 +109,32 @@ class MessengerManager:
             return MessengerManager._querying(text, request_id)
 
     @staticmethod
-    def greetings(text):
+    def personalization(text):
         """API метод для обработки приветствий от пользователя
 
         :param text: сообщение от пользователя
         :return: либо строку, либо None
         """
 
-        greets = MessengerManager._greetings(text)
+        text, tokens = MessengerManager._simple_split(text)
 
-        if greets is not None:
-            return greets
+        for word in tokens:
+            if word in constants.HELLO:
+                return random.choice(constants.HELLO_ANSWER)
+            elif word in constants.HOW_ARE_YOU:
+                return random.choice(constants.HOW_ARE_YOU_ANSWER)
+
+        if text in constants.WHO_YOU_ARE:
+            return random.choice(constants.WHO_YOU_ARE_ANSWER)
+
+        if text in constants.WHAT_CAN_YOU_DO:
+            return random.choice(constants.WHAT_CAN_YOU_DO_ANSWER)
+
+        if text in constants.WHO_IS_YOUR_CREATOR:
+            return random.choice(constants.WHO_IS_YOUR_CREATOR_ANSWER)
+
+        if text in constants.EASTER_EGGS.keys():
+            return random.choice(constants.EASTER_EGGS[text])
 
     @staticmethod
     def _querying(user_request_string, request_id):
@@ -141,19 +156,9 @@ class MessengerManager:
             return core_answer
 
     @staticmethod
-    def _simple_split(string_to_tokenize):
+    def _simple_split(text):
         """Простая токенизация"""
 
-        string_to_tokenize = string_to_tokenize.lower()
-        cleared_string = re.sub(r'[^\w\s]', '', string_to_tokenize)
-        return cleared_string.split()
-
-    @staticmethod
-    def _greetings(text):
-        """Обработка приветов и вопрос из серии 'как дела?'"""
-
-        for word in MessengerManager._simple_split(text):
-            if word in constants.HELLO:
-                return random.choice(constants.HELLO_ANSWER)
-            elif word in constants.HOW_ARE_YOU:
-                return random.choice(constants.HOW_ARE_YOU_ANSWER)
+        text = re.sub(r'[^\w\s]', '', text.strip().lower())
+        tokens = text.split()
+        return text, tokens
