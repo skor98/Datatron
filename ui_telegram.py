@@ -605,7 +605,7 @@ def process_cube_questions(message, cube_result, request_id, input_format):
 def process_minfin_questions(message, minfin_result, ans_confidence, input_format):
     is_input_text = (input_format == 'text')
 
-    feedback_str = ('{user_request}*Запрос после обработки*'
+    feedback_str = ('{user_request}*Вопрос после обработки*'
                     '\n{confidence}`"{question}"`\n\n*Ответ*\n{answer}')
 
     user_request = ''
@@ -617,7 +617,7 @@ def process_minfin_questions(message, minfin_result, ans_confidence, input_forma
         )
 
     if not ans_confidence:
-        confidence = 'Возможно вы имели в виду: '
+        confidence = 'Возможно вы хотели спросить: '
 
     bot.send_message(
         message.chat.id,
