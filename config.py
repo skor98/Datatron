@@ -69,7 +69,7 @@ TEST_PATH_RESULTS = fixed_path(path.join("tests", "results"))
 
 DATA_PATH = fixed_path("data")
 
-WRONG_AUTO_MINFIN_TESTS_FILE = 'wrong_auto_minfin_tests.txt'
+WRONG_AUTO_MINFIN_TESTS_FILE = 'minfin_wrong_auto_tests.json'
 
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"

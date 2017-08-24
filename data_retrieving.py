@@ -36,7 +36,12 @@ class DataRetrieving:
     """
 
     TPP = TextPreprocessing(label='DATRET', delete_question_words=False)
-    exact_minfin_answer_number = 0
+
+    # номер потенциально верного ответа по Минфину
+    _exact_minfin_answer_number = 0
+
+    # хранение данных в памяти
+    _minfin_auto_wrong_data = None
 
     @staticmethod
     def get_data(user_request: str, request_id: str):
@@ -48,7 +53,7 @@ class DataRetrieving:
         if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
             user_request = user_request.lower().replace('?', '')
-            DataRetrieving.exact_minfin_answer_number = (
+            DataRetrieving._exact_minfin_answer_number = (
                 minfin_auto_wrong_tests.get(user_request, 0)
             )
 
@@ -101,17 +106,15 @@ class DataRetrieving:
 
     @staticmethod
     def _minfin_auto_wrong_questions():
-        if not DataRetrieving._minfin_auto_wrong_questions.data:
+        if not DataRetrieving._minfin_auto_wrong_data:
             minfin_wrong_auto_tests_file = path.join(
                 TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
             )
 
             with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
-                minfin_wrong_auto_tests_file.data = json.loads(file.read())
+                DataRetrieving._minfin_auto_wrong_data = json.loads(file.read())
 
-        return DataRetrieving._minfin_auto_wrong_questions.data
-
-    _minfin_auto_wrong_questions.data = None
+        return DataRetrieving._minfin_auto_wrong_data
 
     @staticmethod
     def _preprocess_user_request(user_request: str, request_id: str):
@@ -240,10 +243,10 @@ class DataRetrieving:
 
     @staticmethod
     def _first_place_exact_minfin_answer(all_answers: list):
-        if DataRetrieving.exact_minfin_answer_number:
+        if DataRetrieving._exact_minfin_answer_number:
             for answer in list(all_answers):
                 if (answer['number'] ==
-                        DataRetrieving.exact_minfin_answer_number):
+                        DataRetrieving._exact_minfin_answer_number):
                     all_answers.remove(answer)
                     all_answers.insert(0, answer)
 
