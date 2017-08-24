@@ -58,6 +58,8 @@ class TokenTypes(object):
 def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     if isinstance(regexp, str):
         regexp = re.compile(regexp)
+    elif not hasattr(regexp, 'match'):
+        regexp = re.strip.default_re
 
     res = []
 
@@ -83,10 +85,19 @@ def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     return res
 
 
+re_strip.default_re = re.compile(r'([\W_]+)', re.DOTALL)
+
+
 def clean_double_spaces(text):
     return clean_double_spaces.regexp.sub(' ', text)
 
 clean_double_spaces.regexp = re.compile(r'[\s_]+', re.DOTALL)
+
+
+def try_int(obj):
+    if not isinstance(obj, str) or not TokenTypes.in_type(obj, 'numeric'):
+        return obj
+    return int(obj)
 
 
 def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):

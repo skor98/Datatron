@@ -11,6 +11,7 @@ Created on Thu Aug  3 06:39:36 2017
 from collections import Iterable
 from functools import partial
 from inspect import getfullargspec
+from nlp.nlp_utils import try_int
 import re
 
 
@@ -107,12 +108,11 @@ def _func_with_match(func, match):
     if asp.varkw is None:
         kwargs = {k: v for k, v in kwargs.items() if k in all_args}
 
-    kwargs = {k: int(v) for k, v in kwargs.items() if isinstance(v, str) and v.isnumeric()}
-
     args = [kwargs.pop(a, None) for a in asp.args]
     if asp.varargs is not None:
         args.extend([match.group(0)] + list(match.groups()))
 
-    args = [int(a) if isinstance(a, str) and a.isnumeric() else a for a in args]
+    kwargs = {k: try_int(v) for k, v in kwargs.items()}
+    args = [try_int(a) for a in args]
 
     return str(func(*args, **kwargs))

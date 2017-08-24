@@ -80,13 +80,11 @@ class BackFeeder(object):
             res.extend(code + [context])
 
         res = ''.join(w for w in res if w)
-        res = nlp_utils.re_strip(BackFeeder.lstrip_re, res, sides='l')
+        res = nlp_utils.re_strip(None, res, sides='l')
         res = nlp_utils.clean_double_spaces(res)
         if res[0].islower():
             res = res[0].upper() + res[1:]
         return res
-
-    lstrip_re = re.compile(r'([\W_]*)')
 
 
 class CubeMasks(object):
