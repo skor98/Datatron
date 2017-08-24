@@ -78,6 +78,10 @@ class TextPreprocessing(object):
         """Метод для нормализации текста"""
 
         # TODO: обработка направильного спеллинга
+        
+        # Убираем плюсы-ударения
+        if '\\+' in text:
+            text = text.replace('\\+', '')
 
         # Фильтруем важные символы
         text = TextPreprocessing._filter_symbols(text)
@@ -105,7 +109,7 @@ class TextPreprocessing(object):
 
         # Убираем повторяющиеся слова
         if self.delete_repeatings:
-            tokens = list(set(tokens))
+            tokens = [t for n, t in enumerate(tokens) if t not in tokens[:n]]
 
         normalized_request = ' '.join(tokens)
 
