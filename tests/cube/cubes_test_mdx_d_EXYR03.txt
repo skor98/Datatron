@@ -18,6 +18,6 @@
 Расходы на ЖКХ 2010:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2010], [BGLEVELS].[09-1], [RZPR].[14-848260], [MARKS].[03-4])
 Сколько денег в 2014 потратили на решение общегосударственных вопросов:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([2014], [09-1], [14-848223], [03-4])
 Расходы на общегосударственные вопросы 2014:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2014], [BGLEVELS].[09-1], [RZPR].[14-848223], [MARKS].[03-4])
-Расходы Крыма на национальную безопасность в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-91128], [BGLEVELS].[09-12], [RZPR].[14-850484], [MARKS].[03-4])
-Сколько Крым в 2016 потратил на национальную безопасность:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-91128], [BGLEVELS].[09-12], [RZPR].[14-850484], [MARKS].[03-4])
+Расходы Крыма на национальную безопасность в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-93010], [BGLEVELS].[09-12], [RZPR].[14-850484], [MARKS].[03-4])
+Сколько Крым в 2016 потратил на национальную безопасность:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-93010], [BGLEVELS].[09-12], [RZPR].[14-850484], [MARKS].[03-4])
 Расходы Омской области на охрану окружающей среды 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67687], [BGLEVELS].[09-12], [RZPR].[14-1203414], [MARKS].[03-4])

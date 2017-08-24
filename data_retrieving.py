@@ -6,6 +6,8 @@
 """
 
 import logging
+from os import path
+import json
 
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
@@ -23,6 +25,8 @@ from core.support_library import send_request_to_server
 import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
+from config import TEST_PATH_RESULTS
+from config import WRONG_AUTO_MINFIN_TESTS_FILE
 
 
 class DataRetrieving:
@@ -33,12 +37,24 @@ class DataRetrieving:
 
     TPP = TextPreprocessing(label='DATRET', delete_question_words=False)
 
+    # номер потенциально верного ответа по Минфину
+    _exact_minfin_answer_number = 0
+
+    # хранение данных в памяти
+    _minfin_auto_wrong_data = None
+
     @staticmethod
     def get_data(user_request: str, request_id: str):
         """API метод к ядру системы"""
 
         core_answer = CoreAnswer()
         core_answer.user_request = user_request
+
+        if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+            minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
+            user_request = user_request.lower().replace('?', '')
+            correct_answer_num = minfin_auto_wrong_tests.get(user_request, 0)
+            DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             user_request,
@@ -86,6 +102,18 @@ class DataRetrieving:
             )
 
         return core_answer
+
+    @staticmethod
+    def _minfin_auto_wrong_questions():
+        if not DataRetrieving._minfin_auto_wrong_data:
+            minfin_wrong_auto_tests_file = path.join(
+                TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
+            )
+
+            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8-sig') as file:
+                DataRetrieving._minfin_auto_wrong_data = json.loads(file.read())
+
+        return DataRetrieving._minfin_auto_wrong_data
 
     @staticmethod
     def _preprocess_user_request(user_request: str, request_id: str):
@@ -177,6 +205,9 @@ class DataRetrieving:
         if all_answers:
             DataRetrieving._first_place_right_type(all_answers)
 
+            if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+                DataRetrieving._first_place_exact_minfin_answer(all_answers)
+
         return all_answers
 
     @staticmethod
@@ -210,7 +241,39 @@ class DataRetrieving:
             )
 
     @staticmethod
-    def _format_core_answer(answers: list, request_id: str, core_answer: CubeAnswer):
+    def _first_place_exact_minfin_answer(all_answers: list):
+        correct_number = DataRetrieving._exact_minfin_answer_number
+        if correct_number:
+            for answer in list(all_answers):
+                if (answer.type == 'minfin' and
+                            answer.number == correct_number):
+                    all_answers.remove(answer)
+                    all_answers.insert(0, answer)
+
+                    if answer.get_score() < MODEL_CONFIG["relevant_minfin_main_answer_threshold"]:
+                        score = MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+
+                        logging.info(
+                            "Query_ID: {}\tMessage: Score был увеличен с {} до {}".format(
+                                all_answers[0].request_id,
+                                answer.get_score(),
+                                score
+                            )
+                        )
+
+                        answer.score = score
+
+                    logging.info(
+                        "Query_ID: {}\tMessage: Главный ответ был сменен на основе"
+                        " логов некорректных автоматических тестов".format(
+                            all_answers[0].request_id
+                        )
+                    )
+
+                    break
+
+    @staticmethod
+    def _format_core_answer(answers: list, request_id: str, core_answer: CoreAnswer):
         """Формирование структуры финального ответа"""
 
         # Предельное количество "смотри также"

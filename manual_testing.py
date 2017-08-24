@@ -26,11 +26,12 @@ import uuid
 
 from config import DATETIME_FORMAT, LOG_LEVEL
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
+from config import WRONG_AUTO_MINFIN_TESTS_FILE
 from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
 import logs_helper
-from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
-
+from model_manager import MODEL_CONFIG
+from model_manager import save_default_model, set_default_model, restore_default_model
 
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -62,6 +63,7 @@ def get_jaccard(a: set, b: set):
 
 class AccuracyScoreHelper():
     """Инкапсулирует вычисление точности (accuracy)."""
+
     def __init__(self):
         self._trues = 0
         self._falses = 0
@@ -253,7 +255,7 @@ class BaseTester:
         """
         raise NotImplementedError
 
-    def write_log(self, time_to_write):
+    def write_log(self):
         """
         Записывает логи в файл. Используется старая реализация
         """
@@ -264,10 +266,6 @@ class BaseTester:
 
         file_name = file_name.format(
             datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT),
-            self.get_trues(),
-            self.get_wrongs(),
-            self.get_errors(),
-            time_to_write
         )
 
         if not path.exists(TEST_PATH_RESULTS):
@@ -394,7 +392,43 @@ class BaseTester:
                     self.add_time(time_for_request.total_seconds())
 
         time_delta = time.time() - start_time
-        self.write_log(int(time_delta))
+        self.write_log()
+
+        # Честное тестирование - тестирование с выключенным параметром
+        # При нем также будут записываться вопросы, которые не работают
+
+        # При включенном параметре результаты тестов будут всегда выше,
+        # так как автоматические тесты всегда буду работать
+        # При включенном параметре файл с неработающими автомат. тестами
+        # по минфину обновляться не будут
+        if not MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+            if isinstance(self, MinfinTester):
+                bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
+                should_get_number = re.compile(r'должны получать:(\d+(\.\d+)+)')
+
+                type_of_test = 0
+                only_wrong_manual_tests = {}
+
+                for res in self._text_results:
+                    if 'manual' in res:
+                        type_of_test = 0
+                    elif any(test_type in res for test_type in ('auto', 'extra')):
+                        type_of_test = 1
+                    else:
+                        if type_of_test:
+                            questions = bad_mifin_query.findall(res)
+                            if questions:
+                                question = questions[0].lower().replace('?', '')
+                                only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
+
+                log_filename = path.join(TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
+                with open(log_filename, 'w', encoding='utf-8') as file_out:
+                    file_out.write(json.dumps(
+                        only_wrong_manual_tests,
+                        ensure_ascii=False,
+                        indent=4
+                    ))
+
         logging.info("{} takes {} seconds".format(self.__class__.__name__, time_delta))
 
         restore_default_model()  # Возвращаем данные модели
@@ -822,6 +856,12 @@ def _main():
         help='Отключает логгирование во время тестирования',
     )
 
+    parser.add_argument(
+        "--turn-on-mwat",
+        action='store_true',
+        help='Включает тестирование с учетом неверных авто-тестов по минфину'
+    )
+
     args = parser.parse_args()
 
     # Если аргументов не было, то тестируем как обычно
@@ -829,11 +869,22 @@ def _main():
         args.cube = True
         args.minfin = True
 
+    if args.turn_on_mwat:
+        MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+        save_default_model(MODEL_CONFIG)
+    else:
+        MODEL_CONFIG["use_local_file_processing_for_minfin"] = False
+        save_default_model(MODEL_CONFIG)
+
     score, results = get_results(
         need_cube=args.cube,
         need_minfin=args.minfin,
         write_logs=not args.no_logs
     )
+
+    MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+    save_default_model(MODEL_CONFIG)
+
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
     with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:

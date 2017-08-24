@@ -14,6 +14,7 @@ from os import path
 import sys
 
 from config import SETTINGS, TEST_PATH_RESULTS, DATETIME_FORMAT
+from model_manager import MODEL_CONFIG, save_default_model
 from core.cube_classifier import train_and_save_cube_clf, select_best_cube_clf
 from core.cube_or_minfin_classifier import select_best_cube_or_minfin_clf, train_and_save_cube_or_minfin_clf
 from kb.db_filling import KnowledgeBaseSupport
@@ -108,6 +109,12 @@ if __name__ == '__main__':
         help='Отключает тестирование после инициализации кубов',
     )
 
+    parser.add_argument(
+        "--turn-on-mwat",
+        action='store_true',
+        help='Включает тестирование с учетом неверных авто-тестов по минфину'
+    )
+
     args = parser.parse_args()
     # pylint: enable=invalid-name
 
@@ -133,7 +140,19 @@ if __name__ == '__main__':
     if args.minfin:
         set_up_minfin_data(args.solr_index)
     if not args.disable_testing and args.cube and args.minfin:
+        if args.turn_on_mwat:
+            MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+            save_default_model(MODEL_CONFIG)
+        else:
+            # Выключение на время тестов
+            MODEL_CONFIG["use_local_file_processing_for_minfin"] = False
+            save_default_model(MODEL_CONFIG)
+
         score, results = get_results(write_logs=True)
+
+        # Включение после тестов
+        MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
+        save_default_model(MODEL_CONFIG)
 
         current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
         result_file_name = "results_{}.json".format(current_datetime)
