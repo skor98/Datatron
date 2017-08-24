@@ -59,7 +59,7 @@ def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     if isinstance(regexp, str):
         regexp = re.compile(regexp)
     elif not hasattr(regexp, 'match'):
-        regexp = re.strip.default_re
+        regexp = re_strip.default_re
 
     res = []
 

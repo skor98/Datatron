@@ -102,12 +102,6 @@ class Word(object):
     def can_be_main(self):
         return {'NOUN', 'nomn'} in self
 
-    @property
-    def accepts_accs(self):
-        return (self.transitivity == 'tran'
-                or self.POS == 'PREP'
-                or self.case == 'accs')
-
     def clone(self):
         return Word(self.original, self.caps, self.noproc)
 
@@ -251,12 +245,14 @@ class Phrase(object):
             else:
                 caps = 'lower'
             parsed = Phrase.morph.parse(word)
-            if (not parsed or
-               {'PNCT', 'LATN', 'NUMB', 'UNKN'}.intersection(parsed[0].tag._grammemes_tuple)):
+            if not parsed or any(t in parsed[0].tag for t in ('PNCT', 'LATN', 'NUMB', 'UNKN')):
                 res.append(Word(word, caps, noproc=True))
-            elif parsed[0].tag.case == 'accs' and not (res and res[-1].accepts_accs):
-                options = [p for p in parsed if p.tag.case != 'accs']
-                res.append(Word(options[0] if options else parsed[0], caps))
+            elif 'accs' in parsed[0].tag:
+                alt = [p for p in parsed if 'accs' not in p.tag]
+                if alt:
+                    res.append(Word(alt[0], caps))
+                else:
+                    res.append(Word(parsed[0], caps))
             else:
                 res.append(Word(parsed[0], caps))
         return res

@@ -136,7 +136,7 @@ class TextPreprocessing(object):
 
     @property
     def u_name(self):
-        return ''.join(['#', self.label, self.uid])
+        return '#{}-{}'.format(self.label, self.uid)
 
 
     @property

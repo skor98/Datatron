@@ -70,21 +70,17 @@ def _refactor_data(data):
         doc.question = row.question
 
         # индексируемое поле
-        doc.lem_question = TextPreprocessing(
-            delete_question_words=False
-        )(row.question, request_id)
+        doc.lem_question = _refactor_data.TPP(row.question, request_id)
 
         doc.lem_question_len = len(doc.lem_question.split())
 
         doc.short_answer = row.short_answer
         # индексируемое поле
-        doc.lem_short_answer = TextPreprocessing()(row.short_answer, request_id)
+        doc.lem_short_answer = _refactor_data.TPP(row.short_answer, request_id)
 
         doc.full_answer = row.full_answer
 
-        lem_key_words = TextPreprocessing(
-            delete_question_words=False
-        )(row.key_words, request_id)
+        lem_key_words = _refactor_data.TPP(row.key_words, request_id)
 
         # индексируемое поле
         doc.lem_key_words = ' '.join(
@@ -94,9 +90,7 @@ def _refactor_data(data):
         synonym_questions = _get_manual_synonym_questions(doc.number)
         if synonym_questions:
             lem_synonym_questions = [
-                TextPreprocessing(
-                    delete_question_words=False
-                )(question, request_id)
+                _refactor_data.TPP(question, request_id)
                 for question in synonym_questions
                 ]
 
@@ -149,6 +143,7 @@ def _refactor_data(data):
 
     return docs
 
+_refactor_data.TPP = TextPreprocessing(label='MFDG', delete_question_words=False)
 
 def _write_data(data):
     """
