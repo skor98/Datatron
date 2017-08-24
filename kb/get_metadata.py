@@ -8,11 +8,10 @@ import requests
 
 import logs_helper  # pylint: disable=unused-import
 
+
 # ToDo дописать документацию
 # ToDo заменить списки [] на tuple()
 # ToDo переписать в стиле Python: while i < N -> for i in range(N)
-
-
 class Level:
     def __init__(self, name='', caption='', unique_name='', level_number=''):
         self.name = name

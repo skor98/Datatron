@@ -1,5 +1,5 @@
 MARKS = ['FORECASTDEV', 'FORECASTPERCENT', 'KDPERCENT', 'CURYPREDYDIVFACT', 'FPFDEV', 'FPFPERCENT', 'CURPPREDPDEVFACT']
-YEARS = ['2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017']
+YEARS = ['2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
 test_file = open('test_INDO01.txt', 'r')
 tests_array = []
 correct_tests_array = []
@@ -29,14 +29,14 @@ for i in tests_array:
             dims_with_formal_names.append('[KDGROUPS].' + new_dim)
         if dim_digits == '03':
             dims_with_formal_names.append('[MARKS].' + new_dim)
-        if new_dim[1:len(new_dim)-1:1] in MARKS:
+        if new_dim[1:len(new_dim) - 1:1] in MARKS:
             dims_with_formal_names.append('[MARKS].' + new_dim)
         if dim_digits == '14':
             dims_with_formal_names.append('[RZPR].' + new_dim)
         if dim_digits == '25':
             dims_with_formal_names.append('[BIFB].' + new_dim)
-        if new_dim[1:len(new_dim)-1:1] in YEARS:
-            dims_with_formal_names.append('[YEARS].'+new_dim)
+        if new_dim[1:len(new_dim) - 1:1] in YEARS:
+            dims_with_formal_names.append('[YEARS].' + new_dim)
         if dim_digits == '10':
             dims_with_formal_names.append('[KIF].' + new_dim)
 

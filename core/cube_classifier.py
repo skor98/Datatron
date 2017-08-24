@@ -7,11 +7,11 @@
 import re
 
 from config import TEST_PATH_CUBE
-import logs_helper
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+import logs_helper
+
 
 # pylint: disable=invalid-name
-
 CONFIG_PREFIX = "model_cube_clf"
 
 

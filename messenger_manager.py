@@ -6,9 +6,9 @@ import random
 import re
 
 import constants
+from core.answer_object import CoreAnswer
 from data_retrieving import DataRetrieving
 from dbs.query_db import log_query_to_db
-from core.answer_object import CoreAnswer
 from speechkit import SpeechException
 from speechkit import speech_to_text
 

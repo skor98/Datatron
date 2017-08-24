@@ -5,6 +5,7 @@ Created on 24 Aug 2017
 '''
 
 import re
+
 from nlp import nlp_utils
 from nlp.phrase_processor import Phrase
 

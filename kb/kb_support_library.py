@@ -5,20 +5,20 @@
 Поддерживающие скрипты к базе знаний
 """
 
-import re
 import logging
-import random
-import pandas as pd
 from os import listdir, path
+import random
+import re
 
-import kb.kb_db_creation as dbc
-
-from text_preprocessing import TextPreprocessing
 from config import SETTINGS, TEST_PATH_RESULTS
-
+import kb.kb_db_creation as dbc
 import logs_helper  # pylint: disable=unused-import
+import pandas as pd
+from text_preprocessing import TextPreprocessing
+
 
 TPP = TextPreprocessing(
+    'KBSL',
     delete_digits=True,
     delete_question_words=True
 )

@@ -2,21 +2,21 @@
 # -*- coding: utf-8 -*-
 
 
-import json
-import subprocess
 import datetime
-import pycurl
+import json
+from os import path, remove
+import subprocess
+
+from peewee import fn
 import requests
 
-from os import path, remove
-from peewee import fn
-
+from config import SETTINGS
 import kb.kb_db_creation as dbc
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
-from kb.kb_support_library import get_with_member_to_given_member
 from kb.kb_support_library import get_measure_lem_key_words
-from config import SETTINGS
+from kb.kb_support_library import get_with_member_to_given_member
+import pycurl
 
 
 class CubeDocsGeneration:

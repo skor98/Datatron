@@ -8,6 +8,7 @@ Created on Tue Aug 15 15:07:15 2017
 
 from nlp.tonita_parser import TonitaParser
 
+
 syn_tp = TonitaParser()
 
 

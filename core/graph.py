@@ -7,9 +7,8 @@
 
 from itertools import islice
 
-import networkx as nx
-
 import core.cube_filters as cf
+import networkx as nx
 
 
 class Graph(nx.DiGraph):

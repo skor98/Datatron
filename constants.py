@@ -7,6 +7,7 @@
 
 from json import dumps
 
+
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
 
 TELEGRAM_START_MSG = '''Я – экспертная система Datatron!

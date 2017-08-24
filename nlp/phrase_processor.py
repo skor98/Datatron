@@ -7,7 +7,9 @@ Created on Mon Jul 24 13:13:08 2017
 """
 
 from pymorphy2 import MorphAnalyzer
+
 from nlp import nlp_utils
+
 
 class Word(object):
     def __init__(self, parsed_word, caps='lower', noproc=False):

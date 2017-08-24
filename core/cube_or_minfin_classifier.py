@@ -6,11 +6,11 @@
 """
 
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN
-import logs_helper
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+import logs_helper
+
 
 # pylint: disable=invalid-name
-
 CONFIG_PREFIX = "model_cube_or_minfin_clf"
 
 

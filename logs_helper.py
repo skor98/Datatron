@@ -8,11 +8,11 @@
 одного логгера.
 """
 
+import datetime
+from logging import FileHandler, StreamHandler
+import logging
 import re
 import sys
-import datetime
-import logging
-from logging import FileHandler, StreamHandler
 
 from config import DATETIME_FORMAT, LOG_LEVEL, LOGS_PATH
 from dbs.query_db import get_queries

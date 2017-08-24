@@ -6,20 +6,23 @@
 """
 
 import datetime
+import json
 import logging
 import os
 import random
 import string
-import uuid
 
-import json
+from flask import Flask, request, abort
 import requests
 import telebot
-from flask import Flask, request, abort
+import uuid
 
-import constants
 from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
+import constants
+from core.cube_classifier import CubeClassifier
+from core.cube_docs_processing import CubeProcessor
+from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
 from dbs.user_support_library import check_user_existence
 from dbs.user_support_library import create_feedback
 from dbs.user_support_library import create_user
@@ -28,9 +31,7 @@ from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import text_to_speech
-from core.cube_classifier import CubeClassifier
-from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
-from core.cube_docs_processing import CubeProcessor
+
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)

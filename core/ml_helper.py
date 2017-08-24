@@ -9,33 +9,33 @@
 4. Слой для привязки к более высокми уровням
 """
 
-import os
-import re
-import json
-import logging
-import pickle
 from collections import Counter
 from copy import deepcopy
+import json
+import logging
+import os
+import pickle
+import re
 
 from peewee import fn
-
-import numpy as np
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, log_loss, classification_report
 from sklearn.model_selection import KFold, ParameterGrid
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from kb.kb_db_creation import Member
-from text_preprocessing import TextPreprocessing
 from config import DATA_PATH
-from model_manager import MODEL_CONFIG, save_default_model
+from kb.kb_db_creation import Member
 import logs_helper
+from model_manager import MODEL_CONFIG, save_default_model
+import numpy as np
+from text_preprocessing import TextPreprocessing
+
 
 TPP = TextPreprocessing(
     log=False,
+    label='MODEL',
     delete_digits=False,
     delete_question_words=False,
     delete_repeatings=False,

@@ -5,19 +5,19 @@
 Взаимодействие с Yandex SpeechKit
 """
 
-import uuid
-import subprocess
 import logging
-
-import xml.etree.ElementTree as XmlElementTree
+import subprocess
 from urllib.parse import quote
+
+from ffmpy import FFmpeg
 import httplib2
 import requests
-from ffmpy import FFmpeg
+import uuid
 
 from config import SETTINGS
-
 import logs_helper  # pylint: disable=unused-import
+import xml.etree.ElementTree as XmlElementTree
+
 
 # Yandex URL для API
 YANDEX_ASR_HOST = 'asr.yandex.net'
@@ -31,7 +31,7 @@ PATH_TO_FFMPEG = SETTINGS.PATH_TO_FFMPEG
 TTS_URL = 'https://tts.voicetech.yandex.net/generate'
 
 
-def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str = None, in_content: bytes = None):
+def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str=None, in_content: bytes=None):
     """Обобщённый метод для вызова ffmpeg"""
     ff = FFmpeg(
         executable=PATH_TO_FFMPEG,
@@ -55,7 +55,7 @@ def run_ffmpeg(ff_inputs, ff_outputs, in_filename: str = None, in_content: bytes
     return stdout
 
 
-def convert_to_ogg(in_filename: str = None, in_content: bytes = None):
+def convert_to_ogg(in_filename: str=None, in_content: bytes=None):
     """Конвертирование файл/байтов в OOG кодировку (необходимую для Telegram)"""
 
     return run_ffmpeg(
@@ -66,7 +66,7 @@ def convert_to_ogg(in_filename: str = None, in_content: bytes = None):
     )
 
 
-def convert_to_mp3(in_filename: str = None, in_content: bytes = None):
+def convert_to_mp3(in_filename: str=None, in_content: bytes=None):
     """Конвертирование файл/байтов в mp3 кодировку (необходимую для Telegram)"""
 
     return run_ffmpeg(
@@ -200,7 +200,7 @@ def speech_to_text(
             request_id
         ))
 
-    max_confidence = - float("inf")
+    max_confidence = -float("inf")
     text = ''
 
     for child in xml:
@@ -208,7 +208,7 @@ def speech_to_text(
             text = child.text
             max_confidence = float(child.attrib['confidence'])
 
-    if max_confidence == - float("inf"):
+    if max_confidence == -float("inf"):
         exception_string = (
             'No text found.\n\n' +
             'Response:\n{}\n\n' +
