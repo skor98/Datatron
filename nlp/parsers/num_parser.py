@@ -6,7 +6,10 @@ Created on Fri Aug 18 01:02:02 2017
 @author: larousse
 """
 
-from core.tonita_parser import TonitaParser
+from itertools import chain, zip_longest
+
+from nlp.tonita_parser import TonitaParser
+
 
 num_tp = TonitaParser()
 
@@ -59,18 +62,15 @@ numdict = {
     7000: ['семитысячный'],
     8000: ['восьмитысячный'],
     9000: ['девятитысячный'],
-    10**6: ['миллион', 'млн', 'M', 'М', 'KK', 'КК', 'лям', 'миллионный'],
-    10**9: ['миллиард', 'млрд', 'лярд', 'миллиардный'],
-    10**12: ['триллион', 'трлн', 'триллионный'],
+    10 ** 6: ['миллион', 'млн', 'M', 'М', 'KK', 'КК', 'лям', 'миллионный'],
+    10 ** 9: ['миллиард', 'млрд', 'лярд', 'миллиардный'],
+    10 ** 12: ['триллион', 'трлн', 'триллионный'],
 }
 
-revdict = {}
-for num in numdict:
-    for word in numdict[num]:
-        revdict[word] = num
+revdict = dict(chain.from_iterable(
+    (zip_longest(v, [k], fillvalue=k) for k, v in numdict.items())))
 
-
-def _anything(start=0, end=10**13):
+def _anything(start=0, end=10 ** 13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
 _thousands_re = r'(?:(?P<m_num>{}|(\d+[.,])?\d+) (?:{})|(?P<m>{}))'.format(_anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
@@ -84,7 +84,7 @@ _sign_re = r'(?:(?P<plus>\+|плюс)|(?P<minus>-|минус))'
 
 literal_num_re = r'(?:{}?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(_sign_re, _thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re, _zero_re)
 
-bignum_re = r'{}?(?P<num>{}|(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re, _anything(1, 20), _anything(10**6))
+bignum_re = r'{}?(?P<num>(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re, _anything(10 ** 6))
 
 
 @num_tp.re_handler(literal_num_re)
@@ -109,13 +109,13 @@ def literal_num_h(match):
 
 
 @num_tp.re_handler(bignum_re)
-def bugnum_h(match):
-    deg = revdict.get(match.group('deg'), 1)
-    if match.group('minus') is not None:
+def bugnum_h(minus, num, deg):
+    deg = revdict.get(deg, 1)
+    if minus is not None:
         deg *= -1
-    num = match.group('num').replace(',', '.')
-    if num.isnumeric():
+    if isinstance(num, int):
         return deg * int(num)
+    num = num.replace(',', '.')
     if num.replace('.', '').isnumeric():
         return int(deg * float(num))
     return deg * revdict.get(num, 1)
@@ -125,8 +125,8 @@ romdict = {'i': 1, 'v': 5, 'x': 10, 'l': 50, 'c': 100, 'd': 500, 'm': 1000}
 roman_re = r'(?=[ivxlcdm])m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})'
 
 @num_tp.re_handler(roman_re)
-def roman_h(match):
-    rom = [romdict.get(c.lower(), 0) for c in match.group(0)]
+def roman_h(full):
+    rom = [romdict.get(c.lower(), 0) for c in full]
     res = 0
     for item, next_ in zip(rom, rom[1:]):
         if item >= next_:

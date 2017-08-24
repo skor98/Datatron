@@ -7,27 +7,22 @@
 
 import logging
 
-from core.solr import Solr
-from core.cube_docs_processing import CubeAnswer
-from core.support_library import group_documents
-from core.support_library import send_request_to_server
-from core.support_library import process_server_response
-from core.support_library import process_cube_answer
-from core.answer_object import CoreAnswer
-from core.cube_docs_processing import CubeProcessor
-from core.minfin_docs_processing import MinfinProcessor
-from core.cube_classifier import CubeClassifier
-from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
-
-from text_preprocessing import TextPreprocessing
-
 from config import SETTINGS
 from constants import ERROR_NO_DOCS_FOUND
-from model_manager import MODEL_CONFIG
-
+from core.answer_object import CoreAnswer
+from core.cube_classifier import CubeClassifier
+from core.cube_docs_processing import CubeAnswer
+from core.cube_docs_processing import CubeProcessor
+from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
+from core.minfin_docs_processing import MinfinProcessor
+from core.solr import Solr
+from core.support_library import group_documents
+from core.support_library import process_cube_answer
+from core.support_library import process_server_response
+from core.support_library import send_request_to_server
 import logs_helper  # pylint: disable=unused-import
-
-TPP = TextPreprocessing(delete_question_words=False)
+from model_manager import MODEL_CONFIG
+from text_preprocessing import TextPreprocessing
 
 
 class DataRetrieving:
@@ -35,6 +30,8 @@ class DataRetrieving:
     Модуль связывающие в себе результаты работы Apache Solr,
     и классов обработки его выдачи - CubeProcessor и MinfinProcessor
     """
+
+    TPP = TextPreprocessing(label='DATRET', delete_question_words=False)
 
     @staticmethod
     def get_data(user_request: str, request_id: str):
@@ -95,7 +92,7 @@ class DataRetrieving:
         """Предобработка запроса пользователя"""
 
         # нормализация запроса пользователя
-        norm_user_request = TPP(user_request, request_id)
+        norm_user_request = DataRetrieving.TPP(user_request, request_id)
 
         if MODEL_CONFIG["delete_repeating_words_in_request"]:
             norm_user_request = DataRetrieving._set_user_request(

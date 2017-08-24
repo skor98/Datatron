@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from os import remove, path
 import json
+from os import remove, path
 
 import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
 
-TPP = TextPreprocessing()
+
+TPP = TextPreprocessing(label='DBFILL')
 
 class KnowledgeBaseSupport:
     def __init__(self, data_source_file, db_file):

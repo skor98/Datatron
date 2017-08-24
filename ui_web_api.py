@@ -6,34 +6,28 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
-from os import path, makedirs
-import logging
-from uuid import uuid4
 import json
+import logging
+from os import path, makedirs
 
-import pandas as pd
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
+from uuid import uuid4
 
-from messenger_manager import MessengerManager
-from kb.kb_support_library import read_minfin_data
-from kb.kb_support_library import get_good_queries
-
-from logs_helper import time_with_message
 from config import SETTINGS
-
+from kb.kb_support_library import get_good_queries
+from kb.kb_support_library import read_minfin_data
+from logs_helper import time_with_message
 import logs_helper
-
+from messenger_manager import MessengerManager
 from models.responses.text_response_model import TextResponseModel
-
+import pandas as pd
 from utils.resource_helper import ResourceHelper
 
 
 # pylint: disable=unused-import
 # pylint: disable=no-self-use
 # pylint: disable=missing-docstring
-
-
 def get_minfin_data():
     """
     Возвращает данные по минфину в виде, готовому для вывода.

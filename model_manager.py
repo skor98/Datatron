@@ -25,7 +25,7 @@ class ModelManager:
 
     def __setitem__(self, key, value):
         self.params[key] = value
-        
+
     def __contains__(self, key):
         return key in self.params
 

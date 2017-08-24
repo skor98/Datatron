@@ -1,24 +1,24 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys
 import json
-import math
-import uuid
-import subprocess
 import logging
-import pycurl
+import math
 from os import listdir, path
+import subprocess
+import sys
 
-import pandas as pd
+import uuid
 
 from config import SETTINGS, TEST_PATH_MINFIN
 from kb.kb_support_library import read_minfin_data
+from logs_helper import time_with_message
+import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
+import pandas as pd
+import pycurl
 from text_preprocessing import TextPreprocessing
 
-import logs_helper  # pylint: disable=unused-import
-from logs_helper import time_with_message
 
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr

@@ -5,11 +5,13 @@
 Создание базы данных с пользователями
 """
 
-import sys
 import argparse
+import sys
+
+from peewee import Model, SqliteDatabase, IntegerField, CharField, ForeignKeyField
 
 from config import SETTINGS
-from peewee import Model, SqliteDatabase, IntegerField, CharField, ForeignKeyField
+
 
 database = SqliteDatabase(SETTINGS.PATH_TO_USER_DB)  # pylint: disable=invalid-name
 

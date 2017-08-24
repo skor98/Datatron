@@ -1,6 +1,8 @@
 from os import path
-from config import SETTINGS
+
 from flask import abort, send_file
+
+from config import SETTINGS
 
 
 class ResourceHelper:

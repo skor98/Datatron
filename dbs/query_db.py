@@ -12,6 +12,7 @@ from peewee import SqliteDatabase, DateTimeField, CharField, Model, fn
 from config import QUERY_DB_PATH
 from model_manager import MODEL_CONFIG
 
+
 _database = SqliteDatabase(QUERY_DB_PATH)
 
 

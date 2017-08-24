@@ -9,10 +9,10 @@
 from werkzeug.serving import run_simple
 from werkzeug.wsgi import DispatcherMiddleware
 
-from ui_web_api import app as web_api_app
-from ui_telegram import app as telegram_app
-
 from config import SETTINGS, SETTINGS_PATH
+from ui_telegram import app as telegram_app
+from ui_web_api import app as web_api_app
+
 
 if telegram_app is None:
     server_app = web_api_app

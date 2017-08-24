@@ -8,7 +8,8 @@ Created on Mon Aug 14 18:08:47 2017
 
 from datetime import datetime
 
-from core.tonita_parser import TonitaParser
+from nlp.tonita_parser import TonitaParser
+
 
 time_tp = TonitaParser()
 
@@ -62,7 +63,7 @@ next_kw = ('следующий', 'будущ(?:ий|ее)', 'грядущий', 
 
 current_re = r'(?P<current>(?(point)(?:{c})?|(?:{c})))'.format(c='|'.join(current_kw))
 last_re = r'(?P<last>(?:поза[- ]?)*(?:{}))'.format('|'.join(last_kw))
-next_re = r'(?P<next>(?:после[- ]?)*(?:{}))'.format('|'.join(next_kw))
+next_re = r'(?P<next_>(?:после[- ]?)*(?:{}))'.format('|'.join(next_kw))
 rel_re = r'(?:{} )?(?:{}|{}|{}) (?P<unit>{})'.format(points_re, current_re, last_re, next_re, anyunit)
 
 interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(unitcombo)
@@ -77,14 +78,15 @@ season_re = r'(?:{} )?(?P<season>{})'.format(points_re, anyseason)
 
 static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re, anyunit)
 
-statmonth_re = r'{} (?P<month>{})'.format(points_re, anymonth)
+statmonth_re = r'(?:{}|{}) (?P<month>{})'.format(points_re, _dayformat, anymonth)
+
+shortyear_re = r'(?P<month>{}) (?P<year>\d\d)'.format(anymonth)
 
 @time_tp.re_handler(rel_re)
-def rel_h(match):
-    u_len = unit_lens.get(match.group('unit'), 1)
-    begin = match.group('begin') is not None
+def rel_h(point, begin, last, next_, unit):
+    u_len = unit_lens.get(unit, 1)
+    begin = begin is not None
     newdate = datetime.today()
-    last, next_ = match.group('last', 'next')
     if last is not None:
         sum_len = u_len * (last.count('поза') + 1)
         newdate = mod_date(newdate, -sum_len)
@@ -92,13 +94,13 @@ def rel_h(match):
         sum_len = u_len * (next_.count('после') + 1)
         newdate = mod_date(newdate, sum_len)
     newdate = process_units(newdate, u_len, begin)
-    nomonth = u_len == 12 and match.group('point') is None
+    nomonth = u_len == 12 and point is None
     return date_to_text(newdate, nomonth=nomonth)
 
 
 @time_tp.re_handler(interval_re)
-def interval_h(match):
-    words = match.group('interval').split(' ')
+def interval_h(interval, ago, full):
+    words = interval.split(' ')
     sum_len = 0
     u_lens = []
     coeff = 1
@@ -113,8 +115,8 @@ def interval_h(match):
             coeff = 1
 
     if not u_lens:
-        return match.group(0)
-    if match.group('ago') is not None:
+        return full
+    if ago is not None:
         sum_len *= -1
     newdate = mod_date(datetime.today(), sum_len)
     if len(u_lens) == 1:
@@ -124,48 +126,52 @@ def interval_h(match):
 
 
 @time_tp.re_handler(static_re)
-def static_h(match):
-    u_len = unit_lens.get(match.group('unit'), 1)
-    num = int(match.group('num'))
-    begin = match.group('begin') is not None
+def static_h(unit, num, begin, point):
+    u_len = unit_lens.get(unit, 1)
+    begin = begin is not None
     newdate = get_static(u_len, num, begin)
     noyear = u_len != 12
-    nomonth = not noyear and not begin and match.group('end') is None
+    nomonth = not noyear and not point
     return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
 
 
 @time_tp.re_handler(statmonth_re)
-def statmonth_h(match):
-    num = norm_months.index(match.group('month')) + 1
-    begin = match.group('begin') is not None
+def statmonth_h(begin, month, day):
+    num = norm_months.index(month) + 1
+    begin = (begin is not None or
+            (day is not None and
+             day <= 15))
     newdate = get_static(1, num, begin)
     return date_to_text(newdate, noyear=True)
 
 
 @time_tp.re_handler(dateformat_re)
-def date_h(match):
-    newmonth = match.group('month')
-    if newmonth.isnumeric():
-        newmonth = max(min(int(newmonth), 12), 1)
+def date_h(day, month, year, begin):
+    if isinstance(month, int):
+        month = max(min(month, 12), 1)
     else:
-        newmonth = norm_months.index(newmonth) + 1
-    begin = match.group('begin') is not None
+        month = norm_months.index(month) + 1
+    begin = begin is not None
     if not begin:
-        newday = match.group('day')
-        begin = newday and int(newday) <= 15
-    newyear = max(min(int(match.group('year')), 3000), 1)
-    newdate = datetime(month=newmonth, year=newyear, day=1)
+        begin = day and day <= 15
+    year = max(min(year, 3000), 1)
+    newdate = datetime(month=month, year=year, day=1)
     newdate = process_units(newdate, 1, begin)
     return date_to_text(newdate)
 
 
 @time_tp.re_handler(season_re)
-def season_h(match):
-    num = seasons.index(match.group('season')) + 1
-    begin = match.group('begin') is not None
+def season_h(season, begin):
+    num = seasons.index(season) + 1
+    begin = begin is not None
     newdate = get_static(3, num, begin)
     newdate = mod_date(newdate, -1)
     return date_to_text(newdate, noyear=True)
+
+
+@time_tp.re_handler(shortyear_re)
+def shortyear_h(month, year):
+    return date_to_text(datetime(year=year, month=norm_months.index(month) + 1, day=1))
 
 
 def process_units(date, u_len=1, begin=False):

@@ -6,9 +6,9 @@
 """
 
 from core.support_library import CubeData
-from core.support_library import check_if_year_is_current
 from core.support_library import FunctionExecutionError
 from core.support_library import FunctionExecutionErrorNoMembers
+from core.support_library import check_if_year_is_current
 
 
 def tree_start(cube_data: CubeData):

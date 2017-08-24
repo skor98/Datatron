@@ -13,22 +13,24 @@
 """
 
 import argparse
-import json
-import uuid
 import datetime
-import time
+import json
 import logging
-import re
-from os import path, listdir, makedirs
 from math import isnan
+from os import path, listdir, makedirs
+import re
 from statistics import mean, StatisticsError
+import time
 
-from data_retrieving import DataRetrieving
+import uuid
+
 from config import DATETIME_FORMAT, LOG_LEVEL
 from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
-import logs_helper
+from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
+import logs_helper
 from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
+
 
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
