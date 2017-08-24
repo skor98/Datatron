@@ -404,7 +404,11 @@ def main_search_function(message):
         pers_answer = MessengerManager.personalization(message.text)
 
         if pers_answer:
-            bot.send_message(message.chat.id, pers_answer)
+            bot.send_message(
+                message.chat.id,
+                pers_answer,
+                parse_mode='Markdown'
+            )
         else:
             process_response(message)
     except Exception as err:

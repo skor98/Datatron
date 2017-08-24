@@ -283,7 +283,7 @@ class CubeDocsGeneration:
         """
 
         with open(self.file_name, 'a', encoding='utf-8') as file:
-            file.write(json.dumps(docs, ensure_ascii=False))
+            file.write(json.dumps(docs, ensure_ascii=False, indent=4))
 
     def index_created_documents_via_curl(self):
         """
