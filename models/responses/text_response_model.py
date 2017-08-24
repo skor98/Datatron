@@ -60,7 +60,7 @@ class TextResponseModel:
         ).encode("utf-8")
 
     @staticmethod
-    def from_answer(response: CoreAnswer):
+    def form_answer(response: CoreAnswer):
         # формирование ответа для клиента
         text_response = TextResponseModel()
         text_response.status = response.status
