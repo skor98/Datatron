@@ -393,28 +393,40 @@ class BaseTester:
         time_delta = time.time() - start_time
         self.write_log()
 
-        if isinstance(self, MinfinTester):
-            bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
-            should_get_number = re.compile(r'должны получать:(\d+\.\d+)')
+        # Честное тестирование - тестирование с выключенным параметром
+        # При нем также будут записываться вопросы, которые не работают
 
-            type_of_test = 0
-            only_wrong_manual_tests = {}
+        # При включенном параметре результаты тестов будут всегда выше,
+        # так как автоматические тесты всегда буду работать
+        # При включенном параметре файл с неработающими автомат. тестами
+        # по минфину обновляться не будут
+        if not MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+            if isinstance(self, MinfinTester):
+                bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
+                should_get_number = re.compile(r'должны получать:(\d+\.\d+)')
 
-            for res in self._text_results:
-                if 'manual' in res:
-                    type_of_test = 0
-                elif 'auto' in res:
-                    type_of_test = 1
-                else:
-                    if type_of_test:
-                        questions = bad_mifin_query.findall(res)
-                        if questions:
-                            question = questions[0].lower().replace('?', '')
-                            only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
+                type_of_test = 0
+                only_wrong_manual_tests = {}
 
-            log_filename = path.join(TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
-            with open(log_filename, 'w', encoding='utf-8') as file_out:
-                file_out.write(json.dumps(only_wrong_manual_tests))
+                for res in self._text_results:
+                    if 'manual' in res:
+                        type_of_test = 0
+                    elif any(test_type in res for test_type in ('auto', 'extra')):
+                        type_of_test = 1
+                    else:
+                        if type_of_test:
+                            questions = bad_mifin_query.findall(res)
+                            if questions:
+                                question = questions[0].lower().replace('?', '')
+                                only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
+
+                log_filename = path.join(TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
+                with open(log_filename, 'w', encoding='utf-8') as file_out:
+                    file_out.write(json.dumps(
+                        only_wrong_manual_tests,
+                        ensure_ascii=False,
+                        indent=4
+                    ))
 
         logging.info("{} takes {} seconds".format(self.__class__.__name__, time_delta))
 

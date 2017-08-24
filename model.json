@@ -1,5 +1,5 @@
 {
-    "use_local_file_processing_for_minfin": true,
+    "use_local_file_processing_for_minfin": false,
     "best_cube_data_threshold": 5,
     "cube_answers_scoring_model": "sum",
     "cube_boosting_threshold": 25,

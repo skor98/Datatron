@@ -111,7 +111,7 @@ class DataRetrieving:
                 TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
             )
 
-            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
+            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8-sig') as file:
                 DataRetrieving._minfin_auto_wrong_data = json.loads(file.read())
 
         return DataRetrieving._minfin_auto_wrong_data
@@ -243,10 +243,11 @@ class DataRetrieving:
 
     @staticmethod
     def _first_place_exact_minfin_answer(all_answers: list):
-        if DataRetrieving._exact_minfin_answer_number:
+        correct_number = DataRetrieving._exact_minfin_answer_number
+        if correct_number:
             for answer in list(all_answers):
-                if (answer['number'] ==
-                        DataRetrieving._exact_minfin_answer_number):
+                if (answer.type == 'minfin' and
+                            answer.number == correct_number):
                     all_answers.remove(answer)
                     all_answers.insert(0, answer)
 
@@ -256,6 +257,8 @@ class DataRetrieving:
                             all_answers[0].request_id
                         )
                     )
+
+                    break
 
     @staticmethod
     def _format_core_answer(answers: list, request_id: str, core_answer: CoreAnswer):
