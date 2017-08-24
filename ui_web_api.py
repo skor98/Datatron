@@ -145,7 +145,7 @@ class TextQuery(Resource):
         request_text = args['query']
         request_id = uuid4().hex
 
-        if len(args['query']) < 4:
+        if not args['query']:
             abort(400, message='You need "query" parameter"')
 
         return MessengerManager.make_request(
