@@ -232,8 +232,8 @@ kb/ts*
 
 kb/knowledge_base\.db-journal
 
-\.settings/
-
 \.project
 
 \.pydevproject
+
+\.settings/
