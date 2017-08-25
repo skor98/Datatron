@@ -29,6 +29,8 @@ class Word(object):
     @property
     def verbal(self):
         res = self.original.word if not self.noproc else self.original
+        if 'высочайш' in res:
+            res = res.replace('очай', '')
         if self.caps == 'upper':
             return res.upper()
         if self.caps == 'title':
@@ -238,6 +240,9 @@ class Phrase(object):
         res = []
         phrase = nlp_utils.advanced_tokenizer(phrase, True, True)
         for word in phrase:
+            if 'ъем' in word:
+                word = word.replace('ъем', 'ъём')
+            
             if word.isupper():
                 caps = 'upper'
             elif word.istitle():
