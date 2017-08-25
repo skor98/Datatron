@@ -91,6 +91,8 @@ def _refactor_data(data):
         )
 
         synonym_questions = _get_manual_synonym_questions(doc.number)
+        lem_synonym_questions = []
+
         if synonym_questions:
             lem_synonym_questions = [
                 _refactor_data.TPP(question, request_id)
