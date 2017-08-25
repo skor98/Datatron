@@ -871,10 +871,10 @@ def _main():
 
     if args.turn_on_mwat:
         MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
-        save_default_model(MODEL_CONFIG)
+        set_default_model(MODEL_CONFIG)
     else:
         MODEL_CONFIG["use_local_file_processing_for_minfin"] = False
-        save_default_model(MODEL_CONFIG)
+        set_default_model(MODEL_CONFIG)
 
     score, results = get_results(
         need_cube=args.cube,
@@ -882,8 +882,7 @@ def _main():
         write_logs=not args.no_logs
     )
 
-    MODEL_CONFIG["use_local_file_processing_for_minfin"] = True
-    save_default_model(MODEL_CONFIG)
+    restore_default_model()
 
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)

@@ -686,6 +686,11 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         dim_tmp, dim_str_value = "[{}].[{}]", []
 
         for member in cube_data.members:
+            # TODO: костыль
+            if member['dimension'] == 'KIF':
+                if member['score'] < 8:
+                    continue
+
             dim_str_value.append(dim_tmp.format(
                 member['dimension'],
                 member['cube_value']
