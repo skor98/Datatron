@@ -8,13 +8,14 @@
 import datetime
 import json
 import logging
-import requests
+from os import path
 import re
 
-import numpy
 import requests
 
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+from config import SETTINGS
+from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_cube_caption
@@ -403,6 +404,7 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
 
     for doc in solr_documents:
         if doc['type'] == 'dim_member':
+            combine_search_tech_cube_data(doc)
             cube_data.members.append(doc)
         elif doc['type'] == 'year_dim_member':
             cube_data.year_member = doc
@@ -413,8 +415,10 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
         elif doc['type'] == 'cube':
             cube_data.cubes.append(doc)
         elif doc['type'] == 'measure':
+            combine_search_tech_cube_data(doc)
             cube_data.measures.append(doc)
         elif doc['type'] == 'minfin':
+            combine_search_tech_minfin_data(doc)
             minfin_data.documents.append(doc)
 
     logging.info(
@@ -429,6 +433,67 @@ def group_documents(solr_documents: list, user_request: str, request_id: str):
         ))
 
     return minfin_data, cube_data
+
+
+def minfin_tech_data():
+    """Чтение технической информации по Минфину"""
+
+    if not minfin_tech_data.data:
+        file_to_minfin_tech_file = path.join(
+            SETTINGS.PATH_TO_MINFIN_ATTACHMENTS,
+            TECH_MINFIN_DOCS_FILE
+        )
+
+        with open(file_to_minfin_tech_file, 'r', encoding='utf-8') as file:
+            data = json.loads(file.read())
+            minfin_tech_data.data = data
+    return minfin_tech_data.data
+
+
+minfin_tech_data.data = None
+
+
+def cube_tech_data():
+    """Чтение технической информации по кубам"""
+
+    if not cube_tech_data.data:
+        with open(TECH_CUBE_DOCS_FILE, 'r', encoding='utf-8') as file:
+            data = json.loads(file.read())
+            cube_tech_data.data = data
+
+    return cube_tech_data.data
+
+
+cube_tech_data.data = None
+
+
+def combine_search_tech_minfin_data(found_minfin_doc: dict):
+    """
+    Объединение найденной и технической информации
+    по Минфину
+    """
+    if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+        data = minfin_tech_data()
+        needed_doc = [
+            doc for doc in data if doc['inner_id'] == found_minfin_doc['inner_id']
+            ]
+
+        for key, value in needed_doc[0].items():
+            found_minfin_doc[key] = value
+
+
+def combine_search_tech_cube_data(found_cube_doc: dict):
+    """
+    Объединение найденной и технической информации по кубу
+    """
+    if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+        data = cube_tech_data()
+        needed_doc = [
+            doc for doc in data if doc['inner_id'] == found_cube_doc['inner_id']
+            ]
+
+        for key, value in needed_doc[0].items():
+            found_cube_doc[key] = value
 
 
 def score_cube_question(cube_data: CubeData):
@@ -456,8 +521,7 @@ def score_cube_question(cube_data: CubeData):
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
             max_member_score if max_member_score else 0 +
                                                       MODEL_CONFIG[
-                                                          "measure_weight_in_sum_scoring_model"] * measure_score
-        )
+                                                          "measure_weight_in_sum_scoring_model"] * measure_score)
 
     # получение скоринг-модели
     score_model = MODEL_CONFIG["cube_answers_scoring_model"]

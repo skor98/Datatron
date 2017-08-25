@@ -9,8 +9,11 @@ import logging
 from os import path
 import json
 
-from config import SETTINGS
+
 from constants import ERROR_NO_DOCS_FOUND
+from config import SETTINGS
+from config import TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
+
 from core.answer_object import CoreAnswer
 from core.cube_classifier import CubeClassifier
 from core.cube_docs_processing import CubeAnswer
@@ -22,11 +25,11 @@ from core.support_library import group_documents
 from core.support_library import process_cube_answer
 from core.support_library import process_server_response
 from core.support_library import send_request_to_server
-import logs_helper  # pylint: disable=unused-import
+
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
-from config import TEST_PATH_RESULTS
-from config import WRONG_AUTO_MINFIN_TESTS_FILE
+
+import logs_helper  # pylint: disable=unused-import
 
 
 class DataRetrieving:
@@ -57,7 +60,7 @@ class DataRetrieving:
             DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
         norm_user_request = DataRetrieving._preprocess_user_request(
-            user_request,
+            core_answer.user_request,
             request_id
         )
 
@@ -72,14 +75,16 @@ class DataRetrieving:
         if solr_response['numFound']:
             minfin_docs, cube_data = group_documents(
                 solr_response['docs'],
-                user_request,
+                core_answer.user_request,
                 request_id
             )
 
             minfin_answers = MinfinProcessor.get_data(minfin_docs)
 
             clf = CubeClassifier.inst()
-            best_prediction = tuple(clf.predict_proba(user_request))[0]
+            best_prediction = tuple(
+                clf.predict_proba(core_answer.user_request)
+            )[0]
 
             cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
 

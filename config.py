@@ -71,6 +71,12 @@ DATA_PATH = fixed_path("data")
 
 WRONG_AUTO_MINFIN_TESTS_FILE = 'minfin_wrong_auto_tests.json'
 
+TECH_CUBE_DOCS_FILE = fixed_path(
+    path.join('kb', 'tech_cube_data_for_indexing.json')
+)
+
+TECH_MINFIN_DOCS_FILE = 'tech_minfin_data_for_indexing.json'
+
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
 DATETIME_FORMAT = "{} {}".format(DATE_FORMAT, TIME_FORMAT)

@@ -1,16 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+Генерация документов по кубам
+"""
 
 import datetime
 import json
-from os import path, remove
+from os import path
 import subprocess
+from uuid import uuid4
 
 from peewee import fn
 import requests
 
-from config import SETTINGS
+from config import SETTINGS, TECH_CUBE_DOCS_FILE
+from model_manager import MODEL_CONFIG
 import kb.kb_db_creation as dbc
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
@@ -27,6 +32,8 @@ class CubeDocsGeneration:
 
     def __init__(self):
         self.file_name = path.join('kb', 'cube_data_for_indexing.json')
+        self.tech_file_name = TECH_CUBE_DOCS_FILE
+        self.search_file_name = path.join('kb', 'search_cube_data_for_indexing.json')
         self.core = SETTINGS.SOLR_MAIN_CORE
 
     def generate_docs(self):
@@ -56,10 +63,6 @@ class CubeDocsGeneration:
             'query%3E%3C/delete%3E&commit=true'
         )
         requests.get(dlt_str.format(self.core))
-        try:
-            remove(self.file_name)
-        except FileNotFoundError:
-            pass
 
     def create_core(self):
         """
@@ -125,7 +128,8 @@ class CubeDocsGeneration:
                                     'member_caption': member.caption,
                                     'cube_value': member.cube_value,
                                     'hierarchy_level': member.hierarchy_level,
-                                    'connected_value': get_with_member_to_given_member(member.id)
+                                    'connected_value': get_with_member_to_given_member(member.id),
+                                    'inner_id': uuid4().hex
                                 })
 
         return year_values + territory_values + other_values
@@ -181,7 +185,7 @@ class CubeDocsGeneration:
                 verbal += ' ' + item.lem_synonyms
 
             # создание исходной структур
-            d = {
+            terr_doc = {
                 'type': 'terr_dim_member',
                 'dimension': 'TERRITORIES',
                 'lem_member_caption': verbal,
@@ -203,16 +207,16 @@ class CubeDocsGeneration:
                         )[0]
 
                 # добавление в словарь новой пары
-                d[cube.name] = member.cube_value
+                terr_doc[cube.name] = member.cube_value
 
                 if not some_terr_id:
                     some_terr_id = member.id
 
-            d['connected_value'] = get_with_member_to_given_member(
+            terr_doc['connected_value'] = get_with_member_to_given_member(
                 some_terr_id
             )
 
-            territory_caption.append(d)
+            territory_caption.append(terr_doc)
 
         return territory_caption
 
@@ -234,7 +238,7 @@ class CubeDocsGeneration:
                 'cube_caption': cube.caption,
                 'description': cube_description,
                 'dimensions': get_cube_dimensions(cube.name),
-                'default_measure': get_default_cube_measure(cube.name)
+                'default_measure': get_default_cube_measure(cube.name),
             })
         return cubes
 
@@ -270,7 +274,8 @@ class CubeDocsGeneration:
                     item.measure.cube_value,
                     item.cube.name
                 ),
-                'cube_value': item.measure.cube_value
+                'cube_value': item.measure.cube_value,
+                'inner_id': uuid4().hex
             })
 
         return measures
@@ -282,8 +287,32 @@ class CubeDocsGeneration:
         индексации в Apache Solr
         """
 
-        with open(self.file_name, 'a', encoding='utf-8') as file:
-            file.write(json.dumps(docs, ensure_ascii=False, indent=4))
+        if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+            tech_keys = ('member_caption', 'inner_id')
+            tech_docs = []
+
+            for doc in docs:
+                # документы по ключам из tech_keys
+                if all(tk in doc.keys() for tk in tech_keys):
+                    tech_docs.append(
+                        {
+                            tech_keys[0]: doc.get(tech_keys[0]),
+                            tech_keys[1]: doc.get(tech_keys[1])
+                        }
+                    )
+                # удаление из документа поля
+                doc.pop(tech_keys[0], None)
+
+            # запись данных в технический файл
+            with open(self.tech_file_name, 'w', encoding='utf-8') as file:
+                file.write(json.dumps(tech_docs, ensure_ascii=False, indent=4))
+
+            # запись данных в индексируемый файл
+            with open(self.search_file_name, 'w', encoding='utf-8') as file:
+                file.write(json.dumps(docs, ensure_ascii=False, indent=4))
+        else:
+            with open(self.file_name, 'w', encoding='utf-8') as file:
+                file.write(json.dumps(docs, ensure_ascii=False, indent=4))
 
     def index_created_documents_via_curl(self):
         """
@@ -291,22 +320,29 @@ class CubeDocsGeneration:
         на индексацию в Apache Solr через cURL
         """
 
-        c = pycurl.Curl()
+        indexed_file = self.file_name
+
+        if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+            indexed_file = self.search_file_name
+
+        pycrl = pycurl.Curl()
         curl_addr = (
             'http://' +
             SETTINGS.SOLR_HOST +
             ':8983/solr/{}/update?commit=true'
         )
-        c.setopt(c.URL, curl_addr.format(self.core))
-        c.setopt(c.HTTPPOST,
+        pycrl.setopt(pycrl.URL, curl_addr.format(self.core))
+        pycrl.setopt(pycrl.HTTPPOST,
                  [
                      ('fileupload',
-                      (c.FORM_FILE, self.file_name,
-                       c.FORM_CONTENTTYPE, 'application/json')
+                      (pycrl.FORM_FILE, indexed_file,
+                       pycrl.FORM_CONTENTTYPE, 'application/json')
                       ),
                  ])
-        c.perform()
-        print('Документы для кубов проиндексированы через CURL')
+        pycrl.perform()
+        print('Документ {} проиндексирован через CURL'.format(
+            indexed_file
+        ))
 
     def index_created_documents_via_jar_file(self):
         """
@@ -317,10 +353,16 @@ class CubeDocsGeneration:
         """
 
         path_to_json_data_file = self.file_name
+
+        if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+            path_to_json_data_file = self.search_file_name
+
         command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
             self.core,
             SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
             path_to_json_data_file
         )
         subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
-        print('Документы для кубов проиндексированы через JAR файл')
+        print('Документ {} проиндексирован через JAR файл'.format(
+            path_to_json_data_file
+        ))

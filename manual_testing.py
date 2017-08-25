@@ -53,15 +53,15 @@ def safe_mean(values):
         return float("NaN")
 
 
-def get_jaccard(a: set, b: set):
+def get_jaccard(s1: set, s2: set):
     """
     Возвращает меру Жаккара между множествами a и b \in [0,1]
     Много -- хорошо.
     """
-    return len(a.intersection(b)) / len(a.union(b))
+    return len(s1.intersection(s2)) / len(s1.union(s2))
 
 
-class AccuracyScoreHelper():
+class AccuracyScoreHelper:
     """Инкапсулирует вычисление точности (accuracy)."""
 
     def __init__(self):
@@ -888,7 +888,7 @@ def _main():
     current_datetime = datetime.datetime.now().strftime(CURRENT_DATETIME_FORMAT)
     result_file_name = "results_{}.json".format(current_datetime)
     with open(path.join(TEST_PATH_RESULTS, result_file_name), 'w') as f_out:
-        json.dump(results, f_out, indent=4)
+        json.dump(results, f_out, indent=4, sort_keys=True)
     print("Results: {}".format(json.dumps(results, indent=4)))
     if not isnan(score):
         print("Score: {:.4f}".format(score))

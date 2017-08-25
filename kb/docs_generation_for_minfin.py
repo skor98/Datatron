@@ -1,27 +1,31 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+Генерация документов по Минфину
+"""
+
 import json
 import logging
 import math
 from os import listdir, path
 import subprocess
 import sys
+from uuid import uuid4
 
-import uuid
-
-from config import SETTINGS, TEST_PATH_MINFIN
+from config import SETTINGS, TEST_PATH_MINFIN, TECH_MINFIN_DOCS_FILE
 from kb.kb_support_library import read_minfin_data
-from logs_helper import time_with_message
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 import pandas as pd
 import pycurl
 from text_preprocessing import TextPreprocessing
 
+import logs_helper  # pylint: disable=unused-import
+
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr
-output_file = 'minfin_data_for_indexing.json'
+OUTPUT_FILE = 'minfin_data_for_indexing.json'
+SEARCH_OUTPUT_FILE = 'search_minfin_data_for_indexing.json'
 
 # Путь к папке с исходными вопросами и приложениями от Минфина
 path_to_folder_file = SETTINGS.PATH_TO_MINFIN_ATTACHMENTS
@@ -59,7 +63,7 @@ def _refactor_data(data):
     MinfinDocument
     """
 
-    request_id = uuid.uuid4()
+    request_id = uuid4().hex
 
     docs = []
     for row in data.itertuples():
@@ -151,9 +155,32 @@ def _write_data(data):
     в JSON-строку и ее запись в файл
     """
 
-    with open(path.join(path_to_folder_file, output_file), 'w', encoding='utf-8') as file:
-        data_to_str = '[{}]'.format(','.join([element.toJSON() for element in data]))
-        file.write(data_to_str)
+    if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+        tech_docs_file = path.join(path_to_folder_file, TECH_MINFIN_DOCS_FILE)
+        search_docs_file = path.join(path_to_folder_file, SEARCH_OUTPUT_FILE)
+
+        with open(tech_docs_file, 'w', encoding='utf-8') as file:
+            file.write(
+                '[{}]'.format(
+                    ','.join([element.to_tech_json_object() for element in data])
+                )
+            )
+
+        with open(search_docs_file, 'w', encoding='utf-8') as file:
+            file.write(
+                '[{}]'.format(
+                    ','.join([element.to_search_json_object() for element in data])
+                )
+            )
+
+    else:
+        indexed_file = path.join(path_to_folder_file, OUTPUT_FILE)
+        with open(indexed_file, 'w', encoding='utf-8') as file:
+            file.write(
+                '[{}]'.format(
+                    ','.join([element.to_json() for element in data])
+                )
+            )
 
 
 def _get_manual_synonym_questions(question_number):
@@ -211,6 +238,10 @@ def _index_data_via_curl():
     на индексацию в Apache Solr через cURL
     """
 
+    indexed_file = OUTPUT_FILE
+    if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+        indexed_file = SEARCH_OUTPUT_FILE
+
     curl_instance = pycurl.Curl()
     curl_instance.setopt(
         curl_instance.URL,
@@ -224,13 +255,15 @@ def _index_data_via_curl():
         'fileupload',
         (
             curl_instance.FORM_FILE,
-            path.join(path_to_folder_file, output_file),
+            path.join(path_to_folder_file, indexed_file),
             curl_instance.FORM_CONTENTTYPE, 'application/json'
         )
     ), ])
     curl_instance.perform()
 
-    logging.info('Минфин-документы проиндексированы через CURL')
+    logging.info('Документ {} проиндексирован через CURL'.format(
+        indexed_file
+    ))
 
 
 def _index_data_via_jar_file():
@@ -241,17 +274,27 @@ def _index_data_via_jar_file():
     из папки /example/exampledocs
     """
 
-    path_to_json_data_file = path_to_folder_file.format(output_file)
-    path_to_solr_jar_file = SETTINGS.PATH_TO_SOLR_POST_JAR_FILE
+    path_to_json_data_file = path.join(
+        path_to_folder_file,
+        OUTPUT_FILE
+    )
+
+    if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
+        path_to_json_data_file = path.join(
+            path_to_folder_file,
+            SEARCH_OUTPUT_FILE
+        )
 
     command = r'java -Dauto -Dc={} -Dfiletypes=json -jar {} {}'.format(
         SETTINGS.SOLR_MAIN_CORE,
-        path_to_solr_jar_file,
+        SETTINGS.PATH_TO_SOLR_POST_JAR_FILE,
         path_to_json_data_file
     )
     subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).wait()
 
-    logging.info('Минфин-документы проиндексированы через JAR файл')
+    logging.info('Документ {} проиндексирован через JAR файл'.format(
+        SEARCH_OUTPUT_FILE
+    ))
 
 
 def _add_automatic_key_words(documents):
@@ -386,12 +429,60 @@ class MinfinDocument:
         self.picture = None
         self.document_caption = None
         self.document = None
+        self.inner_id = uuid4().hex
 
-    def toJSON(self):
+    def to_json(self):
         """Перевод класса в JSON-строку"""
 
         return json.dumps(
-            self, default=lambda obj: obj.__dict__, sort_keys=True, indent=4, ensure_ascii=False)
+            self,
+            default=lambda obj: obj.__dict__,
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=4
+        )
+
+    def to_tech_json_object(self):
+        """
+        Перевод в объект с исключительно технической информацией
+        """
+
+        keys_to_return = (
+            'number', 'question', 'short_answer', 'full_answer',
+            'link_name', 'link',
+            'picture_caption', 'picture',
+            'document_caption', 'document',
+            'inner_id'
+        )
+
+        return json.dumps(
+            {key: getattr(self, key, None) for key in keys_to_return},
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=4
+        )
+
+    def to_search_json_object(self):
+        """
+        Перевод в объект с исключительно поисковыми полями
+        """
+
+        keys_to_return = (
+            'type',
+            'lem_question',
+            'lem_question_len',
+            'lem_extra_key_words',
+            'lem_short_answer',
+            'lem_key_words',
+            'inner_id'
+        )
+
+        return json.dumps(
+            {key: getattr(self, key, None) for key in keys_to_return},
+            ensure_ascii=False,
+            sort_keys=True,
+            indent=4
+        )
 
     def get_string_representation(self):
         """Cтроковое представление документа"""
@@ -400,10 +491,6 @@ class MinfinDocument:
         # от того, данные из каких полей берутся, результат
         # может как улучшаться, так и ухудшаться
         lem_synonym_questions = []
-
-        # Если синонимичные вопросы вручную уже прописаны
-        if self.lem_synonym_questions:
-            lem_synonym_questions = self.lem_synonym_questions
 
         # Ручные нормализованные ключевые слова по одному разу
         # Плюс нормализованный запрос
