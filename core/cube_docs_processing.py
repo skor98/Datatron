@@ -26,6 +26,8 @@ class CubeProcessor:
     @staticmethod
     def get_data(cube_data: CubeData, correct_cube: tuple=None):
         """API метод к работе с документами по кубам в ядре"""
+        # уверенность ответа по кубам
+        confidence = True
 
         # увеличения скора корректного по мнению классификатора куба
         CubeProcessor._boost_correct_cube_from_clf(cube_data, correct_cube)
@@ -85,7 +87,7 @@ class CubeProcessor:
             # фильтрация по наличие данных возможно только на этом этапе
             # когда собран MDX-запрос
             if SETTINGS.CHECK_CUBE_DATA_EXISTENCE:
-                csl.filter_cube_data_without_answer(cube_data_list)
+                confidence = csl.filter_cube_data_without_answer(cube_data_list)
 
                 # после фильтрации по наличию данных можно выбрать лучший
                 # как с помощью классификатора, так и по умолчанию (то есть по скору)
@@ -95,7 +97,7 @@ class CubeProcessor:
             cube_data_list
         )
 
-        return answers
+        return answers, confidence
 
     @staticmethod
     def _boost_correct_cube_from_clf(cube_data: CubeData, correct_cube: tuple):

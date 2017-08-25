@@ -33,7 +33,6 @@ from messenger_manager import MessengerManager
 from speechkit import text_to_speech, speech_to_text
 from speechkit import SpeechException
 
-
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
 app = None
@@ -542,6 +541,7 @@ def process_response(message, input_format='text', file_content=None):
             process_cube_questions(
                 message,
                 result.answer,
+                result.confidence,
                 request_id,
                 input_format
             )
@@ -589,11 +589,14 @@ def process_response(message, input_format='text', file_content=None):
             )
 
 
-def process_cube_questions(message, cube_result, request_id, input_format):
+def process_cube_questions(
+        message, cube_result, ans_confidence,
+        request_id, input_format
+):
     is_input_text = (input_format == 'text')
 
     if cube_result.status:
-        form_feedback(message, request_id, cube_result, not is_input_text)
+        form_feedback(message, request_id, cube_result, ans_confidence, not is_input_text)
 
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(message.chat.id, text_to_speech(cube_result.formatted_response))
@@ -712,7 +715,10 @@ def process_minfin_questions(message, minfin_result, ans_confidence, input_forma
         bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
 
 
-def form_feedback(message, request_id, cube_result, user_request_notification=False):
+def form_feedback(
+        message, request_id, cube_result,
+        ans_confidence, user_request_notification=False
+):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
         '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nID зароса: {query_id}'
@@ -721,7 +727,12 @@ def form_feedback(message, request_id, cube_result, user_request_notification=Fa
     expert_str = ''
     verbal_str = ''
 
-    pretty_feed = '*Вопрос после обработки*\n`"{}"`'.format(
+    confidence = '*Вопрос после обработки*\n`"{}"`'
+
+    if not ans_confidence:
+        confidence = 'Возможно, вы хотели спросить: {}'
+
+    pretty_feed = confidence.format(
         cube_result.feedback['pretty_feedback']
     )
 

@@ -835,11 +835,13 @@ def filter_cube_data_without_answer(cube_data_list: list):
     Метод, который оставляет в списке только возвращающие данные запросы
     """
 
+    confidence = True
+
     if cube_data_list:
         request_id = cube_data_list[0].request_id
         before_filtering = len(cube_data_list)
 
-        for cube_data in list(cube_data_list):
+        for idx, cube_data in enumerate(list(cube_data_list)):
 
             response = send_request_to_server(
                 cube_data.mdx_query,
@@ -848,6 +850,9 @@ def filter_cube_data_without_answer(cube_data_list: list):
 
             if not check_mdx_returns_data(response):
                 cube_data_list.remove(cube_data)
+                # Если лучший ответ удаляется
+                if idx == 0:
+                    confidence = False
 
         after_filtering = len(cube_data_list)
 
@@ -857,3 +862,5 @@ def filter_cube_data_without_answer(cube_data_list: list):
                 before_filtering - after_filtering
             )
         )
+
+        return confidence

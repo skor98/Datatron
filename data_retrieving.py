@@ -46,6 +46,9 @@ class DataRetrieving:
     # хранение данных в памяти
     _minfin_auto_wrong_data = None
 
+    # уверенность
+    _confidence = True
+
     @staticmethod
     def get_data(user_request: str, request_id: str):
         """API метод к ядру системы"""
@@ -86,7 +89,8 @@ class DataRetrieving:
                 clf.predict_proba(core_answer.user_request)
             )[0]
 
-            cube_answers = CubeProcessor.get_data(cube_data, best_prediction)
+            cube_answers, cube_confidence = CubeProcessor.get_data(cube_data, best_prediction)
+            DataRetrieving._confidence = cube_confidence
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -318,6 +322,7 @@ class DataRetrieving:
         # Если главный ответ по кубам
         if isinstance(core_answer.answer, CubeAnswer):
             core_answer.status = True
+            core_answer.confidence = DataRetrieving._confidence
 
             logging.info(
                 "Query_ID: {}\tMessage: Главный ответ - "
