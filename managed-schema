@@ -406,14 +406,10 @@
   <field name="_root_" type="string" docValues="false" indexed="true" stored="false"/>
   <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
   <field name="_version_" type="long" indexed="false" stored="false"/>
-  <field name="cube_caption" type="string" multiValued="false" indexed="false"/>
-  <field name="member_caption" type="string" multiValued="false" indexed="false"/>
-  <field name="lem_member_caption" type="string" multiValued="false"/> <!-- Индексирование нормализованных названий измерений-->
-  <field name="lem_member_caption_len" type="tlong" indexed="false"/> <!-- Длина этого поля для бустинга -->
-  <field name="lem_question_len" type="tlong" indexed="false"/> <!-- Аналогичное поле для минфина -->
-  <field name="connected_value.member_cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="connected_value.dimension_cube_value" type="string" multiValued="false" indexed="false"/>
+  <field name="connected_value.member_cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="cube" type="string" multiValued="false" indexed="false"/>
+  <field name="cube_caption" type="string" multiValued="false" indexed="false"/>
   <field name="cube_value" type="string" multiValued="false" indexed="false"/>
   <field name="default_measure" type="string" multiValued="false" indexed="false"/>
   <field name="description" type="string" multiValued="false"/>
@@ -424,13 +420,18 @@
   <field name="full_answer" type="string" multiValued="false" indexed="false"/>
   <field name="hierarchy_level" type="tlongs" multiValued="false" indexed="false"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+  <field name="inner_id" type="string" multiValued="false" indexed="false"/>
+  <field name="lem_extra_key_words" type="string" multiValued="false"/>
   <field name="lem_full_answer" type="string" multiValued="false" indexed="false"/>
   <field name="lem_key_words" type="string" multiValued="false"/>
+  <field name="lem_member_caption" type="string" multiValued="false"/>
+  <field name="lem_member_caption_len" type="tlong" indexed="false"/>
   <field name="lem_question" type="string" multiValued="false"/>
+  <field name="lem_question_len" type="tlong" indexed="false"/>
   <field name="lem_short_answer" type="string" multiValued="false"/>
-  <field name="lem_extra_key_words" type="string" multiValued="false"/>
   <field name="link" type="strings" indexed="false"/>
   <field name="link_name" type="strings" indexed="false"/>
+  <field name="member_caption" type="string" multiValued="false" indexed="false"/>
   <field name="number" type="string" multiValued="false" indexed="false"/>
   <field name="picture" type="strings" indexed="false"/>
   <field name="picture_caption" type="strings" indexed="false"/>
