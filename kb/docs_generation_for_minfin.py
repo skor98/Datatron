@@ -19,7 +19,6 @@ import pandas as pd
 import pycurl
 from text_preprocessing import TextPreprocessing
 
-
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr
 output_file = 'minfin_data_for_indexing.json'
@@ -94,22 +93,21 @@ def _refactor_data(data):
                 for question in synonym_questions
                 ]
 
-            lem_full_answer = TextPreprocessing()(row.full_answer)
+        lem_full_answer = TextPreprocessing()(row.full_answer)
 
-            # добавление уникальных слов и длинного ответа
-            lem_extra_key_words = (
-                set(' '.join(lem_synonym_questions).split()) |
-                set(lem_full_answer.split())
-            )
+        # добавление уникальных слов и длинного ответа
+        lem_extra_key_words = (
+            set(' '.join(lem_synonym_questions).split()) |
+            set(lem_full_answer.split())
+        )
 
-            # удаление уже используемых слов lem_key_words, lem_short_answer
-            lem_extra_key_words -= set(doc.lem_key_words.split())
-            lem_extra_key_words -= set(doc.lem_short_answer.split())
-            lem_extra_key_words -= set(lem_key_words.split())
-            lem_extra_key_words = ' '.join(lem_extra_key_words)
+        # удаление уже используемых слов lem_key_words, lem_short_answer
+        lem_extra_key_words -= set(doc.lem_short_answer.split())
+        lem_extra_key_words -= set(lem_key_words.split())
+        lem_extra_key_words = ' '.join(lem_extra_key_words)
 
-            # индексируемое поле
-            doc.lem_extra_key_words = ' '.join([lem_extra_key_words] * 5)
+        # индексируемое поле
+        doc.lem_extra_key_words = ' '.join([lem_extra_key_words] * 5)
 
         # Может быть несколько
         if row.link_name:
@@ -143,7 +141,9 @@ def _refactor_data(data):
 
     return docs
 
+
 _refactor_data.TPP = TextPreprocessing(label='MFDG', delete_question_words=False)
+
 
 def _write_data(data):
     """
