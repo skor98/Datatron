@@ -160,5 +160,7 @@ class MessengerManager:
         """Простая токенизация"""
 
         text = re.sub(r'[^\w\s]', '', text.strip().lower())
-        tokens = text.split()
-        return text, tokens
+
+        # сохранение всех слов длинной более 1 символа
+        tokens = [t for t in text.split() if len(t) > 1]
+        return ' '.join(tokens), tokens
