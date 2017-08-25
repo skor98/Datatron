@@ -264,7 +264,6 @@ class CubeProcessor:
 
         date_of_update = '16.08.2017'
         updates = {
-            'CLMR02': '01.08.2017',
             'CLDO01': date_of_update,
             'CLDO02': date_of_update,
             'INDO01': date_of_update,
