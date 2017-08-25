@@ -117,7 +117,7 @@ def text_to_speech(text, lang='ru-RU', filename=None, file_like=None, convert=Tr
     text = text.replace('\\+', '+')
 
     url = TTS_URL + '?text={}&format={}&lang={}&speaker={}&key={}&emotion={}&speed={}'.format(
-        quote(text), 'mp3', lang, 'oksana', SETTINGS.YANDEX_API_KEY, 'neutral', '1.0')
+        quote(text), 'mp3', lang, 'oksana', SETTINGS.YANDEX_API_KEY, 'good', '1.0')
 
     req = requests.get(url)
     if req.status_code == 200:
