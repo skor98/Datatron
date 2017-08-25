@@ -82,6 +82,8 @@ class TextPreprocessing(object):
         # Убираем плюсы-ударения
         if '\\+' in text:
             text = text.replace('\\+', '')
+        if 'ъем' in text:
+            text = text.replace('ъем', 'ъём')
 
         # Фильтруем важные символы
         text = TextPreprocessing._filter_symbols(text)
@@ -109,6 +111,7 @@ class TextPreprocessing(object):
 
         # Убираем повторяющиеся слова
         if self.delete_repeatings:
+            tokens = list(tokens)
             tokens = [t for n, t in enumerate(tokens) if t not in tokens[:n]]
 
         normalized_request = ' '.join(tokens)
