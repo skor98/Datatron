@@ -28,15 +28,17 @@ class Solr:
             core
         )
 
-        # Просим Solr выдать solr_documents_to_return (default: 50)
-        # документов в формате json, а также указать score каждого
+        # обработка опечаток
+        if MODEL_CONFIG["process_misspellings"]:
+            user_request = Solr.screen_bad_spelling(user_request)
+
         params = {
             'q': user_request,
             'rows': MODEL_CONFIG["solr_documents_to_return"],
             'wt': 'json',
             'fl': '*,score',
             "bf": "sum(if(exists(lem_member_caption_len),recip(lem_member_caption_len,0.8,2,0),0)," +
-            "if(exists(lem_question_len),recip(lem_question_len,1,5,2),0))",
+                  "if(exists(lem_question_len),recip(lem_question_len,1,5,2),0))",
             'defType': "edismax"  # тип парсера, этот самый мощный
         }
 
@@ -63,3 +65,21 @@ class Solr:
         )
 
         return docs
+
+    @staticmethod
+    def screen_bad_spelling(user_request: str):
+        def affordable_error(str_len: int):
+            if str_len < 5:
+                return 0
+            elif str_len in (5, 6):
+                return 1
+            elif str_len > 6:
+                return 2
+
+        tokens = user_request.split()
+        for token in tokens:
+            err = affordable_error(len(token))
+            if err:
+                tokens += '~{}'.format(err)
+
+        return ' '.join(tokens)
