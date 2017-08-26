@@ -74,8 +74,7 @@ class Word(object):
             return False
         match = False
         for grammeme in ('number', 'case', 'person', 'gender', 'animacy'):
-            gr_pair = (getattr(self, grammeme),
-                       getattr(other, grammeme))
+            gr_pair = (getattr(self, grammeme), getattr(other, grammeme))
             if None in gr_pair:
                 continue
             elif gr_pair[0] != gr_pair[1]:
@@ -94,8 +93,7 @@ class Word(object):
             return self.clone()
         res = self.clone()
         for grammeme in ('number', 'case', 'person', 'gender', 'animacy'):
-            gr_pair = (getattr(res, grammeme),
-                       getattr(other, grammeme))
+            gr_pair = (getattr(res, grammeme), getattr(other, grammeme))
             if gr_pair[0] != gr_pair[1] and None not in gr_pair:
                 res = res.inflect(gr_pair[1])
         return res
@@ -137,13 +135,14 @@ class Word(object):
         if self.noproc:
             return '<Token "{}": not processed>'.format(self.verbal)
         if not self.infl_tags:
-            return '<Word {}: {}>'.format(self.verbal, ', '.join(self.deriv_tags))
+            return '<Word {}: {}>'.format(self.verbal,
+                                          ', '.join(self.deriv_tags))
         else:
             return '<Word {}: {} ({}) in form {}>'.format(
-                self.verbal, self.normal,
+                self.verbal,
+                self.normal,
                 ', '.join(self.deriv_tags),
-                '/'.join(self.infl_tags),
-            )
+                '/'.join(self.infl_tags), )
 
 
 class Phrase(object):
@@ -167,7 +166,9 @@ class Phrase(object):
         if mainpos is not None:
             self.mainpos = mainpos
         else:
-            main_finder = [n for n, w in enumerate(self.structure) if w.can_be_main]
+            main_finder = [
+                n for n, w in enumerate(self.structure) if w.can_be_main
+            ]
             self.mainpos = main_finder[0] if main_finder else None
 
     @property
@@ -178,11 +179,10 @@ class Phrase(object):
         if self.mainpos is None:
             return self.clone()
         newmain = self.main.inflect(grammemes)
-        return Phrase(
-            [w.make_agree(newmain) if w.agrees(self.main) else w
-             for w in self.structure],
-            self.mainpos
-        )
+        return Phrase([
+            w.make_agree(newmain) if w.agrees(self.main) else w
+            for w in self.structure
+        ], self.mainpos)
 
     def clone(self):
         return Phrase([w.clone() for w in self.structure], self.mainpos)
@@ -226,11 +226,10 @@ class Phrase(object):
         return self.verbal
 
     def __repr__(self):
-        return '<Phrase {}: [{}]>'.format(
-            self.verbal,
-            '; '.join([repr(w) if n != self.mainpos else repr(w) + '(MAIN)'
-                       for n, w in enumerate(self.structure)])
-        )
+        return '<Phrase {}: [{}]>'.format(self.verbal, '; '.join([
+            repr(w) if n != self.mainpos else repr(w) + '(MAIN)'
+            for n, w in enumerate(self.structure)
+        ]))
 
     def __bool__(self):
         return bool(self.structure)
@@ -242,7 +241,7 @@ class Phrase(object):
         for word in phrase:
             if 'ъем' in word:
                 word = word.replace('ъем', 'ъём')
-            
+
             if word.isupper():
                 caps = 'upper'
             elif word.istitle():
@@ -250,7 +249,8 @@ class Phrase(object):
             else:
                 caps = 'lower'
             parsed = Phrase.morph.parse(word)
-            if not parsed or any(t in parsed[0].tag for t in ('PNCT', 'LATN', 'NUMB', 'UNKN')):
+            if not parsed or any(t in parsed[0].tag
+                                 for t in ('PNCT', 'LATN', 'NUMB', 'UNKN')):
                 res.append(Word(word, caps, noproc=True))
             elif 'accs' in parsed[0].tag:
                 alt = [p for p in parsed if 'accs' not in p.tag]

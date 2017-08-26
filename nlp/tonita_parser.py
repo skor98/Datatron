@@ -45,6 +45,7 @@ class TonitaParser(object):
 
             self.handlers.append(_wrapped)
             return _wrapped
+
         return _decorate
 
     set_handler.repl_maker = lambda r: lambda m: ' '.join((m.group(0), r(m)))
@@ -119,9 +120,9 @@ def _func_with_match(func, match):
 
     mgdict = match.groupdict()
     mgdict = {k: v for k, v in mgdict.items() if v is not None}
-    mgdict.update({k + '_': v
-                   for k, v in mgdict.items()
-                   if k + '_' in all_args})
+    mgdict.update(
+        {k + '_': v
+         for k, v in mgdict.items() if k + '_' in all_args})
     kwargs.update(mgdict, match=match, full=match.group(0))
     kwargs.update(dict.fromkeys(all_args.difference(kwargs), None))
     if asp.varkw is None:

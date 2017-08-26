@@ -54,7 +54,6 @@ class TokenTypes(object):
         return 'unknown' in typeset
 
 
-
 def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     if isinstance(regexp, str):
         regexp = re.compile(regexp)
@@ -86,6 +85,7 @@ def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
 def clean_double_spaces(text):
     return clean_double_spaces.regexp.sub(' ', text)
 
+
 clean_double_spaces.regexp = re.compile(r'[\s_]+', re.DOTALL)
 
 
@@ -102,26 +102,28 @@ def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):
         if TokenTypes.in_type(token, 'whitespace'):
             if not with_spaces:
                 token = None
-            tokens[idx] = (token,)
+            tokens[idx] = (token, )
             continue
         if TokenTypes.in_type(token, 'punctuation'):
             if not with_punct:
                 token = None
-            tokens[idx] = (token,)
+            tokens[idx] = (token, )
             continue
         if TokenTypes.in_type(token, ('null', 'word')):
-            tokens[idx] = (token,)
+            tokens[idx] = (token, )
             continue
 
         newtokens = nltk.word_tokenize(token)
         for newidx, newtoken in enumerate(newtokens):
-            newtoken = re_strip(TokenTypes.type_re('punctuation'), newtoken, only_text=False)
+            newtoken = re_strip(
+                TokenTypes.type_re('punctuation'), newtoken, only_text=False)
             if not with_punct:
-                newtoken = (newtoken[1],)
+                newtoken = (newtoken[1], )
             else:
-                newtoken = [i[0] if isinstance(i, tuple) else i for i in newtoken]
+                newtoken = [
+                    i[0] if isinstance(i, tuple) else i for i in newtoken
+                ]
             newtokens[newidx] = newtoken
         tokens[idx] = itertools.chain.from_iterable(newtokens)
 
     return list(filter(None, itertools.chain.from_iterable(tokens)))
-

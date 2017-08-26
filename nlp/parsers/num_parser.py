@@ -10,7 +10,6 @@ from itertools import chain, zip_longest
 
 from nlp.tonita_parser import TonitaParser
 
-
 num_tp = TonitaParser()
 
 num_tp.add_h(r'(\d+)[-–—](\d+)', r'\1 \2')
@@ -67,15 +66,17 @@ numdict = {
     10 ** 12: ['триллион', 'трлн', 'триллионный', 'триллионное'],
 }
 
-revdict = dict(chain.from_iterable(
-    (zip_longest(v, [k], fillvalue=k) for k, v in numdict.items())))
+revdict = dict(
+    chain.from_iterable((zip_longest(
+        v, [k], fillvalue=k) for k, v in numdict.items())))
 
 
-def _anything(start=0, end=10 ** 13):
+def _anything(start=0, end=10**13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
 
-_thousands_re = r'(?:(?P<m_num>{}|(\d+[.,])?\d+) (?:{})|(?P<m>{}))'.format(_anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
+_thousands_re = r'(?:(?P<m_num>{}|(\d+[.,])?\d+) (?:{})|(?P<m>{}))'.format(
+    _anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
 _hundreds_re = r'(?P<c>{})'.format(_anything(100, 901))
 _teen_re = r'(?P<xi>{})'.format(_anything(10, 20))
 _tens_re = r'(?P<x>{})'.format(_anything(20, 91))
@@ -84,10 +85,12 @@ _zero_re = r'(?P<zero>{})'.format(_anything(0, 1))
 
 _sign_re = r'(?:(?P<plus>\+|плюс)|(?P<minus>-|минус))'
 
+literal_num_re = r'(?:{}?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(
+    _sign_re, _thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re,
+    _zero_re)
 
-literal_num_re = r'(?:{}?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(_sign_re, _thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re, _zero_re)
-
-bignum_re = r'{}?(?P<num>(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re, _anything(10 ** 6))
+bignum_re = r'{}?(?P<num>(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re,
+                                                             _anything(10**6))
 
 
 @num_tp.set_handler(literal_num_re)
