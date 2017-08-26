@@ -13,7 +13,7 @@ from nlp.tonita_parser import TonitaParser
 
 num_tp = TonitaParser()
 
-num_tp.add_simple(r'(\d+)[-–—](\d+)', r'\1 \2')
+num_tp.add_h(r'(\d+)[-–—](\d+)', r'\1 \2')
 
 numdict = {
     0: ['ноль', 'нуль', 'нулевой', 'нулевое'],
@@ -70,8 +70,10 @@ numdict = {
 revdict = dict(chain.from_iterable(
     (zip_longest(v, [k], fillvalue=k) for k, v in numdict.items())))
 
+
 def _anything(start=0, end=10 ** 13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
+
 
 _thousands_re = r'(?:(?P<m_num>{}|(\d+[.,])?\d+) (?:{})|(?P<m>{}))'.format(_anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
 _hundreds_re = r'(?P<c>{})'.format(_anything(100, 901))
@@ -82,12 +84,13 @@ _zero_re = r'(?P<zero>{})'.format(_anything(0, 1))
 
 _sign_re = r'(?:(?P<plus>\+|плюс)|(?P<minus>-|минус))'
 
+
 literal_num_re = r'(?:{}?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(_sign_re, _thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re, _zero_re)
 
 bignum_re = r'{}?(?P<num>(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re, _anything(10 ** 6))
 
 
-@num_tp.re_handler(literal_num_re)
+@num_tp.set_handler(literal_num_re)
 def literal_num_h(match):
     if all(i is None for i in match.groups()[1:]):
         return match.group(0)
@@ -108,7 +111,7 @@ def literal_num_h(match):
     return str(res)
 
 
-@num_tp.re_handler(bignum_re)
+@num_tp.set_handler(bignum_re)
 def bugnum_h(minus, num, deg):
     deg = revdict.get(deg, 1)
     if minus is not None:
@@ -124,7 +127,8 @@ def bugnum_h(minus, num, deg):
 romdict = {'i': 1, 'v': 5, 'x': 10, 'l': 50, 'c': 100, 'd': 500, 'm': 1000}
 roman_re = r'(?=[ivxlcdm])m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})'
 
-@num_tp.re_handler(roman_re)
+
+@num_tp.set_handler(roman_re)
 def roman_h(full):
     rom = [romdict.get(c.lower(), 0) for c in full]
     res = 0

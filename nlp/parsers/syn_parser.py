@@ -23,20 +23,20 @@ contr = {
     'фин': 'финансовый'
 }
 contr = {key + r'\W+': contr[key] + ' ' for key in contr}
-syn_tp.add_many(contr, sep_left=True, sep_right=False)
+syn_tp.add_dict(contr, sep_left=True, sep_right=False)
 
 # разные варианты указания на Россию
 russland_names = (
     'россия', 'российский федерация', 'россиюшка', 'рашка', 'русь',
     'наш страна', 'этот? страна', 'держава',
 )
-syn_tp.add_many(dict.fromkeys(russland_names, 'РФ'))
+syn_tp.add_dict(dict.fromkeys(russland_names, 'РФ'))
 
 # разные варианты указания на Минфин
 minfin_names = (
     'мф', 'министерство финанс(?:ы|овый)?', 'финанс(?:ы|овый)? министерство',
 )
-syn_tp.add_many(dict.fromkeys(minfin_names, 'минфин'))
+syn_tp.add_dict(dict.fromkeys(minfin_names, 'минфин'))
 
 # отдельные случаи
-syn_tp.add_simple('это(?=$)', 'определение', sep_left=True, sep_right=False)
+syn_tp.add_dict({'это(?=$)': 'определение'}, sep_left=True, sep_right=False)

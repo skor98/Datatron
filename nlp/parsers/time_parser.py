@@ -18,13 +18,13 @@ norm_months = [
     'май', 'июнь', 'июль', 'август',
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
-time_tp.add_many({m[:3]: m for m in norm_months if len(m) > 3})
+time_tp.add_dict({m[:3]: m for m in norm_months if len(m) > 3})
 anymonth = '|'.join(norm_months)
 
 seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
-time_tp.add_many({
+time_tp.add_dict({
     'мес': 'месяц',
     'кв': 'квартал',
     'семестр': 'полугодие',
@@ -33,7 +33,7 @@ time_tp.add_many({
     'сегодня': 'этот месяц',
 })
 
-time_tp.add_simple(
+time_tp.add_h(
     r'(?<!год )(?:2\d|19)\d{2}(?! год)',
     'год',
     preserve_old=True,
@@ -55,7 +55,7 @@ end_kw = ('конец', 'итог', 'финал', 'окончание')
 points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw), '|'.join(end_kw))
 multipoints_re = r'(?:(?:{p}) )+({p})'.format(p='|'.join(begin_kw + end_kw))
 
-time_tp.add_simple(multipoints_re, r'\1')
+time_tp.add_h(multipoints_re, r'\1')
 
 current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
 last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
@@ -82,7 +82,8 @@ statmonth_re = r'(?:{}|{}) (?P<month>{})'.format(points_re, _dayformat, anymonth
 
 shortyear_re = r'(?P<month>{}) (?P<year>\d\d)'.format(anymonth)
 
-@time_tp.re_handler(rel_re)
+
+@time_tp.set_handler(rel_re)
 def rel_h(point, begin, last, next_, unit):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -98,7 +99,7 @@ def rel_h(point, begin, last, next_, unit):
     return date_to_text(newdate, nomonth=nomonth)
 
 
-@time_tp.re_handler(interval_re)
+@time_tp.set_handler(interval_re)
 def interval_h(interval, ago, full):
     words = interval.split(' ')
     sum_len = 0
@@ -125,7 +126,7 @@ def interval_h(interval, ago, full):
     return date_to_text(newdate)
 
 
-@time_tp.re_handler(static_re)
+@time_tp.set_handler(static_re)
 def static_h(unit, num, begin, point):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -135,17 +136,17 @@ def static_h(unit, num, begin, point):
     return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
 
 
-@time_tp.re_handler(statmonth_re)
+@time_tp.set_handler(statmonth_re)
 def statmonth_h(begin, month, day):
     num = norm_months.index(month) + 1
     begin = (begin is not None or
-            (day is not None and
-             day <= 15))
+             (day is not None and
+              day <= 15))
     newdate = get_static(1, num, begin)
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.re_handler(dateformat_re)
+@time_tp.set_handler(dateformat_re)
 def date_h(day, month, year, begin):
     if isinstance(month, int):
         month = max(min(month, 12), 1)
@@ -160,7 +161,7 @@ def date_h(day, month, year, begin):
     return date_to_text(newdate)
 
 
-@time_tp.re_handler(season_re)
+@time_tp.set_handler(season_re)
 def season_h(season, begin):
     num = seasons.index(season) + 1
     begin = begin is not None
@@ -169,7 +170,7 @@ def season_h(season, begin):
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.re_handler(shortyear_re)
+@time_tp.set_handler(shortyear_re)
 def shortyear_h(month, year):
     return date_to_text(datetime(year=year, month=norm_months.index(month) + 1, day=1))
 

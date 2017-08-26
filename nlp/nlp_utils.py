@@ -58,8 +58,6 @@ class TokenTypes(object):
 def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     if isinstance(regexp, str):
         regexp = re.compile(regexp)
-    elif not hasattr(regexp, 'match'):
-        regexp = re_strip.default_re
 
     res = []
 
@@ -83,9 +81,6 @@ def re_strip(regexp, text, flags=0, only_text=True, sides='lr'):
     if only_text:
         return text
     return res
-
-
-re_strip.default_re = re.compile(r'([\W_]+)', re.DOTALL)
 
 
 def clean_double_spaces(text):

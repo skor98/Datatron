@@ -7,22 +7,26 @@
 
 from functools import lru_cache
 import logging
+
+from nltk import FreqDist
+from nltk.corpus import stopwords
+from pymorphy2 import MorphAnalyzer
+import uuid
+
 import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
-from nltk import FreqDist
-from nltk.corpus import stopwords
-from pymorphy2 import MorphAnalyzer
-import uuid
 
 
 # этот импорт убирать нельзя, иначе полетит логгирование
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
+
 def _mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
+
 
 class TextPreprocessing(object):
     """
@@ -38,7 +42,6 @@ class TextPreprocessing(object):
         'parse_time': _mc_get("parser_time_default"),
     }
 
-
     language = 'russian'
 
     question_words = set('кто что это где для зачем какой'.split())
@@ -49,7 +52,6 @@ class TextPreprocessing(object):
     ).union(
         'подсказать также иной да нет'.split()
     )
-
 
     def __init__(self, log=True, label='NULL', **kwargs):
         self.log = log
@@ -69,16 +71,13 @@ class TextPreprocessing(object):
         self.lemmatizer_name = 'pymorphy/nltk'
 
         if self.log:
-            logging.info(
-                self.setup_str.replace('] П', '] Препроцессор создан, п')
-            )
-
+            logging.info(self.setup_str)
 
     def normalize(self, text, request_id='<NoID>'):
         """Метод для нормализации текста"""
 
         # TODO: обработка направильного спеллинга
-        
+
         # Убираем плюсы-ударения
         if '\\+' in text:
             text = text.replace('\\+', '')
@@ -118,7 +117,7 @@ class TextPreprocessing(object):
 
         if self.log:
             logging.info(
-                "Query_ID: {}\tMessage: [TextPP #{}] Запрос после нормализации: {}".format(
+                "Query_ID: {}\tMessage: [TextPP {}] Запрос после нормализации: {}".format(
                     request_id,
                     self.uid,
                     normalized_request
@@ -127,10 +126,7 @@ class TextPreprocessing(object):
 
         return normalized_request
 
-
     __call__ = normalize
-
-
 
     @property
     def combined_parser(self):
@@ -140,16 +136,13 @@ class TextPreprocessing(object):
             self.parse_time,
         )
 
-
     @property
     def u_name(self):
-        return '#{}-{}'.format(self.label, self.uid)
-
+        return '{}#{}'.format(self.label, self.uid)
 
     @property
     def active_params(self):
         return tuple([p for p in self.params if self.params[p]])
-
 
     @property
     def setup_str(self):
@@ -162,13 +155,11 @@ class TextPreprocessing(object):
             af_str
         )
 
-
     def __getattr__(self, attr):
         res = self.params.get(attr, None)
         if res is not None:
             return res
         raise AttributeError
-
 
     morph = MorphAnalyzer()
 

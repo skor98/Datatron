@@ -4,18 +4,23 @@ Created on 24 Aug 2017
 @author: larousse
 '''
 
+import logging
 import re
 
+import logs_helper  # pylint: disable=unused-import
 from nlp import nlp_utils
 from nlp.phrase_processor import Phrase
+from nlp.tonita_parser import TonitaParser
 
 
 class BackFeeder(object):
     @staticmethod
-    def fb_to_phrase(cube, verbal_feedback):
-        mask = getattr(CubeMasks, cube)
+    def prettify(cube, verbal_feedback):
+        mask = CubeMasks.get_mask(cube)
         prepr_feedback = BackFeeder._preprocess_fb(verbal_feedback)
-        return BackFeeder._make_phrase(mask, prepr_feedback)
+        pretty = BackFeeder._make_phrase(mask, prepr_feedback)
+        logging.info('Обратная связь для ответа из куба {}: {}'.format(cube, pretty))
+        return pretty
 
     @staticmethod
     def _preprocess_fb(verbal_feedback):
@@ -46,45 +51,46 @@ class BackFeeder(object):
 
         return {key: Phrase(res[key]) for key in res if res[key] is not None}
 
+
     @staticmethod
     def _make_phrase(mask, prepr_feedback):
         """
         Создание человекочитаемого фидбека из словаря по маске.
         """
-        res = []
-        for word in mask.split('{'):
-            if '}' not in word:
-                res.append(word)
-                continue
-
-            code, context = word.split('}', 1)
-            if '/' in code:
-                code, alt = code.split('/')
-            else:
-                alt = ''
-            code = code.split('?')
-            word_index = 2 if code[0] == '' else 0
-            word = code[word_index].split('*')
-            val = prepr_feedback.get(word[0].lower())
-
-            if val is None:
-                res.extend([alt, context])
-                continue
-
-            if len(word) == 1:
-                val = val.verbal
-            else:
-                val = val.inflect(word[1:]).verbal
-
-            code[word_index] = val
-            res.extend(code + [context])
-
-        res = ''.join(w for w in res if w)
-        res = nlp_utils.re_strip(None, res, sides='l')
+        res = BackFeeder._mask_parser(mask, prepr_feedback)
+        res = nlp_utils.re_strip('([\s_]+)', res, sides='l')
         res = nlp_utils.clean_double_spaces(res)
-        if res[0].islower():
-            res = res[0].upper() + res[1:]
+
         return res
+
+    @staticmethod
+    def _mask_parser(mask, prepr_feedback):
+        def _repl(key, gram=None, cap=None, lcont='', rcont='', dflt=''):
+            val = prepr_feedback.get(key)
+            if val is None:
+                return dflt
+            if gram is not None:
+                val = val.inflect(gram.split('*'))
+
+            resword = val.verbal
+
+            if cap is not None and resword[0].islower():
+                resword = resword[0].upper() + resword[1:]
+
+            return ''.join((lcont, resword, rcont))
+
+        return TonitaParser.once(mask, BackFeeder._main_re, _repl,
+                                 sep_left=False, sep_right=False)
+
+    _main_re = re.compile(
+        r'''(?<!\\)\{
+        ((?<!\\)\?(?P<lcont>.*?)(?<!\\)\?)?
+        (?P<cap>(?<!\\)\^)?
+        (?P<key>.+?)
+        (\*(?P<gram>\w+?(\*\w+?)*))?
+        ((?<!\\)\?(?P<rcont>.*?)(?<!\\)\?)?
+        ((?<!\\)\|(?P<dflt>.*?))?
+        (?<!\\)\}''', re.VERBOSE | re.DOTALL)
 
 
 class CubeMasks(object):
@@ -94,15 +100,17 @@ class CubeMasks(object):
     Слева от текста всегда убираются все знаки препинания и пробелы, а первое слово пишется с большой буквы.
     Остальные слова пишутся точно так же, как и в источнике.
     Помимо этого, на последнем этапе из текста вычищаются все парные пробелы.
-    Внутри фигурных скобок: {[?префикс?]код_измерения[*граммемы]?[постфикс]?/[значение по умолчанию]};
+    Внутри фигурных скобок: {[?префикс?][^]код_измерения[*граммемы]?[постфикс]?|[значение по умолчанию]};
     (значения в квадратных скобках -- опциональные)
 
     Код_измерения -- первое слово названия измерения, из которого берётся значение
     (например, "{раздел}" может обозначать значение измерения "Раздел и подраздел расходов")
     Мере соответствует код "мера"; если мера равна "значение", она игнорируется.
-    Кубу соответствует код "куб", но пока его использовать смысла нет, т.к. всё равно
-    разным кубам соответствуют разные маски.
+    Кубу соответствует код "куб".
     Месяцу (если он есть) и году соответствует код "месгод" (нечто вида "март 2014 года")
+
+    Если перед кодом измерения стоит символ "^", первая буква полученного значения
+    будет сделана заглавной, иначе капитализация будет как в БД, без изменений.
 
     После кода через звёздочку идёт список граммем, соответствующих форме, в которую нужно
     поставить значение (между собой граммемы тоже разделены звёздочками).
@@ -116,18 +124,26 @@ class CubeMasks(object):
     входных данных указан год, а если год не указан -- просто "данные".
 
     Если же значение не найдено, на его место подставляется вариант по умолчанию - тот, что указан
-    после "/".
+    после "|".
     Вложение в условный контекст сложных выражений и других ссылок на данном этапе работы не поддерживается
 
     Пример маски:
-    '{показатели*nomn/Годовые доходы} {?бюджета ?территория*gent/федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2/прошлом году}{?: ?мера*nomn}'
+    '{^показатели*nomn|Годовые доходы} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2|прошлом году}{?: ?мера*nomn}'
     '''
 
-    CLDO01 = 'Оперативные данные по {показатель*datv/федеральному бюджету}{?: ?мера*nomn}'
-    CLDO02 = 'Оперативные данные по {уровень*datv/бюджету} {территория*gent/РФ}{?: ?мера*nomn}'
-    CLMR02 = '{показатели*nomn/Госдолг РФ} по состоянию на {месгод*accs/настоящее время}{?: ?мера*nomn}'
-    EXDO01 = 'Оперативные данные по {показатели*datv/расходам} {?бюджета ?территория*gent/федерального бюджета}{? на ?раздел*accs}{?: ?мера*nomn}'
-    EXYR03 = '{показатели*nomn/Годовые расходы} из {?бюджета ?территория*gent/федерального бюджета}{? на ?раздел*accs} в {месгод*loc2/прошлом году}{?: ?мера*nomn}'
-    FSYR01 = '{показатели*nomn/Финансирование} {?бюджета ?территория*gent/федерального бюджета} в {месгод*loc2/прошлом году} через {источники*accs/все источники}{?: ?мера*nomn}'
-    INDO01 = 'Оперативные данные по {показатели*datv/доходам} {?бюджета ?территория*gent/федерального бюджета}{? в категории ?группа*nomn}{?: ?мера*nomn}'
-    INYR03 = '{показатели*nomn/Годовые доходы} {?бюджета ?территория*gent/федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2/прошлом году}{?: ?мера*nomn}'
+    _common_cube_prefix = '{?[?куб*nomn?] ?}'
+
+    _base_cube_masks = {
+        'CLDO01': 'Оперативные данные по {показатель*datv|федеральному бюджету}{?: ?мера*nomn}',
+        'CLDO02': 'Оперативные данные по {уровень*datv|бюджету} {территория*gent|РФ}{?: ?мера*nomn}',
+        'CLMR02': '{^показатели*nomn|Госдолг РФ} по состоянию на {месгод*accs|настоящее время}{?: ?мера*nomn}',
+        'EXDO01': 'Оперативные данные по {показатели*datv|расходам} {?бюджета ?территория*gent|федерального бюджета}{? на ?раздел*accs}{?: ?мера*nomn}',
+        'EXYR03': '{^показатели*nomn|Годовые расходы} из {?бюджета ?территория*gent|федерального бюджета}{? на ?раздел*accs} в {месгод*loc2|прошлом году}{?: ?мера*nomn}',
+        'FSYR01': '{^показатели*nomn|Финансирование} {?бюджета ?территория*gent|федерального бюджета} в {месгод*loc2|прошлом году} через {источники*accs|все источники}{?: ?мера*nomn}',
+        'INDO01': 'Оперативные данные по {показатели*datv|доходам} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn}{?: ?мера*nomn}',
+        'INYR03': '{^показатели*nomn|Годовые доходы} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2|прошлом году}{?: ?мера*nomn}'
+    }
+
+    @staticmethod
+    def get_mask(cube):
+        return CubeMasks._common_cube_prefix + CubeMasks._base_cube_masks.get(cube, '')
