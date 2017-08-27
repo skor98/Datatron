@@ -332,23 +332,3 @@ def get_good_queries(count=0):
 
 
 get_good_queries.queries = None
-
-
-def m():
-    query = (dbc.Member
-             .select()
-             .where(dbc.Member.cube_value.startswith('10-'))
-             )
-
-    for member in query:
-        lem_caption = member.lem_caption.split()
-        try:
-            lem_caption.remove('бюджет')
-        except ValueError:
-            pass
-        dbc.Member.update(lem_caption=' '.join(lem_caption)).where(
-            dbc.Member.id == member.id
-        ).execute()
-
-
-m()
