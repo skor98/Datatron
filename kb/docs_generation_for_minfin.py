@@ -79,11 +79,15 @@ def _refactor_data(data):
 
         doc.short_answer = row.short_answer
         # индексируемое поле
-        doc.lem_short_answer = _refactor_data.TPP(row.short_answer, request_id)
+        doc.lem_short_answer = _only_long_words(
+            _refactor_data.TPP(row.short_answer, request_id)
+        )
 
         doc.full_answer = row.full_answer
 
-        lem_key_words = _refactor_data.TPP(row.key_words, request_id)
+        lem_key_words = _only_long_words(
+            _refactor_data.TPP(row.key_words, request_id)
+        )
 
         # индексируемое поле
         doc.lem_key_words = ' '.join(
@@ -99,7 +103,9 @@ def _refactor_data(data):
                 for question in synonym_questions
                 ]
 
-        lem_full_answer = TextPreprocessing()(row.full_answer)
+        lem_full_answer = _only_long_words(
+            _refactor_data.TTP(row.full_answer, request_id)
+        )
 
         # добавление уникальных слов и длинного ответа
         lem_extra_key_words = (
@@ -110,10 +116,11 @@ def _refactor_data(data):
         # удаление уже используемых слов lem_key_words, lem_short_answer
         lem_extra_key_words -= set(doc.lem_short_answer.split())
         lem_extra_key_words -= set(lem_key_words.split())
-        lem_extra_key_words = ' '.join(lem_extra_key_words)
 
         # индексируемое поле
-        doc.lem_extra_key_words = ' '.join([lem_extra_key_words] * 5)
+        doc.lem_extra_key_words = ' '.join(
+            [' '.join(lem_extra_key_words)] * 5
+        )
 
         # Может быть несколько
         if row.link_name:
@@ -183,6 +190,14 @@ def _write_data(data):
                     ','.join([element.to_json() for element in data])
                 )
             )
+
+
+def _only_long_words(text: str):
+    """Возвращает строку из слов длиннее 2х букв"""
+
+    return ' '.join(
+        [word for word in text.split() if len(word) > 2]
+    )
 
 
 def _get_manual_synonym_questions(question_number):
