@@ -96,7 +96,9 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
 
     measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
     cube_p = re.compile(r'(?<=FROM \[)\w*')
-    members_p = re.compile(r'(\[\w+\]\.\[[0-9-]*\])')
+
+    # найдет как все элементы измерения, так и меру
+    members_p = re.compile(r'(\[\w+\]\.(?:\[[0-9-]*\]|\[\w+\]))')
 
     measure_value = measure_p.search(mdx_query).group()
     cube = cube_p.search(mdx_query).group()
@@ -104,12 +106,13 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     dims_vals = []
     for member in members_p.findall(mdx_query):
         member = member.split('.')
-        dims_vals.append(
-            {
-                'dim': member[0][1:-1],
-                'val': member[1][1:-1]
-            }
-        )
+        if member[0] != '[MEASURES]':
+            dims_vals.append(
+                {
+                    'dim': member[0][1:-1],
+                    'val': member[1][1:-1]
+                }
+            )
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [get_captions_for_dimensions(i['val']) for i in dims_vals]
