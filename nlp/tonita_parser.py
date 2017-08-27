@@ -21,8 +21,10 @@ class TonitaParser(object):
         self.handlers = []
 
     def set_handler(self, regexp, *,
-                    preserve_old=False, sep_left=True, sep_right=True):
-        if not isinstance(regexp, Pattern):
+                    preserve_old=False,
+                    sep_left=True,
+                    sep_right=True):
+        if not issubclass(type(regexp), Pattern):
             if sep_left and not regexp.startswith(r'(?<!\w)'):
                 regexp = r'(?<!\w)' + regexp
             elif sep_right and not regexp.endswith(r'(?!\w)'):
