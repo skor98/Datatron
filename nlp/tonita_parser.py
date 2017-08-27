@@ -8,7 +8,8 @@ Created on Thu Aug  3 06:39:36 2017
 
 # pylint: disable=missing-docstring
 
-from collections import Iterable
+import copy
+from typing import Iterable, Pattern
 from functools import partial
 from inspect import getfullargspec
 from nlp.nlp_utils import try_int
@@ -16,64 +17,66 @@ import re
 
 
 class TonitaParser(object):
-    def __init__(self, sub_dict=None):
-        self.actions = []
-        if sub_dict is not None:
-            self.add_many(sub_dict)
+    def __init__(self):
+        self.handlers = []
 
-    def re_handler(self, regexp, preserve_old=False, sep_left=True, sep_right=True):
-        if not isinstance(regexp, str) and hasattr(regexp, 'pattern'):
-            regexp = regexp.pattern
-        if sep_left and not regexp.startswith(r'(?<!\w)'):
-            regexp = r'(?<!\w)' + regexp
-        if sep_right and not regexp.endswith(r'(?!\w)'):
-            regexp = regexp + r'(?!\w)'
-        cond_re = re.compile(regexp, re.IGNORECASE)
+    def set_handler(self, regexp, *,
+                    preserve_old=False,
+                    sep_left=True,
+                    sep_right=True):
+        if not issubclass(type(regexp), Pattern):
+            if sep_left and not regexp.startswith(r'(?<!\w)'):
+                regexp = r'(?<!\w)' + regexp
+            elif sep_right and not regexp.endswith(r'(?!\w)'):
+                regexp = regexp + r'(?!\w)'
+            regexp = re.compile(regexp, re.IGNORECASE)
+
         def _decorate(sub):
             if not callable(sub):
-                if not isinstance(sub, str):
-                    sub = str(sub)
                 if preserve_old:
-                    _repl = ' '.join([r'\g<0>' , sub])
+                    _repl = r'\g<0> {}'.format(sub)
                 else:
-                    _repl = sub
+                    _repl = str(sub)
             else:
                 _repl = partial(_func_with_match, sub)
                 if preserve_old:
-                    _repl = lambda m: ' '.join([m.group(0), _repl(m)])
+                    _repl = TonitaParser.set_handler.repl_maker(_repl)
 
-            _wrapped = partial(cond_re.sub, _repl)
-            _wrapped.regexp = cond_re
-            _wrapped.num = len(self.actions)
+            _wrapped = partial(regexp.sub, _repl)
+            _wrapped.num = len(self.handlers)
 
-            self.actions.append(_wrapped)
+            self.handlers.append(_wrapped)
             return _wrapped
+
         return _decorate
 
-    def add_simple(self, regexp, sub='', *args, **kwargs):
-        self.re_handler(regexp, *args, **kwargs)(sub)
+    set_handler.repl_maker = lambda r: lambda m: ' '.join((m.group(0), r(m)))
 
-    def add_many(self, sub_dict, *args, **kwargs):
-        for origin in sub_dict:
-            self.add_simple(origin, sub_dict[origin], *args, **kwargs)
+    def add_h(self, regexp, sub='', **kwargs):
+        self.set_handler(regexp, **kwargs)(sub)
+
+    def add_dict(self, hdict, **kwargs):
+        for origin, target in hdict.items():
+            self.add_h(origin, target, **kwargs)
 
     def __add__(self, other):
-        if other is None:
-            other = TonitaParser()
-        if hasattr(other, 'actions'):
+        if other is None or isinstance(other, TonitaParser):
+            hnew = copy.deepcopy(getattr(other, 'handlers', []))
+            for handler in hnew:
+                handler.num += len(self.handlers)
             res = TonitaParser()
-            res.actions = self.actions + other.actions
+            res.handlers = copy.deepcopy(self.handlers) + hnew
             return res
         raise TypeError
 
     def __radd__(self, other):
         if other is None:
-            other = TonitaParser()
-        if hasattr(other, 'actions'):
+            return self + None
+        elif isinstance(other, TonitaParser):
             return other.__add__(self)
         raise TypeError
 
-    def __call__(self, text):
+    def process(self, text):
         if isinstance(text, str):
             res = text
         elif isinstance(text, Iterable):
@@ -81,13 +84,29 @@ class TonitaParser(object):
         else:
             res = str(text)
 
-        for act in self.actions:
-            res = act(res)
+        for handler in self.handlers:
+            res = handler(res)
 
         if not isinstance(text, str) and isinstance(text, Iterable):
             return res.split(' ')
         return res
 
+    __call__ = process
+
+    @staticmethod
+    def from_dict(hdict, **kwargs):
+        res = TonitaParser()
+        res.add_dict(hdict, **kwargs)
+        return res
+
+    @staticmethod
+    def once(text='', regexp=None, sub=None, *, asdict=None, **kwargs):
+        hdict = {}
+        if isinstance(asdict, dict):
+            hdict.update(asdict)
+        if None not in (regexp, sub):
+            hdict[regexp] = sub
+        return TonitaParser.from_dict(hdict, **kwargs)(text)
 
 
 def _func_with_match(func, match):
@@ -102,9 +121,12 @@ def _func_with_match(func, match):
     all_args = set(asp.args + asp.kwonlyargs)
 
     mgdict = match.groupdict()
-    mgdict.update({k + '_': v for k, v in mgdict.items() if k + '_' in all_args})
+    mgdict = {k: v for k, v in mgdict.items() if v is not None}
+    mgdict.update(
+        {k + '_': v
+         for k, v in mgdict.items() if k + '_' in all_args})
     kwargs.update(mgdict, match=match, full=match.group(0))
-    kwargs.update(dict.fromkeys(all_args.difference(kwargs.keys()), None))
+    kwargs.update(dict.fromkeys(all_args.difference(kwargs), None))
     if asp.varkw is None:
         kwargs = {k: v for k, v in kwargs.items() if k in all_args}
 

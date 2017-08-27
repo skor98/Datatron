@@ -10,7 +10,6 @@ from datetime import datetime
 
 from nlp.tonita_parser import TonitaParser
 
-
 time_tp = TonitaParser()
 
 norm_months = [
@@ -18,13 +17,13 @@ norm_months = [
     'май', 'июнь', 'июль', 'август',
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
-time_tp.add_many({m[:3]: m for m in norm_months if len(m) > 3})
+time_tp.add_dict({m[:3]: m for m in norm_months if len(m) > 3})
 anymonth = '|'.join(norm_months)
 
 seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
-time_tp.add_many({
+time_tp.add_dict({
     'мес': 'месяц',
     'кв': 'квартал',
     'семестр': 'полугодие',
@@ -33,11 +32,10 @@ time_tp.add_many({
     'сегодня': 'этот месяц',
 })
 
-time_tp.add_simple(
+time_tp.add_h(
     r'(?<!год )(?:2\d|19)\d{2}(?! год)',
     'год',
-    preserve_old=True,
-)
+    preserve_old=True, )
 
 unit_lens = {
     'год': 12,
@@ -52,21 +50,27 @@ unitcombo = r'(?:(?:\d+ )?(?:{}) ?)+'.format(anyunit)
 begin_kw = ('состояние на', 'канун', 'старт')
 end_kw = ('конец', 'итог', 'финал', 'окончание')
 
-points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw), '|'.join(end_kw))
+points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw),
+                                                           '|'.join(end_kw))
 multipoints_re = r'(?:(?:{p}) )+({p})'.format(p='|'.join(begin_kw + end_kw))
 
-time_tp.add_simple(multipoints_re, r'\1')
+time_tp.add_h(multipoints_re, r'\1')
 
 current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
-last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший', 'вчерашний')
-next_kw = ('следующий', 'будущ(?:ий|ее)', 'грядущий', 'наступающий', 'завтрашний')
+last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший',
+           'вчерашний')
+next_kw = ('следующий', 'будущ(?:ий|ее)', 'грядущий', 'наступающий',
+           'завтрашний')
 
-current_re = r'(?P<current>(?(point)(?:{c})?|(?:{c})))'.format(c='|'.join(current_kw))
+current_re = r'(?P<current>(?(point)(?:{c})?|(?:{c})))'.format(
+    c='|'.join(current_kw))
 last_re = r'(?P<last>(?:поза[- ]?)*(?:{}))'.format('|'.join(last_kw))
 next_re = r'(?P<next_>(?:после[- ]?)*(?:{}))'.format('|'.join(next_kw))
-rel_re = r'(?:{} )?(?:{}|{}|{}) (?P<unit>{})'.format(points_re, current_re, last_re, next_re, anyunit)
+rel_re = r'(?:{} )?(?:{}|{}|{}) (?P<unit>{})'.format(points_re, current_re,
+                                                     last_re, next_re, anyunit)
 
-interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(unitcombo)
+interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(
+    unitcombo)
 
 _dayformat = r'(?P<day>[0-3]?\d)'
 _monthformat = r'(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
@@ -76,13 +80,16 @@ dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
 
 season_re = r'(?:{} )?(?P<season>{})'.format(points_re, anyseason)
 
-static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re, anyunit)
+static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re,
+                                                                anyunit)
 
-statmonth_re = r'(?:{}|{}) (?P<month>{})'.format(points_re, _dayformat, anymonth)
+statmonth_re = r'(?:{}|{}) (?P<month>{})'.format(points_re, _dayformat,
+                                                 anymonth)
 
 shortyear_re = r'(?P<month>{}) (?P<year>\d\d)'.format(anymonth)
 
-@time_tp.re_handler(rel_re)
+
+@time_tp.set_handler(rel_re)
 def rel_h(point, begin, last, next_, unit):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -98,7 +105,7 @@ def rel_h(point, begin, last, next_, unit):
     return date_to_text(newdate, nomonth=nomonth)
 
 
-@time_tp.re_handler(interval_re)
+@time_tp.set_handler(interval_re)
 def interval_h(interval, ago, full):
     words = interval.split(' ')
     sum_len = 0
@@ -125,7 +132,7 @@ def interval_h(interval, ago, full):
     return date_to_text(newdate)
 
 
-@time_tp.re_handler(static_re)
+@time_tp.set_handler(static_re)
 def static_h(unit, num, begin, point):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -135,17 +142,15 @@ def static_h(unit, num, begin, point):
     return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
 
 
-@time_tp.re_handler(statmonth_re)
+@time_tp.set_handler(statmonth_re)
 def statmonth_h(begin, month, day):
     num = norm_months.index(month) + 1
-    begin = (begin is not None or
-            (day is not None and
-             day <= 15))
+    begin = (begin is not None or (day is not None and day <= 15))
     newdate = get_static(1, num, begin)
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.re_handler(dateformat_re)
+@time_tp.set_handler(dateformat_re)
 def date_h(day, month, year, begin):
     if isinstance(month, int):
         month = max(min(month, 12), 1)
@@ -160,7 +165,7 @@ def date_h(day, month, year, begin):
     return date_to_text(newdate)
 
 
-@time_tp.re_handler(season_re)
+@time_tp.set_handler(season_re)
 def season_h(season, begin):
     num = seasons.index(season) + 1
     begin = begin is not None
@@ -169,9 +174,11 @@ def season_h(season, begin):
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.re_handler(shortyear_re)
+@time_tp.set_handler(shortyear_re)
 def shortyear_h(month, year):
-    return date_to_text(datetime(year=year, month=norm_months.index(month) + 1, day=1))
+    return date_to_text(
+        datetime(
+            year=year, month=norm_months.index(month) + 1, day=1))
 
 
 def process_units(date, u_len=1, begin=False):

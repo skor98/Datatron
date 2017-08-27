@@ -17,7 +17,7 @@ import pandas as pd
 from text_preprocessing import TextPreprocessing
 
 TPP = TextPreprocessing(
-    'KBSL',
+    label='KBSL',
     delete_digits=True,
     delete_question_words=True
 )

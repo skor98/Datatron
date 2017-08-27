@@ -13,9 +13,9 @@ import re
 
 import requests
 
-from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 from config import SETTINGS
 from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
+from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_cube_caption
@@ -115,7 +115,8 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
             )
 
     # Полные вербальные отражения значений измерений и меры
-    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val']) for i in dims_vals]
+    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val'])
+                                    for i in dims_vals]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
@@ -133,10 +134,7 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         'user_request': user_request
     }
 
-    feedback['pretty_feedback'] = BackFeeder.fb_to_phrase(
-        cube,
-        feedback['verbal']
-    )
+    feedback['pretty_feedback'] = BackFeeder.prettify(cube, feedback['verbal'])
 
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
@@ -238,7 +236,9 @@ def process_server_response(cube_answer, response: requests):
             cube_answer.status = False
             cube_answer.message = ERROR_GENERAL
             logging.exception(
-                'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(cube_answer.request_id)
+                'Query_ID: {}\tMessage: Сервер вернул НЕ JSON'.format(
+                    cube_answer.request_id
+                )
             )
             return
     else:
@@ -323,7 +323,7 @@ def process_cube_answer(cube_answer, value):
 
     # TODO: убрать этот костыль
     if ('KDPERCENT' in cube_answer.mdx_query or
-                'EXPERCENT' in cube_answer.mdx_query):
+            'EXPERCENT' in cube_answer.mdx_query):
         value_format = 1
 
     # Добавление форматированного результата
@@ -390,7 +390,8 @@ def select_measure_for_selected_cube(cube_data: CubeData):
         if cube_data.measures:
             # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
             # для повышения скора
-            if cube_data.measures[0]['score'] > MODEL_CONFIG["measure_matching_threshold"]:
+            if (cube_data.measures[0]['score'] >
+                    MODEL_CONFIG["measure_matching_threshold"]):
                 cube_data.selected_measure = cube_data.measures[0]
 
 
@@ -478,7 +479,8 @@ def combine_search_tech_minfin_data(found_minfin_doc: dict):
     if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
         data = minfin_tech_data()
         needed_doc = [
-            doc for doc in data if doc['inner_id'] == found_minfin_doc['inner_id']
+            doc for doc in data
+            if doc['inner_id'] == found_minfin_doc['inner_id']
             ]
 
         for key, value in needed_doc[0].items():
@@ -492,7 +494,8 @@ def combine_search_tech_cube_data(found_cube_doc: dict):
     if MODEL_CONFIG['enable_searching_and_tech_info_separation']:
         data = cube_tech_data()
         needed_doc = [
-            doc for doc in data if doc['inner_id'] == found_cube_doc['inner_id']
+            doc for doc in data
+            if doc['inner_id'] == found_cube_doc['inner_id']
             ]
 
         for key, value in needed_doc[0].items():
@@ -520,11 +523,11 @@ def score_cube_question(cube_data: CubeData):
         if cube_data.selected_measure:
             measure_score = cube_data.selected_measure['score']
 
-        cube_data.score['sum'] = (
-            MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score +
-            max_member_score if max_member_score else 0 +
-                                                      MODEL_CONFIG[
-                                                          "measure_weight_in_sum_scoring_model"] * measure_score)
+        cube_data.score['sum'] = sum((
+            MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score,
+            max_member_score if max_member_score else 0,
+            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+        ))
 
     # получение скоринг-модели
     score_model = MODEL_CONFIG["cube_answers_scoring_model"]
@@ -548,7 +551,7 @@ def preprocess_territory_member(cube_data: CubeData):
     # TODO: убрать этот костыль
     if (cube_data.selected_cube['cube'] == 'EXYR03' and
             cube_data.terr_member and
-                cube_data.terr_member['cube_value'] == '08-2'):
+            cube_data.terr_member['cube_value'] == '08-2'):
         cube_data.terr_member = None
 
         # TODO: убрать этот костыль
@@ -573,7 +576,7 @@ def process_with_members(cube_data: CubeData):
     found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
 
     for member in list(cube_data.members):
-        with_member_dim = member.get('connected_value.dimension_cube_value', None)
+        with_member_dim = member.get('connected_value.dimension_cube_value')
 
         if with_member_dim and with_member_dim not in found_cube_dimensions:
             # Если есть связанное значение является территорией
@@ -581,16 +584,14 @@ def process_with_members(cube_data: CubeData):
             # То элемент и связанное значение игнорируется
             if (with_member_dim == 'TERRITORIES' and
                     cube_data.terr_member and
-                        cube_data.terr_member['cube_value'] != '08-2' and
-                        member['score'] < cube_data.terr_member['score']):
+                    cube_data.terr_member['cube_value'] != '08-2' and
+                    member['score'] < cube_data.terr_member['score']):
                 cube_data.members.remove(member)
             else:
-                cube_data.members.append(
-                    {
-                        'dimension': with_member_dim,
-                        'cube_value': member['connected_value.member_cube_value']
-                    }
-                )
+                cube_data.members.append({
+                    'dimension': with_member_dim,
+                    'cube_value': member['connected_value.member_cube_value']
+                })
 
 
 def process_with_member_for_territory(cube_data: CubeData):
@@ -599,7 +600,8 @@ def process_with_member_for_territory(cube_data: CubeData):
     if cube_data.terr_member:
 
         # используемые измерения на основе выдачи Solr
-        found_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
+        found_cube_dimensions = [elem['dimension']
+                                 for elem in cube_data.members]
 
         # если территория уже добавлена, как связанное значение
         if cube_data.terr_member['dimension'] in found_cube_dimensions:
@@ -616,24 +618,20 @@ def process_with_member_for_territory(cube_data: CubeData):
             # TODO: подумать над этим местом
             if connected_dim not in found_cube_dimensions:
                 # добавление связанного значения
-                cube_data.members.append(
-                    {
-                        'dimension': connected_dim,
-                        'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-                    }
-                )
+                cube_data.members.append({
+                    'dimension': connected_dim,
+                    'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                })
             else:
                 for member in list(cube_data.members):
                     if (member['dimension'] == connected_dim and
-                                member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
+                            member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
                         cube_data.members.remove(member)
 
-                        cube_data.members.append(
-                            {
-                                'dimension': connected_dim,
-                                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-                            }
-                        )
+                        cube_data.members.append({
+                            'dimension': connected_dim,
+                            'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                        })
 
                         break
 
@@ -657,14 +655,15 @@ def process_default_members(cube_data: CubeData):
     )
 
     for dim in unused_dimensions:
-        default_value = get_default_member_for_dimension(cube_data.selected_cube['cube'], dim)
+        default_value = get_default_member_for_dimension(
+            cube_data.selected_cube['cube'],
+            dim
+        )
         if default_value:
-            cube_data.members.append(
-                {
-                    'dimension': default_value['dimension_cube_value'],
-                    'cube_value': default_value['member_cube_value']
-                }
-            )
+            cube_data.members.append({
+                'dimension': default_value['dimension_cube_value'],
+                'cube_value': default_value['member_cube_value']
+            })
 
 
 def process_default_measures(cube_data: CubeData):
@@ -756,7 +755,8 @@ def best_answer_depending_on_cube(cube_data_list: list, correct_cube: str):
                     # ответы снова в порядке убывания скора
                     cube_data_list = sorted(
                         cube_data_list,
-                        key=lambda cube_data_elem: cube_data_elem.score[scoring_model],
+                        key=lambda cube_data_elem:
+                            cube_data_elem.score[scoring_model],
                         reverse=True
                     )
 
