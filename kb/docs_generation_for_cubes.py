@@ -116,15 +116,13 @@ class CubeDocsGeneration:
                                         dbc.DimensionMember.dimension_id == dimension.id
                         ):
                             for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
-                                verbal = member.lem_caption
-                                if member.lem_synonyms:
-                                    verbal += ' {}'.format(member.lem_synonyms)
                                 other_values.append({
                                     'type': 'dim_member',
                                     'cube': cube.name,
                                     'dimension': dimension.cube_value,
-                                    'lem_member_caption': verbal,
-                                    'lem_member_caption_len': len(verbal.split()),
+                                    'lem_member_caption': member.lem_caption,
+                                    'lem_member_caption_len': len(member.lem_caption.split()),
+                                    'lem_key_words': member.lem_synonyms,
                                     'member_caption': member.caption,
                                     'cube_value': member.cube_value,
                                     'hierarchy_level': member.hierarchy_level,
@@ -178,18 +176,13 @@ class CubeDocsGeneration:
 
         # Создание документа определенной структуры
         for item in members:
-            verbal = item.lem_caption
-
-            # добавление синонимов, если есть
-            if item.lem_synonyms:
-                verbal += ' ' + item.lem_synonyms
-
             # создание исходной структур
             terr_doc = {
                 'type': 'terr_dim_member',
                 'dimension': 'TERRITORIES',
-                'lem_member_caption': verbal,
-                'lem_member_caption_len': len(verbal.split()),
+                'lem_member_caption': item.lem_caption,
+                'lem_member_caption_len': len(item.lem_caption.split()),
+                'lem_key_words': item.lem_synonyms,
                 'member_caption': item.caption
             }
 
@@ -236,7 +229,7 @@ class CubeDocsGeneration:
                 'type': 'cube',
                 'cube': cube.name,
                 'cube_caption': cube.caption,
-                'description': cube_description,
+                'lem_key_words': cube_description,
                 'dimensions': get_cube_dimensions(cube.name),
                 'default_measure': get_default_cube_measure(cube.name),
             })
