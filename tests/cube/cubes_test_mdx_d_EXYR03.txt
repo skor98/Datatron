@@ -4,7 +4,7 @@
 Расходы бюджета Архангельской области в 2016 году на охрану окружающей среды:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67678], [BGLEVELS].[09-12], [RZPR].[14-1203414], [MARKS].[03-4])
 Объем расходов Архангельской области в 2016 на здравоохранение:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67678], [BGLEVELS].[09-12], [RZPR].[14-848302], [MARKS].[03-4])
 Сумма израсходованная бюджетом Архангельской области в 2016 году на скорую медицинскую помощь:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67678], [BGLEVELS].[09-12], [TERRITORIES].[14-108717], [MARKS].[03-4])
-Расходы Федерального бюджета на дороги в 2016 году: SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-1], [RZPR].[14-1203167], [MARKS].[03-4])
+Расходы Федерального бюджета на дороги в 2016 году: SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-1], [RZPR].[14-1203386], [MARKS].[03-4])
 Расходы ХМАО ЮГРА на национальную экономику в 2011 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2011], [TERRITORIES].[08-67695], [BGLEVELS].[09-12], [RZPR].[14-848398], [MARKS].[03-4])
 Сколько Ханты тратили на нац экономику в 2011:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2011], [TERRITORIES].[08-67695], [BGLEVELS].[09-12], [RZPR].[14-848398], [MARKS].[03-4])
 Сколько в Ханты-Мансийском автономном округе тратили на средства массовой информации в 2011:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2011], [TERRITORIES].[08-67695], [BGLEVELS].[09-12], [RZPR].[14-413259], [MARKS].[03-4])

@@ -104,7 +104,7 @@ def _refactor_data(data):
                 ]
 
         lem_full_answer = _only_long_words(
-            _refactor_data.TTP(row.full_answer, request_id)
+            _refactor_data.TPP(row.full_answer, request_id)
         )
 
         # добавление уникальных слов и длинного ответа

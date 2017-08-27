@@ -37,7 +37,7 @@ class Solr:
             'rows': MODEL_CONFIG["solr_documents_to_return"],
             'wt': 'json',
             'fl': '*,score',
-            "bf": "sum(if(exists(lem_member_caption_len),recip(lem_member_caption_len,0.8,2,0),0)," +
+            "bf": "sum(if(exists(lem_member_caption_len),recip(lem_member_caption_len,0.4,2,0),0)," +
                   "if(exists(lem_question_len),recip(lem_question_len,1,5,2),0))",
             'defType': "edismax"  # тип парсера, этот самый мощный
         }
