@@ -598,9 +598,6 @@ def process_cube_questions(
     if cube_result.status:
         form_feedback(message, request_id, cube_result, ans_confidence, not is_input_text)
 
-        bot.send_chat_action(message.chat.id, 'upload_audio')
-        bot.send_voice(message.chat.id, text_to_speech(cube_result.formatted_response))
-
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             stats_pattern = (
                 'Суммарный score: {}'
@@ -708,8 +705,15 @@ def process_minfin_questions(message, minfin_result, ans_confidence, input_forma
                     caption=minfin_result.document_caption
                 )
 
-    bot.send_chat_action(message.chat.id, 'upload_audio')
-    bot.send_voice(message.chat.id, text_to_speech(minfin_result.short_answer))
+    # Отправлять голосовой ответ только в случае,
+    # если он отличается от полного
+    if minfin_result.short_answer != minfin_result.full_answer:
+        bot.send_chat_action(message.chat.id, 'upload_audio')
+        bot.send_voice(
+            message.chat.id,
+            text_to_speech(minfin_result.short_answer),
+            caption="Краткий ответ"
+        )
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
         bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
