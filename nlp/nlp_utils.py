@@ -95,8 +95,11 @@ def try_int(obj):
     return int(obj)
 
 
+token_split_re = re.compile(r'((?:[\s_]+)|(?<=[a-zа-яё])/(?=[a-zа-яё]))', re.DOTALL)
+
+
 def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):
-    tokens = TokenTypes.type_re('whitespace').split(text)
+    tokens = token_split_re.split(text)
 
     for idx, token in enumerate(tokens):
         if TokenTypes.in_type(token, 'whitespace'):
