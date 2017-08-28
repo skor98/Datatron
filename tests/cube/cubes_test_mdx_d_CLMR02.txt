@@ -1,6 +1,6 @@
 ﻿Задолженность РФ по состоянию на 01.01.2017:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-12],[YEARS].[2016])
 Внешний долг Российской Федерации на 01.02.2017 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-1],[YEARS].[2017],[MARKS].[33-1])
-Сколько составлял внешний долг России в конце 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016],[MARKS].[33-1],[MOTHS].[04-12])
+Сколько составлял внешний долг России в конце 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016],[MARKS].[33-1],[MONTHS].[04-12])
 Объем внешнего долга Российской Федерации в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016],[MARKS].[33-1])
 Внешний долг Российской федерации по состоянию на первое марта 2017 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-2],[YEARS].[2017],[MARKS].[33-1])
 Размер внешнего долга в первом полугодии 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([MONTHS].[04-6],[YEARS].[2016],[MARKS].[33-1])
@@ -32,4 +32,4 @@
 Размещение евробондов в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2015], [MARKS].[33-5])
 Размещение еврооблигаций в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-5])
 Объем заимствований России в 2017 году в форме евробондов:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-5])
-Размещение евробондов в марте 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-5], [MOTHS].[04-3])
+Размещение евробондов в марте 2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-5], [MONTHS].[04-3])
