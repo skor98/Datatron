@@ -566,7 +566,7 @@ class CubeTester(BaseTester):
 
         measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
         cube_p = re.compile(r'(?<=FROM \[)\w*')
-        members_p = re.compile(r'(\[\w+\]\.\[[0-9-]*\])')
+        members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
 
         def get_measure(mdx_query):
             """Получение регуляркой меры"""

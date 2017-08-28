@@ -79,8 +79,8 @@ def _refactor_data(data):
 
         doc.short_answer = row.short_answer
         # индексируемое поле
-        doc.lem_short_answer = _only_long_words(
-            _refactor_data.TPP(row.short_answer, request_id)
+        doc.lem_short_answer = _only_words(
+            _only_long_words(_refactor_data.TPP(row.short_answer, request_id))
         )
 
         doc.full_answer = row.full_answer
@@ -117,10 +117,9 @@ def _refactor_data(data):
         lem_extra_key_words -= set(doc.lem_short_answer.split())
         lem_extra_key_words -= set(lem_key_words.split())
 
+        lem_extra_key_words = _only_words(' '.join(lem_extra_key_words))
         # индексируемое поле
-        doc.lem_extra_key_words = ' '.join(
-            [' '.join(lem_extra_key_words)] * 5
-        )
+        doc.lem_extra_key_words = lem_extra_key_words
 
         # Может быть несколько
         if row.link_name:
@@ -190,6 +189,20 @@ def _write_data(data):
                     ','.join([element.to_json() for element in data])
                 )
             )
+
+
+def _only_words(text: str):
+    def isfloat(value):
+        try:
+            float(value.replace(",", "."))
+            return True
+        except ValueError:
+            return False
+
+    tokens = [
+        word for word in text.split() if not word.isdigit() and not isfloat(word)
+        ]
+    return ' '.join(tokens)
 
 
 def _only_long_words(text: str):
