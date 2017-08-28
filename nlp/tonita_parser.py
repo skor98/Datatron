@@ -52,9 +52,9 @@ class ReHandler(TonitaHandler):
             repl = ReHandler.args_from_match(sub, remove_none)
 
         if preserve:
-            self.repl = lambda m: ' '.join([m.group(0), repl(m)])
+            self.repl = lambda m: ' '.join([m.group(0), str(repl(m))])
         else:
-            self.repl = repl
+            self.repl = lambda m: str(repl(m))
 
         def check(text): return regexp.search(text) is not None
         process = partial(regexp.sub, self.repl)
@@ -128,7 +128,7 @@ class TonitaParser(object):
         for handler in self.handlers:
             if ((handler.check is None or handler.check(res)) and
                     handler.process is not None):
-                res = handler.process(res)
+                res = str(handler.process(res))
 
         if not isinstance(text, str) and isinstance(text, Iterable):
             return res.split(' ')
