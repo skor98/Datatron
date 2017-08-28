@@ -8,34 +8,39 @@ Created on Mon Aug 14 18:08:47 2017
 
 from datetime import datetime
 
-from nlp.tonita_parser import TonitaParser
+from nlp.tonita_parser import TonitaParser, ReHandler
 
 time_tp = TonitaParser()
 
 norm_months = [
-    'январь', 'февраль', 'март', 'апрель',
-    'май', 'июнь', 'июль', 'август',
+    'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август',
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
-time_tp.add_dict({m[:3]: m for m in norm_months if len(m) > 3})
+time_tp.handlers.extend(ReHandler.fromdict(
+        {m[:3]: m for m in norm_months if len(m) > 3},
+        flags=98
+))
 anymonth = '|'.join(norm_months)
 
 seasons = ['зима', 'весна', 'лето', 'осень']
 anyseason = '|'.join(seasons)
 
-time_tp.add_dict({
+time_tp.handlers.extend(ReHandler.fromdict({
     'мес': 'месяц',
     'кв': 'квартал',
     'семестр': 'полугодие',
     'полгода': 'полугодие',
     'г': 'год',
     'сегодня': 'этот месяц',
-})
+}, flags=98))
 
-time_tp.add_h(
-    r'(?<!год )(?:2\d|19)\d{2}(?! год)',
-    'год',
-    preserve_old=True, )
+time_tp.create_handler(
+    ReHandler,
+    regexp=r'(?<!год[\s_]) (?:2\d | 19) \d{2} (?![\s_]год)',
+    sub='год',
+    preserve=True,
+    flags=98
+)
 
 unit_lens = {
     'год': 12,
@@ -45,16 +50,26 @@ unit_lens = {
     'месяц': 1
 }
 anyunit = '|'.join(unit_lens.keys())
-unitcombo = r'(?:(?:\d+ )?(?:{}) ?)+'.format(anyunit)
+unitcombo = r'''
+    (?: (?: \d+ [\s_] )?
+        (?:{}) [\s_]? ) +
+    '''.format(anyunit)
 
 begin_kw = ('состояние на', 'канун', 'старт')
 end_kw = ('конец', 'итог', 'финал', 'окончание')
 
-points_re = r'(?P<point>(?P<begin>{})|(?P<end>{}))'.format('|'.join(begin_kw),
-                                                           '|'.join(end_kw))
-multipoints_re = r'(?:(?:{p}) )+({p})'.format(p='|'.join(begin_kw + end_kw))
+points_re = r'(?P<point> (?P<begin>{}) | (?P<end>{}) )'.format(
+        '|'.join(begin_kw), '|'.join(end_kw))
 
-time_tp.add_h(multipoints_re, r'\1')
+multipoints_re = r'(?: (?: {p}) [\s_] )+ ({p})'.format(
+    p='|'.join(begin_kw + end_kw))
+
+time_tp.create_handler(
+    ReHandler,
+    regexp=r'(?: (?:{p}) [\s_])+ ({p})'.format(p='|'.join(begin_kw + end_kw)),
+    sub='\1',
+    flags=98
+)
 
 current_kw = ('текущий', 'нынешний', 'этот?', 'сегодняшний')
 last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедший', 'минувший',
@@ -62,34 +77,52 @@ last_kw = ('прошл(?:ый|ое)', 'предыдущий', 'прошедши�
 next_kw = ('следующий', 'будущ(?:ий|ее)', 'грядущий', 'наступающий',
            'завтрашний')
 
-current_re = r'(?P<current>(?(point)(?:{c})?|(?:{c})))'.format(
+current_re = r'(?P<current> (?(point) (?:{c})? | (?:{c}) ))'.format(
     c='|'.join(current_kw))
-last_re = r'(?P<last>(?:поза[- ]?)*(?:{}))'.format('|'.join(last_kw))
-next_re = r'(?P<next_>(?:после[- ]?)*(?:{}))'.format('|'.join(next_kw))
-rel_re = r'(?:{} )?(?:{}|{}|{}) (?P<unit>{})'.format(points_re, current_re,
-                                                     last_re, next_re, anyunit)
+last_re = r'(?P<last> (?:поза[-\s_]?)* (?:{}))'.format('|'.join(last_kw))
+next_re = r'(?P<next_> (?:после[-\s_]?)* (?:{}))'.format('|'.join(next_kw))
+rel_re = r'''
+    (?: {}[\s_])?
+    (?:{}|{}|{})[\s_]
+    (?P<unit>{})
+    '''.format(
+    points_re, current_re, last_re, next_re, anyunit)
 
-interval_re = r'(?P<pr>через )?(?P<interval>{})(?(pr)|(?: спустя| (?P<ago>назад)))'.format(
-    unitcombo)
+interval_re = r'''
+    (?P<pr>через[\s_])?
+    (?P<interval>{})
+    (?(pr) | (?: [\s_]спустя | [\s_](?P<ago>назад) ))
+    '''.format(unitcombo)
 
 _dayformat = r'(?P<day>[0-3]?\d)'
-_monthformat = r'(?P<month>0?[1-9]|1[012]|{})'.format(anymonth)
-_yearformat = r'(?P<year>(?:19|2\d)\d{2})(?: год)?'
-dateformat_re = r'(?:{}|{})[.,/ \-]{}[.,/ \-]{}'.format(
-    points_re, _dayformat, _monthformat, _yearformat)
 
-season_re = r'(?:{} )?(?P<season>{})'.format(points_re, anyseason)
+_monthformat = r'(?P<month> 0?[1-9] | 1[012] | {} )'.format(anymonth)
 
-static_re = r'(?:{} )?(?P<num>\d*[1-9]\d*) (?P<unit>{})'.format(points_re,
-                                                                anyunit)
+_yearformat = r'''
+    (?P<year> (?:19|2\d) \d{2})
+    (?: [\s_] год)?'''
 
-statmonth_re = r'(?:{}|{}) (?P<month>{})'.format(points_re, _dayformat,
-                                                 anymonth)
+dateformat_re = r'''
+    (?:{}|{}) [.,/_\s\-]
+    {} [.,/_\s\-]
+    {}
+    '''.format(points_re, _dayformat, _monthformat, _yearformat)
 
-shortyear_re = r'(?P<month>{}) (?P<year>\d\d)'.format(anymonth)
+season_re = r'''(?:{} [\s_])?
+              (?P<season>{})'''.format(points_re, anyseason)
+
+static_re = r'''(?:{}[\s_])?
+                (?P<num> \d*[1-9]\d*) [\s_]
+                (?P<unit>{})'''.format(points_re, anyunit)
+
+statmonth_re = r'''(?:{}|{})[\s_]
+                   (?P<month>{})'''.format(
+    points_re, _dayformat, anymonth)
+
+shortyear_re = r'(?P<month>{}) [\s_] (?P<year>\d\d)'.format(anymonth)
 
 
-@time_tp.set_handler(rel_re)
+@time_tp.set_handler(ReHandler, regexp=rel_re, flags=98)
 def rel_h(point, begin, last, next_, unit):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -105,7 +138,7 @@ def rel_h(point, begin, last, next_, unit):
     return date_to_text(newdate, nomonth=nomonth)
 
 
-@time_tp.set_handler(interval_re)
+@time_tp.set_handler(ReHandler, regexp=interval_re, flags=98)
 def interval_h(interval, ago, full):
     words = interval.split(' ')
     sum_len = 0
@@ -132,7 +165,7 @@ def interval_h(interval, ago, full):
     return date_to_text(newdate)
 
 
-@time_tp.set_handler(static_re)
+@time_tp.set_handler(ReHandler, regexp=static_re, flags=98)
 def static_h(unit, num, begin, point):
     u_len = unit_lens.get(unit, 1)
     begin = begin is not None
@@ -142,7 +175,7 @@ def static_h(unit, num, begin, point):
     return date_to_text(newdate, noyear=noyear, nomonth=nomonth)
 
 
-@time_tp.set_handler(statmonth_re)
+@time_tp.set_handler(ReHandler, regexp=statmonth_re, flags=98)
 def statmonth_h(begin, month, day):
     num = norm_months.index(month) + 1
     begin = (begin is not None or (day is not None and day <= 15))
@@ -150,7 +183,7 @@ def statmonth_h(begin, month, day):
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.set_handler(dateformat_re)
+@time_tp.set_handler(ReHandler, regexp=dateformat_re, flags=98)
 def date_h(day, month, year, begin):
     if isinstance(month, int):
         month = max(min(month, 12), 1)
@@ -165,7 +198,7 @@ def date_h(day, month, year, begin):
     return date_to_text(newdate)
 
 
-@time_tp.set_handler(season_re)
+@time_tp.set_handler(ReHandler, regexp=season_re, flags=98)
 def season_h(season, begin):
     num = seasons.index(season) + 1
     begin = begin is not None
@@ -174,7 +207,7 @@ def season_h(season, begin):
     return date_to_text(newdate, noyear=True)
 
 
-@time_tp.set_handler(shortyear_re)
+@time_tp.set_handler(ReHandler, regexp=shortyear_re, flags=98)
 def shortyear_h(month, year):
     return date_to_text(
         datetime(

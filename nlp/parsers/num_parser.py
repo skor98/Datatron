@@ -8,11 +8,16 @@ Created on Fri Aug 18 01:02:02 2017
 
 from itertools import chain, zip_longest
 
-from nlp.tonita_parser import TonitaParser
+from nlp.tonita_parser import TonitaParser, ReHandler
 
 num_tp = TonitaParser()
 
-num_tp.add_h(r'(\d+)[-–—](\d+)', r'\1 \2')
+num_tp.create_handler(
+    ReHandler,
+    regexp=r'(\d+)[-–—](\d+)',
+    sub=r'\1 \2',
+    flags=98
+)
 
 numdict = {
     0: ['ноль', 'нуль', 'нулевой', 'нулевое'],
@@ -61,9 +66,12 @@ numdict = {
     7000: ['семитысячный', 'семитысячное'],
     8000: ['восьмитысячный', 'восьмитысячное'],
     9000: ['девятитысячный', 'девятитысячное'],
-    10 ** 6: ['миллион', 'млн', 'M', 'М', 'KK', 'КК', 'лям', 'миллионный', 'миллионное'],
-    10 ** 9: ['миллиард', 'млрд', 'лярд', 'миллиардный', 'миллиардное'],
-    10 ** 12: ['триллион', 'трлн', 'триллионный', 'триллионное'],
+    10**6: [
+        'миллион', 'млн', 'M', 'М', 'KK', 'КК', 'лям', 'миллионный',
+        'миллионное'
+    ],
+    10**9: ['миллиард', 'млрд', 'лярд', 'миллиардный', 'миллиардное'],
+    10**12: ['триллион', 'трлн', 'триллионный', 'триллионное'],
 }
 
 revdict = dict(
@@ -75,25 +83,40 @@ def _anything(start=0, end=10**13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
 
-_thousands_re = r'(?:(?P<m_num>{}|(\d+[.,])?\d+) (?:{})|(?P<m>{}))'.format(
-    _anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
+_thousands_re = r'''
+   (?:
+    (?P<m_num> {} | (\d+ [.,] )?\d+) [\s_] (?: {})
+    | (?P<m> {}))
+   '''.format(_anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
+
 _hundreds_re = r'(?P<c>{})'.format(_anything(100, 901))
 _teen_re = r'(?P<xi>{})'.format(_anything(10, 20))
 _tens_re = r'(?P<x>{})'.format(_anything(20, 91))
 _ones_re = r'(?P<i>{})'.format(_anything(1, 10))
 _zero_re = r'(?P<zero>{})'.format(_anything(0, 1))
 
-_sign_re = r'(?:(?P<plus>\+|плюс)|(?P<minus>-|минус))'
+_sign_re = r'(?: (?P<plus> \+ | плюс) | (?P<minus> - | минус))'
 
-literal_num_re = r'(?:{}?(?: ?{})?(?: ?{})?(?: ?{}|(?: ?{})?(?: ?{})?)|{})'.format(
-    _sign_re, _thousands_re, _hundreds_re, _teen_re, _tens_re, _ones_re,
-    _zero_re)
+literal_num_re = r'''
+    (?:
+        {}?
+        (?: [\s_]? {})?
+        (?: [\s_]? {})?
+        (?:
+            [\s_]? {}
+            | (?: [\s_]? {})? (?: [\s_]? {})?
+        ) | {}
+    )'''.format(_sign_re, _thousands_re, _hundreds_re,
+                _teen_re, _tens_re, _ones_re, _zero_re)
 
-bignum_re = r'{}?(?P<num>(\d+[.,])?\d+) ?(?P<deg>{})'.format(_sign_re,
-                                                             _anything(10**6))
+bignum_re = r''''
+    {}?
+    (?P<num> (\d+[.,])?\d+) [\s_]?
+    (?P<deg>{})
+    '''.format(_sign_re, _anything(10**6))
 
 
-@num_tp.set_handler(literal_num_re)
+@num_tp.set_handler(ReHandler, regexp=literal_num_re, flags=98)
 def literal_num_h(match):
     if all(i is None for i in match.groups()[1:]):
         return match.group(0)
@@ -114,7 +137,7 @@ def literal_num_h(match):
     return str(res)
 
 
-@num_tp.set_handler(bignum_re)
+@num_tp.set_handler(ReHandler, regexp=bignum_re, flags=98)
 def bugnum_h(minus, num, deg):
     deg = revdict.get(deg, 1)
     if minus is not None:
@@ -128,10 +151,16 @@ def bugnum_h(minus, num, deg):
 
 
 romdict = {'i': 1, 'v': 5, 'x': 10, 'l': 50, 'c': 100, 'd': 500, 'm': 1000}
-roman_re = r'(?=[ivxlcdm])m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})'
+roman_re = r'''
+   (?=[ivxlcdm])
+   m{0,4}
+   (cm|cd|d?c{0,3})
+   (xc|xl|l?x{0,3})
+   (ix|iv|v?i{0,3})
+   '''
 
 
-@num_tp.set_handler(roman_re)
+@num_tp.set_handler(ReHandler, regexp=roman_re, flags=98)
 def roman_h(full):
     rom = [romdict.get(c.lower(), 0) for c in full]
     res = 0

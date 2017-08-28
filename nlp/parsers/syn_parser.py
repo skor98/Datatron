@@ -6,7 +6,7 @@ Created on Tue Aug 15 15:07:15 2017
 @author: larousse
 """
 
-from nlp.tonita_parser import TonitaParser
+from nlp.tonita_parser import TonitaParser, ReHandler
 
 syn_tp = TonitaParser()
 
@@ -21,26 +21,45 @@ contr = {
     'фин': 'финансовый'
 }
 contr = {key + r'\W+': contr[key] + ' ' for key in contr}
-syn_tp.add_dict(contr, sep_left=True, sep_right=False)
+syn_tp.handlers.extend(ReHandler.fromdict(
+        contr, sep_left=True, sep_right=False, flags=98
+))
 
 # разные варианты указания на Россию
 russland_names = (
     'россия',
-    'российский федерация',
+    'российский[\s_]федерация',
     'россиюшка',
     'рашка',
     'русь',
-    'наш страна',
-    'этот? страна',
+    'наш[\s_]страна',
+    'этот?[\s_]страна',
     'держава', )
-syn_tp.add_dict(dict.fromkeys(russland_names, 'РФ'))
+syn_tp.handlers.extend(
+    ReHandler.fromdict(
+        dict.fromkeys(russland_names, 'РФ'),
+        flags=98
+    )
+)
 
 # разные варианты указания на Минфин
 minfin_names = (
     'мф',
-    'министерство финанс(?:ы|овый)?',
-    'финанс(?:ы|овый)? министерство', )
-syn_tp.add_dict(dict.fromkeys(minfin_names, 'минфин'))
+    'министерство[\s_]финанс(?:ы|овый)?',
+    'финанс(?:ы|овый)?[\s_]министерство', )
+syn_tp.handlers.extend(
+    ReHandler.fromdict(
+        dict.fromkeys(minfin_names, 'минфин'),
+        flags=98
+    )
+)
 
 # отдельные случаи
-syn_tp.add_dict({'это(?=$)': 'определение'}, sep_left=True, sep_right=False)
+syn_tp.create_handler(
+    ReHandler,
+    regexp=r'это(?=$)',
+    sub='определение',
+    flags=98,
+    sep_left=True,
+    sep_right=False
+)
