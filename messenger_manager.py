@@ -11,7 +11,7 @@ from data_retrieving import DataRetrieving
 from dbs.query_db import log_query_to_db
 from speechkit import SpeechException
 from speechkit import speech_to_text
-
+from manual_testing import get_jaccard
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):
     """
@@ -116,7 +116,11 @@ class MessengerManager:
         :return: либо строку, либо None
         """
 
+        # чем меньше, тем больше примеров будет подходить
+        JACCARD_SIMILARITY_THRESHOLD = 0.7
+
         text, tokens = MessengerManager._simple_split(text)
+        tokens = set(tokens)
 
         for word in tokens:
             if word in constants.HELLO:
@@ -124,14 +128,25 @@ class MessengerManager:
             elif word in constants.HOW_ARE_YOU:
                 return random.choice(constants.HOW_ARE_YOU_ANSWER)
 
-        if text in constants.WHO_YOU_ARE:
-            return random.choice(constants.WHO_YOU_ARE_ANSWER)
+        for cur_const in constants.WHO_YOU_ARE:
+            cur_set = set(cur_const.split())
+            if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
+                return random.choice(constants.WHO_YOU_ARE_ANSWER)
 
-        if text in constants.WHAT_CAN_YOU_DO:
-            return random.choice(constants.WHAT_CAN_YOU_DO_ANSWER)
+        for cur_const in constants.WHAT_CAN_YOU_DO:
+            cur_set = set(cur_const.split())
+            if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
+                return random.choice(constants.WHAT_CAN_YOU_DO_ANSWER)
 
-        if text in constants.WHO_IS_YOUR_CREATOR:
-            return random.choice(constants.WHO_IS_YOUR_CREATOR_ANSWER)
+        for cur_const in constants.WHO_IS_YOUR_CREATOR:
+            cur_set = set(cur_const.split())
+            if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
+                return random.choice(constants.WHO_IS_YOUR_CREATOR_ANSWER)
+
+        for cur_const in constants.WHO_IS_YOUR_CREATOR:
+            cur_set = set(cur_const.split())
+            if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
+                return random.choice(constants.WHO_IS_YOUR_CREATOR_ANSWER)
 
         if text in constants.EASTER_EGGS.keys():
             return random.choice(constants.EASTER_EGGS[text])
@@ -163,4 +178,4 @@ class MessengerManager:
 
         # сохранение всех слов длинной более 1 символа
         tokens = [t for t in text.split() if len(t) > 1]
-        return ' '.join(tokens), tokens
+        return " ".join(tokens).strip(), tuple(tokens)
