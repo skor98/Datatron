@@ -10,7 +10,7 @@ import re
 import logs_helper  # pylint: disable=unused-import
 from nlp import nlp_utils
 from nlp.phrase_processor import Phrase
-from nlp.tonita_parser import TonitaParser
+from nlp.tonita_parser import ReHandler
 
 
 class BackFeeder(object):
@@ -19,8 +19,9 @@ class BackFeeder(object):
         mask = CubeMasks.get_mask(cube)
         prepr_feedback = BackFeeder._preprocess_fb(verbal_feedback)
         pretty = BackFeeder._make_phrase(mask, prepr_feedback)
-        logging.info('Обратная связь для ответа из куба {}: {}'.format(cube,
-                                                                       pretty))
+        logging.info('Обратная связь для ответа из куба {}: {}'.format(
+                cube, pretty.replace('\n', '\t')
+        ))
         return pretty
 
     @staticmethod
@@ -36,8 +37,6 @@ class BackFeeder(object):
             if newval and newval[:8] not in ('неуказан', 'неизвест'):
                 res[newkey] = newval
 
-        if res.get('территория') is None:
-            res['территория'] = 'Российская Федерация'
         if verbal_feedback.get('measure', 'значение').lower() == 'значение':
             res['мера'] = None
         else:
@@ -80,8 +79,14 @@ class BackFeeder(object):
 
             return ''.join((lcont, resword, rcont))
 
-        return TonitaParser.once(
-            mask, BackFeeder._main_re, _repl, sep_left=False, sep_right=False)
+        return ReHandler(
+            regexp=BackFeeder._main_re,
+            sub=_repl,
+            sep_left=False,
+            sep_right=False,
+            remove_none=True,
+            flags=98,
+        ).process(mask)
 
     _main_re = re.compile(r'''(?<!\\)\{
         ((?<!\\)\?(?P<lcont>.*?)(?<!\\)\?)?
@@ -90,7 +95,7 @@ class BackFeeder(object):
         (\*(?P<gram>\w+?(\*\w+?)*))?
         ((?<!\\)\?(?P<rcont>.*?)(?<!\\)\?)?
         ((?<!\\)\|(?P<dflt>.*?))?
-        (?<!\\)\}''', re.VERBOSE | re.DOTALL)
+        (?<!\\)\}''', flags=114)
 
 
 class CubeMasks(object):
@@ -131,25 +136,25 @@ class CubeMasks(object):
     '{^показатели*nomn|Годовые доходы} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2|прошлом году}{?: ?мера*nomn}'
     '''
 
-    _common_cube_prefix = '{?[?куб*nomn?] ?}'
+    _common_cube_prefix = '{куб*nomn|Прочие данные}: '
 
     _base_cube_masks = {
         'CLDO01':
         'Оперативные данные по {показатель*datv|федеральному бюджету}{?: ?мера*nomn}',
         'CLDO02':
-        'Оперативные данные по {уровень*datv|бюджету} {территория*gent|РФ}{?: ?мера*nomn}',
+        'Оперативные данные по {уровень*datv|бюджету}{? ?территория*gent}{?: ?мера*nomn}',
         'CLMR02':
         '{^показатели*nomn|Госдолг РФ} по состоянию на {месгод*accs|настоящее время}{?: ?мера*nomn}',
         'EXDO01':
-        'Оперативные данные по {показатели*datv|расходам} {?бюджета ?территория*gent|федерального бюджета}{? на ?раздел*accs}{?: ?мера*nomn}',
+        '{^показатели*nomn|Расходы} {уровень*gent|бюджета}{? ?территория*gent}{? на ?раздел*accs} по оперативным данным{?: ?мера*nomn}',
         'EXYR03':
-        '{^показатели*nomn|Годовые расходы} из {?бюджета ?территория*gent|федерального бюджета}{? на ?раздел*accs} в {месгод*loc2|прошлом году}{?: ?мера*nomn}',
+        '{^показатели*nomn|Годовые расходы} {уровень*gent|бюджета}{? ?территория*gent}{? на ?раздел*accs} в {месгод*loc2|прошлом году}{?: ?мера*nomn}',
         'FSYR01':
         '{^показатели*nomn|Финансирование} {?бюджета ?территория*gent|федерального бюджета} в {месгод*loc2|прошлом году} через {источники*accs|все источники}{?: ?мера*nomn}',
         'INDO01':
-        'Оперативные данные по {показатели*datv|доходам} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn}{?: ?мера*nomn}',
+        '{^показатели*nomn|Доходы} {уровень*gent|бюджета}{? ?территория*gent}{? за счёт ?группа*gent} по оперативным данным{?: ?мера*nomn}',
         'INYR03':
-        '{^показатели*nomn|Годовые доходы} {?бюджета ?территория*gent|федерального бюджета}{? в категории ?группа*nomn} в {месгод*loc2|прошлом году}{?: ?мера*nomn}'
+        '{^показатели*nomn|Годовые доходы} {уровень*gent|бюджета}{? ?территория*gent}{? за счёт ?группа*gent} в {месгод*loc2|прошлом году}{?: ?мера*nomn}'
     }
 
     @staticmethod
