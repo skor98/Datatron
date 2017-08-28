@@ -176,7 +176,7 @@ class DataRetrieving:
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
         request_len = len(norm_user_request.split())
 
-        if 1 < request_len <= short_question_threshold:
+        if request_len <= short_question_threshold:
             norm_user_request = ' '.join(
                 [norm_user_request.strip()] * multiplier
             )

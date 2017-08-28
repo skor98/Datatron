@@ -525,7 +525,7 @@ def score_cube_question(cube_data: CubeData):
 
         cube_data.score['sum'] = sum((
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score,
-            max_member_score if max_member_score else 0,
+                max_member_score if max_member_score else 0,
             MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
         ))
 
@@ -540,30 +540,31 @@ def preprocess_territory_member(cube_data: CubeData):
     """
     Дополнительные фильтры по территории
     """
+    if cube_data.terr_member:
+        if cube_data.terr_member['cube_value'] != '08-2':
+            for member in list(cube_data.members):
+                if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+                    cube_data.members.remove(member)
+        else:
+            for member in cube_data.members:
+                if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+                    cube_data.terr_member = None
 
-    for member in cube_data.members:
-        # игнорирование территории для опредленных уровней бюджета
-        if member['dimension'] == 'BGLEVELS':
-            if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+            # Игнорирование территории РФ для EXYRO3
+            # TODO: убрать этот костыль
+            if cube_data.selected_cube['cube'] == 'EXYR03':
                 cube_data.terr_member = None
 
-    # Игнорирование территории РФ для EXYRO3
-    # TODO: убрать этот костыль
-    if (cube_data.selected_cube['cube'] == 'EXYR03' and
-            cube_data.terr_member and
-            cube_data.terr_member['cube_value'] == '08-2'):
-        cube_data.terr_member = None
-
-        # TODO: убрать этот костыль
-        for member in list(cube_data.members):
-            if member['cube_value'] == '09-12':
-                cube_data.members.remove(member)
-                cube_data.members.append(
-                    {
-                        'dimension': member['dimension'],
-                        'cube_value': '09-0'
-                    }
-                )
+                # TODO: убрать этот костыль
+                for member in list(cube_data.members):
+                    if member['cube_value'] == '09-12':
+                        cube_data.members.remove(member)
+                        cube_data.members.append(
+                            {
+                                'dimension': member['dimension'],
+                                'cube_value': '09-0'
+                            }
+                        )
 
 
 def process_with_members(cube_data: CubeData):
