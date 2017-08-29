@@ -24,7 +24,6 @@
 Расходы Чеченской республики:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-10],[BGLEVELS].[09-12],[TERRITORIES].[08-2136])
 Дефицит бюджета Ненецкого автономного округа:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-10575])
 Доходы города Москвы»:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-12],[MARKS].[03-1],[TERRITORIES].[08-23783])
-Доходы субъектов Российской Федерации:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-12],[MARKS].[03-1], [TERRITORIES].[08--1])
 Процент исполнения консолидированного бюджета Вологодской области по доходам в текущем году:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-1],[BGLEVELS].[09-12],[TERRITORIES].[08-10809])
 Кассовое исполнение по доходам консолидированного бюджета Ярославской области:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-1],[BGLEVELS].[09-12],[TERRITORIES].[08-20670])
 Сумма исполнения налоговых и неналоговых доходов Ярославской области:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-3],[BGLEVELS].[09-12],[TERRITORIES].[08-20670])

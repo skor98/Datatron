@@ -13,6 +13,7 @@ from nltk.corpus import stopwords
 from pymorphy2 import MorphAnalyzer
 import uuid
 
+# этот импорт убирать нельзя, иначе полетит логгирование
 import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
@@ -21,11 +22,11 @@ from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
 
 
-# этот импорт убирать нельзя, иначе полетит логгирование
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 
-def _mc_get(key): return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
+def _mc_get(key):
+    return MODEL_CONFIG[key] if key in MODEL_CONFIG else False
 
 
 class TextPreprocessing(object):
@@ -51,6 +52,8 @@ class TextPreprocessing(object):
         question_words
     ).union(
         'подсказать также иной да нет'.split()
+    ).union(
+        "подсказать показать сказать".split()
     )
 
     def __init__(self, log=True, label='NULL', **kwargs):

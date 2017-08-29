@@ -15,6 +15,6 @@
 Подскажите а каковы доходы Сахалинской области в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-67704])
 Скажите а каковы доходы хабаровского края сейчас:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-67707])
 Подскажите пожалуйста доходы Чукотского АО в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-67640])
-Срочно нужна информация о доходах Крыма в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-67640])
+Срочно нужна информация о доходах Крыма в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-93010])
 Омагад омагад сколько денег заработал севастополь в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-93011])
 Объем поступлений по доходам кировской области)))))))):SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-67663])
