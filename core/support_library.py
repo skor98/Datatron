@@ -134,7 +134,7 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
 
     feedback['pretty_feedback'] = BackFeeder.prettify(cube, feedback['verbal'])
 
-    with open(path.join(FEEDBACK_TESTS_FOLDER, cube+'.txt'), 'a', encoding='utf-8') as file:
+    with open(path.join(FEEDBACK_TESTS_FOLDER, cube + '.txt'), 'a', encoding='utf-8') as file:
         file.write(
             '{}:{}\n'.format(feedback['pretty_feedback'], mdx_query)
         )
@@ -396,6 +396,16 @@ def select_measure_for_selected_cube(cube_data: CubeData):
             if (cube_data.measures[0]['score'] >
                     MODEL_CONFIG["measure_matching_threshold"]):
                 cube_data.selected_measure = cube_data.measures[0]
+
+                # TODO: костыль для куба CLDO01 при запросах со словом "процент"
+                # решение проблемы интерференции процент в мере и элементе измерения
+                if cube_data.selected_cube['cube'] == 'CLDO01':
+                    if 'ввп' in cube_data.user_request.lower():
+                        cube_data.selected_measure = None
+                    elif 'процент' in cube_data.selected_measure['lem_member_caption']:
+                        for member in list(cube_data.members):
+                            if member['cube_value'] in ('25-18', '25-19', '25-21'):
+                                cube_data.members.remove(member)
 
 
 def group_documents(solr_documents: list, user_request: str, request_id: str):
