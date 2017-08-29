@@ -69,27 +69,37 @@ def _refactor_data(data):
     for row in data.itertuples():
         doc = MinfinDocument()
         doc.number = row.id
-
         doc.question = row.question
 
         # индексируемое поле
         doc.lem_question = _refactor_data.TPP(row.question, request_id)
-
         doc.lem_question_len = len(doc.lem_question.split())
 
-        doc.short_answer = row.short_answer.replace(' - ', '–')
+        # Дефис вместо тире
+        doc.short_answer = (
+            row.short_answer
+                .replace(' - ', ' — ')
+                .replace(' − ', ' — ')
+                .replace(' – ', ' — ')
+        )
+
         # индексируемое поле
         doc.lem_short_answer = _only_words(
             _only_long_words(_refactor_data.TPP(row.short_answer, request_id))
         )
 
-        doc.full_answer = row.full_answer
-
-        lem_key_words = _only_long_words(
-            _refactor_data.TPP(row.key_words, request_id)
+        # Дефис вместо тире
+        doc.full_answer = (
+            row.full_answer
+                .replace(' - ', ' — ')
+                .replace(' − ', ' — ')
+                .replace(' – ', ' — ')
         )
 
         # индексируемое поле
+        lem_key_words = _only_long_words(
+            _refactor_data.TPP(row.key_words, request_id)
+        )
         doc.lem_key_words = ' '.join(
             [lem_key_words] * MODEL_CONFIG["minfin_manual_key_words_repetition"]
         )
@@ -108,6 +118,7 @@ def _refactor_data(data):
         )
 
         # добавление уникальных слов и длинного ответа
+        # индексируемое поле
         lem_extra_key_words = (
             set(' '.join(lem_synonym_questions).split()) |
             set(lem_full_answer.split())
@@ -118,7 +129,6 @@ def _refactor_data(data):
         lem_extra_key_words -= set(lem_key_words.split())
 
         lem_extra_key_words = _only_words(' '.join(lem_extra_key_words))
-        # индексируемое поле
         doc.lem_extra_key_words = lem_extra_key_words
 
         # Может быть несколько
