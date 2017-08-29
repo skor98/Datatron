@@ -15,6 +15,7 @@ import requests
 
 from config import SETTINGS
 from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
+from config import FEEDBACK_TESTS_FOLDER
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
@@ -132,6 +133,11 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     }
 
     feedback['pretty_feedback'] = BackFeeder.prettify(cube, feedback['verbal'])
+
+    with open(path.join(FEEDBACK_TESTS_FOLDER, cube+'.txt'), 'a', encoding='utf-8') as file:
+        file.write(
+            '{}:{}\n'.format(feedback['pretty_feedback'], mdx_query)
+        )
 
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
@@ -542,6 +548,9 @@ def preprocess_territory_member(cube_data: CubeData):
             for member in list(cube_data.members):
                 if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
                     cube_data.members.remove(member)
+                elif member['cube_value'].startswith('09-'):
+                    member.pop('connected_value.dimension_cube_value', None)
+                    member.pop('connected_value.member_cube_value', None)
         else:
             for member in cube_data.members:
                 if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):

@@ -77,6 +77,8 @@ TECH_CUBE_DOCS_FILE = fixed_path(
 
 TECH_MINFIN_DOCS_FILE = 'tech_minfin_data_for_indexing.json'
 
+FEEDBACK_TESTS_FOLDER = fixed_path(path.join("tests", "cubes_pretty"))
+
 DATE_FORMAT = "%Y.%m.%d"
 TIME_FORMAT = "%H:%M:%S"
 DATETIME_FORMAT = "{} {}".format(DATE_FORMAT, TIME_FORMAT)
