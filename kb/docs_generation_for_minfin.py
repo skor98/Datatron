@@ -77,7 +77,7 @@ def _refactor_data(data):
 
         doc.lem_question_len = len(doc.lem_question.split())
 
-        doc.short_answer = row.short_answer
+        doc.short_answer = row.short_answer.replace(' - ', '–')
         # индексируемое поле
         doc.lem_short_answer = _only_words(
             _only_long_words(_refactor_data.TPP(row.short_answer, request_id))

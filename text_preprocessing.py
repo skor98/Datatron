@@ -78,8 +78,6 @@ class TextPreprocessing(object):
     def normalize(self, text, request_id='<NoID>'):
         """Метод для нормализации текста"""
 
-        # TODO: обработка направильного спеллинга
-
         # Убираем плюсы-ударения
         if '\\+' in text:
             text = text.replace('\\+', '')

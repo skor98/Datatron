@@ -324,7 +324,7 @@ def process_cube_answer(cube_answer, value):
     # Получение из базы знаний (knowledge_base.db) формата для меры
     value_format = get_representation_format(cube_answer.mdx_query)
 
-    # TODO: убрать этот костыль
+    # TODO: костыль процентного формата ответа для элементов измерения
     if ('KDPERCENT' in cube_answer.mdx_query or
                 'EXPERCENT' in cube_answer.mdx_query):
         value_format = 1
@@ -566,12 +566,11 @@ def preprocess_territory_member(cube_data: CubeData):
                 if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
                     cube_data.terr_member = None
 
-            # Игнорирование территории РФ для EXYRO3
-            # TODO: убрать этот костыль
+            # TODO: костыль для игнорирование территории РФ для EXYRO3
             if cube_data.selected_cube['cube'] == 'EXYR03':
                 cube_data.terr_member = None
 
-                # TODO: убрать этот костыль
+                # TODO: костыль для верхного дефолтного значения BGLEVELS
                 for member in list(cube_data.members):
                     if member['cube_value'] == '09-12':
                         cube_data.members.remove(member)
@@ -705,7 +704,7 @@ def create_mdx_query(cube_data: CubeData, mdx_type='basic'):
         dim_tmp, dim_str_value = "[{}].[{}]", []
 
         for member in cube_data.members:
-            # TODO: костыль
+            # TODO: костыль для игнорирования ненужных элементов измерения KIF
             if member['dimension'] == 'KIF':
                 if member['score'] < 8:
                     continue
