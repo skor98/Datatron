@@ -5,8 +5,9 @@
 Специфическое для классификатора типов кубов
 """
 import re
+from itertools import chain
 
-from config import TEST_PATH_CUBE
+from config import TEST_PATH_CUBE, FEEDBACK_TESTS_FOLDER
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
 import logs_helper
 
@@ -59,11 +60,11 @@ def _get_cubes_tests_data():
 
     res = []
     CubesMap = {}
-    for line in get_folder_lines(TEST_PATH_CUBE):
+    for line in chain(get_folder_lines(TEST_PATH_CUBE), get_folder_lines(FEEDBACK_TESTS_FOLDER)):
         if line.startswith('*'):
             continue
 
-        req, answer = line.split(':')
+        req, answer = " ".join(line.split(':')[:-1]), line.split(':')[-1]
         answer = CUBE_RE.search(answer).group()
 
         if answer not in CubesMap:
