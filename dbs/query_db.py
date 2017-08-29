@@ -23,7 +23,7 @@ class UserQuery(Model):
     date = DateTimeField()
     request_id = CharField()
     user_id = CharField()
-    user_name = CharField()
+    user_name = CharField(null=True)
     platform = CharField()
     query = CharField()
     query_type = CharField()

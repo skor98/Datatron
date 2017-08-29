@@ -36,6 +36,11 @@ class CubeProcessor:
         CubeProcessor._boost_measures_of_correct_cube_from_clf(
             cube_data, correct_cube)
 
+        # увеличения скора элементов измерений
+        # CubeProcessor._boost_members_of_correct_cube_form_clf(
+        #     cube_data, correct_cube
+        # )
+
         cube_data_list = []
 
         if cube_data:
@@ -150,6 +155,24 @@ class CubeProcessor:
                 key=lambda elem: elem['score'],
                 reverse=True
             )
+
+    @staticmethod
+    def _boost_members_of_correct_cube_form_clf(
+            cube_data: CubeData,
+            correct_cube: tuple
+    ):
+        if correct_cube:
+            for member in cube_data.members:
+                if member['cube'] == correct_cube:
+                    member['score'] *= 1.25
+
+            cube_data.members = sorted(
+                cube_data.members,
+                key=lambda elem: elem['score'],
+                reverse=True
+            )
+
+
 
     @staticmethod
     def _get_several_cube_answers(cube_data: CubeData):

@@ -596,7 +596,10 @@ def process_cube_questions(
     is_input_text = (input_format == 'text')
 
     if cube_result.status:
-        form_feedback(message, request_id, cube_result, ans_confidence, not is_input_text)
+        form_feedback(
+            message, request_id, cube_result,
+            ans_confidence, not is_input_text
+        )
 
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             stats_pattern = (
@@ -626,28 +629,40 @@ def process_cube_questions(
         )
 
 
-def process_minfin_questions(message, minfin_result, ans_confidence, input_format):
+def process_minfin_questions(
+        message, minfin_result, ans_confidence, input_format
+):
     is_input_text = (input_format == 'text')
 
-    feedback_str = '{user_request}{confidence}`"{question}"`\n\n*Ответ*\n{answer}'
+    feedback_str = '{user_request}{confidence}{feedback}*Ответ*\n{answer}'
 
-    user_request = ''
-    confidence = '*Вопрос после обработки*\n'
-
-    if not is_input_text:
+    if is_input_text:
+        user_request = ''
+    else:
         user_request = '*Ваш вопрос*\n"{}"\n\n'.format(
             minfin_result.user_request
         )
 
-    if not ans_confidence:
+    if ans_confidence:
+        confidence = '*Вопрос после обработки*\n'
+    else:
         confidence = 'Возможно, вы хотели спросить: '
+
+    low_user_request = minfin_result.user_request.lower().replace('?', '')
+    low_minfin_question = minfin_result.question.lower().replace('?', '')
+
+    if low_user_request == low_minfin_question:
+        confidence = ''
+        feedback = ''
+    else:
+        feedback = '`"{}"`\n\n'.format(minfin_result.question)
 
     bot.send_message(
         message.chat.id,
         feedback_str.format(
             user_request=user_request,
             confidence=confidence,
-            question=minfin_result.question,
+            feedback=feedback,
             answer=minfin_result.full_answer),
         parse_mode='Markdown',
         reply_markup=constants.RESPONSE_QUALITY
@@ -705,9 +720,8 @@ def process_minfin_questions(message, minfin_result, ans_confidence, input_forma
                     caption=minfin_result.document_caption
                 )
 
-    # Отправлять голосовой ответ только в случае,
-    # если он отличается от полного
-    if minfin_result.short_answer != minfin_result.full_answer:
+    # Отправлять голосовой ответ только в случае, если он отличается от полного
+    if len(minfin_result.short_answer) != len(minfin_result.full_answer):
         bot.send_chat_action(message.chat.id, 'upload_audio')
         bot.send_voice(
             message.chat.id,

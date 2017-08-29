@@ -59,8 +59,12 @@ class DataRetrieving:
         if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
             user_request = user_request.lower().replace('?', '')
-            correct_answer_num = minfin_auto_wrong_tests.get(user_request, 0)
-            DataRetrieving._exact_minfin_answer_number = correct_answer_num
+
+            # сработает для формулировки с любым порядком слов
+            for key in minfin_auto_wrong_tests.keys():
+                if set(user_request) == set(key):
+                    correct_answer_num = minfin_auto_wrong_tests.get(key, 0)
+                    DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             core_answer.user_request,
@@ -176,7 +180,7 @@ class DataRetrieving:
         multiplier = MODEL_CONFIG["repetition_num_for_short_request"]
         request_len = len(norm_user_request.split())
 
-        if 1 < request_len <= short_question_threshold:
+        if request_len <= short_question_threshold:
             norm_user_request = ' '.join(
                 [norm_user_request.strip()] * multiplier
             )
