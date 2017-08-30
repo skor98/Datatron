@@ -13,6 +13,7 @@ from speechkit import SpeechException
 from speechkit import speech_to_text
 from manual_testing import get_jaccard
 
+
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):
     """
     Сохраняет пользовательский запрос как в самих логах,
@@ -125,7 +126,10 @@ class MessengerManager:
         for word in tokens:
             if word in constants.HELLO:
                 return random.choice(constants.HELLO_ANSWER)
-            elif word in constants.HOW_ARE_YOU:
+
+        for cur_const in constants.HOW_ARE_YOU:
+            cur_set = set(cur_const.split())
+            if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
                 return random.choice(constants.HOW_ARE_YOU_ANSWER)
 
         for cur_const in constants.WHO_YOU_ARE:

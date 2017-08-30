@@ -93,25 +93,23 @@ def send_request_to_server(mdx_query: str, cube: str):
     return api_response
 
 
-def form_feedback(mdx_query: str, cube: str, user_request: str):
+def form_feedback(mdx_query: str, user_request: str):
     """
     Формирование обратной связи по запросу
     для экспертной и обычной обратной связи
     """
 
-    mdx_query = mdx_query.upper()
     measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
     cube_p = re.compile(r'(?<=FROM \[)\w*')
     members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
 
     measure_value = measure_p.search(mdx_query).group()
-    # ToDo: происходит переопределение параметра cube
     cube = cube_p.search(mdx_query).group()
 
-    dims_vals = []
+    members = []
     for member in members_p.findall(mdx_query):
         member = member.split('.')
-        dims_vals.append(
+        members.append(
             {
                 'dim': member[0][1:-1],
                 'val': member[1][1:-1]
@@ -119,8 +117,9 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         )
 
     # Полные вербальные отражения значений измерений и меры
-    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val'])
-                                    for i in dims_vals]
+    full_verbal_dimensions_value = [
+        get_captions_for_dimensions(i['val']) for i in members
+        ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
@@ -128,7 +127,7 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
         'formal': {
             'cube': cube,
             'measure': measure_value,
-            'dims': dims_vals
+            'dims': members
         },
         'verbal': {
             'domain': get_cube_caption(cube),
@@ -142,6 +141,7 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
 
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
+
     return feedback
 
 
@@ -150,6 +150,7 @@ def get_pretty_feedback(mdx_query: str):
     Используя уже готовый MDX запрос возвращаем pretty_feedback
     """
     mdx_query = mdx_query.upper()
+
     measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
     cube_p = re.compile(r'(?<=FROM \[)\w*')
     members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
@@ -157,10 +158,10 @@ def get_pretty_feedback(mdx_query: str):
     measure_value = measure_p.search(mdx_query).group()
     cube = cube_p.search(mdx_query).group()
 
-    dims_vals = []
+    members = []
     for member in members_p.findall(mdx_query):
         member = member.split('.')
-        dims_vals.append(
+        members.append(
             {
                 'dim': member[0][1:-1],
                 'val': member[1][1:-1]
@@ -168,8 +169,9 @@ def get_pretty_feedback(mdx_query: str):
         )
 
     # Полные вербальные отражения значений измерений и меры
-    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val'])
-                                    for i in dims_vals]
+    full_verbal_dimensions_value = [
+        get_captions_for_dimensions(i['val']) for i in members
+        ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
@@ -588,7 +590,8 @@ def score_cube_question(cube_data: CubeData):
         cube_data.score['sum'] = sum((
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score,
             max_member_score if max_member_score else 0,
-            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score
+            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score,
+            cube_data.terr_member['score'] if cube_data.terr_member else 0
         ))
 
     # получение скоринг-модели
@@ -974,7 +977,39 @@ def check_real_territory_existence(cube_data: CubeData):
 
 
 def check_real_bglevel_existence(cube_data: CubeData):
-    pass
+    """
+    Проверяет, насколько найденные BGLEVELS соответствуют
+    реальному запросу
+    """
+    key_words_for_bglevels = {
+        '09-1': ('федеральный',),
+        '09-2': ('тгвф', 'консолидированный'),
+        '09-4': ('район', 'районный'),
+        '09-5': ('район', 'районный'),
+        '09-7': ('государственный', 'внебюджетный', 'фонд'),
+        '09-8': ('пенсионный', 'фонд'),
+        '09-9': ('фонд', 'социальный', 'страхование'),
+        '09-10': ('фонд', ),
+        '09-11': ('фонд', 'омс'),
+        '09-20': ('фонд', 'консолидированный'),
+        '09-24': ('поселение', 'сельский', 'село')
+    }
+
+    for member in list(cube_data.members):
+        if member['dimension'] == 'BGLEVELS':
+            bglevel = key_words_for_bglevels.get(
+                member['cube_value'], None
+            )
+
+            if bglevel and not all(kw in cube_data.norm_user_request for kw in bglevel):
+                cube_data.members.remove(member)
+                logging.info(
+                    "Query_ID: {}\tMessage: Элемент BGLEVELS {} "
+                    "был удален".format(
+                        cube_data.request_id,
+                        member['cube_value']
+                    )
+                )
 
 
 def ignore_improbable_members(cube_data: CubeData):
@@ -1075,16 +1110,13 @@ def ignore_improbable_members(cube_data: CubeData):
 
     SEVERAL_BGLEVELS = (
         '09-3',  # бюджет субъекта
-        '09-5',  # бюджет района
         '09-6',  # бюджет поселения
         '09-15',  # бюджет городского поселения
         '09-18',  # бюджет внутригородских муниципальных образований
         '09-19',  # местный бюджет
-        '09-20',  # консолидированный бюджет РФ (без фондов)
         '09-21',  # бюджет городского округа с внутригородским делением
         '09-22',  # бюджет внутригородского района
         '09-23',  # бюджет городского поселения
-        '09-24'  # бюджет сельского поселения
     )
 
     ELEMENTS_TO_IGNORE = TOO_LONG_ELEMS + SEVERAL_BGLEVELS

@@ -14,8 +14,9 @@ from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
 from core.support_library import FunctionExecutionErrorNoMembers
 import core.support_library as csl
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
+
+import logs_helper  # pylint: disable=unused-import
 
 
 class CubeProcessor:
@@ -44,6 +45,9 @@ class CubeProcessor:
         cube_data_list = []
 
         if cube_data:
+            # проверка на правдоподобность найденного уровня бюджета
+            csl.check_real_bglevel_existence(cube_data)
+
             # проверка на правдоподобность найденной территории
             csl.check_real_territory_existence(cube_data)
 
@@ -266,7 +270,6 @@ class CubeProcessor:
 
             feedback = csl.form_feedback(
                 item.mdx_query,
-                cube,
                 item.user_request
             )
 
