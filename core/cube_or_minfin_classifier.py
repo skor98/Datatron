@@ -4,9 +4,11 @@
 """
 Специфическое для классификатора куб/минфин
 """
+import logging
 
-from config import TEST_PATH_CUBE, TEST_PATH_MINFIN
+from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, LOG_LEVEL
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+from core.support_library import get_pretty_feedback
 import logs_helper
 
 
@@ -62,12 +64,27 @@ def _get_cube_or_minfin_tests_data():
             if line.startswith('*'):
                 continue
 
-            req = line.split(':')[0]
+            req = " ".join(line.split(':')[:-1])
             answer = class_ind
 
             req = req.lower()
             req = preprocess(req)
             res.append((req, answer))
+
+            # Добавим также pretty_feedback:
+            if class_ind == 0:
+                mdx_query = line.split(':')[-1]
+                try:
+                    # логгирование лучше выключить, иначе будет мусор
+                    logging.getLogger().setLevel(logging.ERROR)
+                    pretty_feedback = get_pretty_feedback(mdx_query)
+
+                    # Фидбек относится к тому же кубу, что и исходные данные, добавляем
+                    res.append((pretty_feedback, answer))
+                except:
+                    logging.error("Не могу получить pretty_feedback: {}".format(mdx_query))
+                finally:
+                    logging.getLogger().setLevel(logs_helper.string_to_log_level(LOG_LEVEL))
 
     return tuple(res), IndToClassName
 
@@ -85,6 +102,6 @@ def select_best_cube_or_minfin_clf():
     select_best_model(
         data,
         ind_to_class,
-        kfolds=10,
+        kfolds=8,
         config_prefix=CONFIG_PREFIX
     )

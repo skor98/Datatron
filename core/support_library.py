@@ -15,7 +15,6 @@ import requests
 
 from config import SETTINGS
 from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
-from config import FEEDBACK_TESTS_FOLDER
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
@@ -135,11 +134,6 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     }
 
     feedback['pretty_feedback'] = BackFeeder.prettify(cube, feedback['verbal'])
-
-    with open(path.join(FEEDBACK_TESTS_FOLDER, cube + '.txt'), 'a', encoding='utf-8') as file:
-        file.write(
-            '{}:{}\n'.format(feedback['pretty_feedback'], mdx_query)
-        )
 
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
