@@ -75,6 +75,7 @@ class CubeProcessor:
                 # доработка вариантов
                 for item in cube_data_list:
                     csl.select_measure_for_selected_cube(item)
+                    csl.preprocess_bglevels_member(item)
                     csl.preprocess_territory_member(item)
                     csl.score_cube_question(item)
 

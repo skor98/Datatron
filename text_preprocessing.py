@@ -55,7 +55,8 @@ class TextPreprocessing(object):
     ).union(
         "подсказать показать рассказать сказать пояснить объяснить".split()
     ).union(
-        "years bglevels kif kdgroups marks bifb territories months".split()
+        ("years bglevels kif kdgroups marks bifb "
+         "territories months rzpr value").split()
     )
 
     def __init__(self, log=True, label='NULL', **kwargs):

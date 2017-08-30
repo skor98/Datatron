@@ -385,7 +385,7 @@ def process_cube_answer(cube_answer, value):
     # Если формат для меры - 1, что означает процент
     elif value_format == 1:
         # Перевод округление
-        formatted_value = '{}%'.format(round(value, 5))
+        formatted_value = '{}%'.format(round(value, 3))
         cube_answer.formatted_response = formatted_value
 
     # Добавление к неформатированного результата
@@ -600,6 +600,15 @@ def score_cube_question(cube_data: CubeData):
     if score_model == 'sum':
         sum_scoring()
 
+def preprocess_bglevels_member(cube_data: CubeData):
+    """
+    Дополнительный фильтры на уровень бюджета
+    """
+
+    if not cube_data.terr_member:
+        for member in list(cube_data.members):
+            if member['cube_value'] == '09-12':
+                cube_data.members.remove(member)
 
 def preprocess_territory_member(cube_data: CubeData):
     """
@@ -615,11 +624,26 @@ def preprocess_territory_member(cube_data: CubeData):
                     member.pop('connected_value.member_cube_value', None)
         else:
             for member in cube_data.members:
-                if member['cube_value'] in ('09-1', '09-8', '09-9', '09-10', '09-20'):
+                bglevels_without_territory = (
+                    '09-1',
+                    '09-8',
+                    '09-9',
+                    '09-10',
+                    '09-20'
+                )
+
+                if member['cube_value'] in bglevels_without_territory:
                     cube_data.terr_member = None
 
             # TODO: костыль для игнорирование территории РФ для EXYRO3
-            if cube_data.selected_cube['cube'] in ('EXYR03', 'EXDO01'):
+            cube_to_apply_rule = (
+                'EXYR03',
+                'EXDO01',
+                'INDO01',
+                'INYR03'
+            )
+
+            if cube_data.selected_cube['cube'] in cube_to_apply_rule:
                 cube_data.terr_member = None
 
                 # TODO: костыль для верхного дефолтного значения BGLEVELS
@@ -708,7 +732,6 @@ def process_with_member_for_territory(cube_data: CubeData):
 
 def process_default_members(cube_data: CubeData):
     """Обработка дефолтных значений"""
-
     # используемые измерения на основе выдачи Solr,
     # а также измерения связанных элементов
     used_cube_dimensions = [elem['dimension'] for elem in cube_data.members]
@@ -982,17 +1005,17 @@ def check_real_bglevel_existence(cube_data: CubeData):
     реальному запросу
     """
     key_words_for_bglevels = {
-        '09-1': ('федеральный',),
-        '09-2': ('тгвф', 'консолидированный'),
-        '09-4': ('район', 'районный'),
-        '09-5': ('район', 'районный'),
-        '09-7': ('государственный', 'внебюджетный', 'фонд'),
-        '09-8': ('пенсионный', 'фонд'),
-        '09-9': ('фонд', 'социальный', 'страхование'),
-        '09-10': ('фонд', ),
-        '09-11': ('фонд', 'омс'),
-        '09-20': ('фонд', 'консолидированный'),
-        '09-24': ('поселение', 'сельский', 'село')
+        '09-1': ('федеральный', 'федбюджет', 'фб', 'фед-бюджет'),
+        '09-2': ('тгвф', ),
+        '09-4': ('район', ),
+        '09-5': ('район', ),
+        '09-7': ('внебюджетный', ),
+        '09-8': ('пенсионный', ),
+        '09-9': ('страхование', ),
+        '09-10': ('медицинский', 'омс', 'страхование',),
+        '09-11': ('медицинский', 'омс', 'страхование',),
+        '09-20': ('фонд', ),
+        '09-24': ('поселение', 'село')
     }
 
     for member in list(cube_data.members):
@@ -1001,7 +1024,7 @@ def check_real_bglevel_existence(cube_data: CubeData):
                 member['cube_value'], None
             )
 
-            if bglevel and not all(kw in cube_data.norm_user_request for kw in bglevel):
+            if bglevel and not any(kw in cube_data.norm_user_request for kw in bglevel):
                 cube_data.members.remove(member)
                 logging.info(
                     "Query_ID: {}\tMessage: Элемент BGLEVELS {} "
