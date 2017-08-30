@@ -15,16 +15,18 @@ import requests
 
 from config import SETTINGS
 from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
-from config import FEEDBACK_TESTS_FOLDER
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
+
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_default_member_for_dimension
 from kb.kb_support_library import get_representation_format
-import logs_helper  # pylint: disable=unused-import
+
 from model_manager import MODEL_CONFIG
 from nlp.feedback_maker import BackFeeder
+
+import logs_helper  # pylint: disable=unused-import
 
 
 class CubeData:
@@ -135,11 +137,6 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     }
 
     feedback['pretty_feedback'] = BackFeeder.prettify(cube, feedback['verbal'])
-
-    with open(path.join(FEEDBACK_TESTS_FOLDER, cube + '.txt'), 'a', encoding='utf-8') as file:
-        file.write(
-            '{}:{}\n'.format(feedback['pretty_feedback'], mdx_query)
-        )
 
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
@@ -900,3 +897,159 @@ def filter_cube_data_without_answer(cube_data_list: list):
         )
 
         return confidence
+
+
+def check_real_territory_existence(cube_data: CubeData):
+    """
+    Если найдена территория происходит проверка была ли
+    на самом деле территория в запросе. Решения проблемы
+    интерференции слов "автономный" и "федеральный" из
+    других элементов измерения с территорией
+    """
+
+    if cube_data.terr_member:
+        lem_key_words = cube_data.terr_member.get('lem_key_words', '')
+        lem_territory = cube_data.terr_member['lem_member_caption']
+
+        words_for_replacement = (
+            'республика',
+            'область',
+            'край',
+            'округ',
+            'автономный',
+            'федеральный'
+        )
+
+        for word in words_for_replacement:
+            lem_territory = lem_territory.replace(word, '')
+
+        lem_territory += ' {}'.format(lem_key_words)
+
+        count = 0
+        for word in lem_territory.split():
+            if word in cube_data.norm_user_request:
+                count += 1
+
+        if not count:
+            cube_data.terr_member = None
+
+
+def check_real_bglevel_existence(cube_data: CubeData):
+    pass
+
+
+def ignore_improbable_members(cube_data: CubeData):
+    """
+    Удаление из выдачи Solr элементов, которые вряд ли могли интересовать
+    пользователя
+    """
+
+    # элементы с caption более 7 слов
+    TOO_LONG_ELEMS = (
+        "05-15",
+        "05-39",
+        "05-40",
+        "05-41",
+        "05-20",
+        "05-34",
+        "05-36",
+        "05-26",
+        "05-28",
+        "05-37",
+        "05-42",
+        "14-342647",
+        "14-8359",
+        "14-413273",
+        "14-8360",
+        "14-413274",
+        "14-8362",
+        "14-413276",
+        "14-8376",
+        "14-405752",
+        "14-854482",
+        "14-409137",
+        "14-108129",
+        "14-8390",
+        "14-1203368",
+        "14-1203374",
+        "14-8393",
+        "14-853005",
+        "14-8394",
+        "14-850485",
+        "14-8413",
+        "14-872691",
+        "14-1203306",
+        "14-1203226",
+        "14-1203227",
+        "14-8431",
+        "14-8432",
+        "14-349155",
+        "14-1203248",
+        "14-413268",
+        "14-413267",
+        "22-108302",
+        "03-3",
+        "14-413257",
+        "10-153828",
+        "10-153889",
+        "10-153808",
+        "10-153827",
+        "10-155330",
+        "10-155786",
+        "10-153890",
+        "10-153891",
+        "10-153921",
+        "10-153771",
+        "10-154790",
+        "10-155791",
+        "10-153944",
+        "10-154947",
+        "10-154865",
+        "10-155279",
+        "10-154822",
+        "10-154791",
+        "10-155133",
+        "10-154984",
+        "10-154893",
+        "10-155357",
+        "10-154781",
+        "10-154919",
+        "10-154975",
+        "10-153946",
+        "10-154948",
+        "10-154976",
+        "10-154920",
+        "10-154823",
+        "10-154782",
+        "10-155358",
+        "10-154792",
+        "10-154866",
+        "10-155134",
+        "10-154985",
+        "10-155280",
+        "10-154894",
+        "10-155788",
+        "10-153923",
+        "03-5",
+        "03-42"
+    )
+
+    SEVERAL_BGLEVELS = (
+        '09-3',  # бюджет субъекта
+        '09-5',  # бюджет района
+        '09-6',  # бюджет поселения
+        '09-15',  # бюджет городского поселения
+        '09-18',  # бюджет внутригородских муниципальных образований
+        '09-19',  # местный бюджет
+        '09-20',  # консолидированный бюджет РФ (без фондов)
+        '09-21',  # бюджет городского округа с внутригородским делением
+        '09-22',  # бюджет внутригородского района
+        '09-23',  # бюджет городского поселения
+        '09-24'  # бюджет сельского поселения
+    )
+
+    ELEMENTS_TO_IGNORE = TOO_LONG_ELEMS + SEVERAL_BGLEVELS
+
+    for member in list(cube_data.members):
+        if member['cube_value'] in ELEMENTS_TO_IGNORE:
+            cube_data.members.remove(member)

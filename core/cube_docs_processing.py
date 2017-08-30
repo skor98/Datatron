@@ -44,23 +44,11 @@ class CubeProcessor:
         cube_data_list = []
 
         if cube_data:
+            # проверка на правдоподобность найденной территории
+            csl.check_real_territory_existence(cube_data)
 
-            # Удаление территории в том случае, если есть вероятность,
-            # что территория найдена по неключевым словам "автономный", "федеральный" и пр.
-            if cube_data.terr_member:
-                lem_key_words = cube_data.terr_member.get('lem_key_words', None)
-                lem_territory = cube_data.terr_member['lem_member_caption']
-                if lem_key_words:
-                    if lem_key_words not in cube_data.norm_user_request:
-                        if lem_territory.split()[0] not in cube_data.norm_user_request:
-                            cube_data.terr_member = None
-
-            # for member in list(cube_data.members):
-            #     if member['cube_value'] == '09-20':
-            #         cube_data.members.remove(member)
-            #     elif member['dimension'] == 'KDGROUPS' and member['score'] < 8:
-            #         cube_data.members.remove(member)
-
+            # удаление из найденных документов маловероятных
+            csl.ignore_improbable_members(cube_data)
 
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
