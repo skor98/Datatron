@@ -40,9 +40,9 @@ class ReHandler(TonitaHandler):
                  sep_right=True):
         if isinstance(regexp, str):
             if sep_left:
-                regexp = r'(?<!\w)' + regexp
+                regexp = r'(?<![\w-])' + regexp
             if sep_right:
-                regexp += r'(?!\w)'
+                regexp += r'(?![\w-])'
             regexp = re.compile(regexp, flags)
         self.regexp = regexp
 
