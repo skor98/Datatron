@@ -13,14 +13,13 @@ from nltk.corpus import stopwords
 from pymorphy2 import MorphAnalyzer
 import uuid
 
-# этот импорт убирать нельзя, иначе полетит логгирование
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
 
+import logs_helper  # pylint: disable=unused-import
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -51,9 +50,9 @@ class TextPreprocessing(object):
         'не такой сейчас'.split(),
         question_words
     ).union(
-        'подсказать также иной да нет'.split()
+        'также иной да нет'.split()
     ).union(
-        "подсказать показать сказать".split()
+        "подсказать показать рассказать сказать пояснить объяснить".split()
     )
 
     def __init__(self, log=True, label='NULL', **kwargs):
@@ -78,8 +77,6 @@ class TextPreprocessing(object):
 
     def normalize(self, text, request_id='<NoID>'):
         """Метод для нормализации текста"""
-
-        # TODO: обработка направильного спеллинга
 
         # Убираем плюсы-ударения
         if '\\+' in text:

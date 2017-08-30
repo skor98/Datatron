@@ -62,7 +62,7 @@ class DataRetrieving:
 
             # сработает для формулировки с любым порядком слов
             for key in minfin_auto_wrong_tests.keys():
-                if set(user_request) == set(key):
+                if set(user_request.split()) == set(key.split()):
                     correct_answer_num = minfin_auto_wrong_tests.get(key, 0)
                     DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
