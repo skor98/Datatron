@@ -83,6 +83,7 @@ class DataRetrieving:
             minfin_docs, cube_data = group_documents(
                 solr_response['docs'],
                 core_answer.user_request,
+                norm_user_request,
                 request_id
             )
 

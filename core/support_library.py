@@ -30,8 +30,9 @@ from nlp.feedback_maker import BackFeeder
 class CubeData:
     """Структура для данных передаваемых между узлами"""
 
-    def __init__(self, user_request='', request_id=''):
+    def __init__(self, user_request='', norm_user_request='', request_id=''):
         self.user_request = user_request
+        self.norm_user_request = norm_user_request
         self.request_id = request_id
         self.tree_path = None
         self.selected_cube = None
@@ -48,8 +49,9 @@ class CubeData:
 class MinfinData:
     """Промежуточная структура данных по Минфину"""
 
-    def __init__(self, user_request='', request_id=''):
+    def __init__(self, user_request='', norm_user_request='', request_id=''):
         self.user_request = user_request
+        self.norm_user_request = norm_user_request
         self.request_id = request_id
         self.documents = []
 
@@ -408,16 +410,27 @@ def select_measure_for_selected_cube(cube_data: CubeData):
                                 cube_data.members.remove(member)
 
 
-def group_documents(solr_documents: list, user_request: str, request_id: str):
+def group_documents(
+        solr_documents: list, user_request: str,
+        norm_user_request: str, request_id: str
+):
     """
     Разбитие найденных документы по переменным
     для различных типов вопросов
     """
 
     # Найденные документы по Минфин вопросам
-    minfin_data = MinfinData(user_request, request_id)
+    minfin_data = MinfinData(
+        user_request,
+        norm_user_request,
+        request_id
+    )
 
-    cube_data = CubeData(user_request, request_id)
+    cube_data = CubeData(
+        user_request,
+        norm_user_request,
+        request_id
+    )
 
     for doc in solr_documents:
         if doc['type'] == 'dim_member':
@@ -567,7 +580,7 @@ def preprocess_territory_member(cube_data: CubeData):
                     cube_data.terr_member = None
 
             # TODO: костыль для игнорирование территории РФ для EXYRO3
-            if cube_data.selected_cube['cube'] == 'EXYR03':
+            if cube_data.selected_cube['cube'] in ('EXYR03', 'EXDO01'):
                 cube_data.terr_member = None
 
                 # TODO: костыль для верхного дефолтного значения BGLEVELS
@@ -577,7 +590,9 @@ def preprocess_territory_member(cube_data: CubeData):
                         cube_data.members.append(
                             {
                                 'dimension': member['dimension'],
-                                'cube_value': '09-0'
+                                'cube_value': '09-0',
+                                'score': member['score'],
+                                'member_caption': 'все уровни'
                             }
                         )
 
@@ -680,6 +695,8 @@ def process_default_members(cube_data: CubeData):
                 'dimension': default_value['dimension_cube_value'],
                 'cube_value': default_value['member_cube_value']
             })
+
+            process_default_measures(cube_data)
 
 
 def process_default_measures(cube_data: CubeData):

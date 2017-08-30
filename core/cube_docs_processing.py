@@ -24,7 +24,7 @@ class CubeProcessor:
     """
 
     @staticmethod
-    def get_data(cube_data: CubeData, correct_cube: tuple=None):
+    def get_data(cube_data: CubeData, correct_cube: tuple = None):
         """API метод к работе с документами по кубам в ядре"""
         # уверенность ответа по кубам
         confidence = True
@@ -44,6 +44,24 @@ class CubeProcessor:
         cube_data_list = []
 
         if cube_data:
+
+            # Удаление территории в том случае, если есть вероятность,
+            # что территория найдена по неключевым словам "автономный", "федеральный" и пр.
+            if cube_data.terr_member:
+                lem_key_words = cube_data.terr_member.get('lem_key_words', None)
+                lem_territory = cube_data.terr_member['lem_member_caption']
+                if lem_key_words:
+                    if lem_key_words not in cube_data.norm_user_request:
+                        if lem_territory.split()[0] not in cube_data.norm_user_request:
+                            cube_data.terr_member = None
+
+            # for member in list(cube_data.members):
+            #     if member['cube_value'] == '09-20':
+            #         cube_data.members.remove(member)
+            #     elif member['dimension'] == 'KDGROUPS' and member['score'] < 8:
+            #         cube_data.members.remove(member)
+
+
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
@@ -169,8 +187,6 @@ class CubeProcessor:
                 key=lambda elem: elem['score'],
                 reverse=True
             )
-
-
 
     @staticmethod
     def _get_several_cube_answers(cube_data: CubeData):
