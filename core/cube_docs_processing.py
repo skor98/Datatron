@@ -65,15 +65,13 @@ class CubeProcessor:
                 # доработка вариантов
                 for item in cube_data_list:
                     csl.select_measure_for_selected_cube(item)
+                    csl.preprocess_territory_member(item)
                     csl.score_cube_question(item)
 
                 cube_data_list = CubeProcessor._take_best_cube_data(
                     cube_data_list, correct_cube[0])
 
                 for item in cube_data_list:
-                    # предобработка территорий
-                    csl.preprocess_territory_member(item)
-
                     # обработка связанных значений
                     csl.process_with_members(item)
 

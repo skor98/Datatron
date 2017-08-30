@@ -38,7 +38,7 @@ class Solr:
             'wt': 'json',
             'fl': '*,score',
             "bf": "sum(if(exists(lem_member_caption_len),recip(lem_member_caption_len,0.4,2,0),0)," +
-                  "if(exists(lem_question_len),recip(lem_question_len,1,5,2),0))",
+                  "if(exists(lem_question_len),recip(lem_question_len,0.7,5,2),0))",
             'defType': "edismax"  # тип парсера, этот самый мощный
         }
 
