@@ -66,7 +66,6 @@ MODEL_CONFIG_PATH = fixed_path("model.json")
 TEST_PATH_CUBE = fixed_path(path.join("tests", "cube"))
 TEST_PATH_MINFIN = fixed_path(path.join("tests", "minfin"))
 TEST_PATH_RESULTS = fixed_path(path.join("tests", "results"))
-FEEDBACK_TESTS_FOLDER = fixed_path(path.join("tests", "cubes_pretty"))
 
 DATA_PATH = fixed_path("data")
 

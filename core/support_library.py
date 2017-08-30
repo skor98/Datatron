@@ -99,11 +99,13 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     для экспертной и обычной обратной связи
     """
 
+    mdx_query = mdx_query.upper()
     measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
     cube_p = re.compile(r'(?<=FROM \[)\w*')
     members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
 
     measure_value = measure_p.search(mdx_query).group()
+    # ToDo: происходит переопределение параметра cube
     cube = cube_p.search(mdx_query).group()
 
     dims_vals = []
@@ -141,6 +143,43 @@ def form_feedback(mdx_query: str, cube: str, user_request: str):
     if logging.getLogger().isEnabledFor(logging.DEBUG):
         logging.debug("Получили фидбек {}".format(feedback))
     return feedback
+
+
+def get_pretty_feedback(mdx_query: str):
+    """
+    Используя уже готовый MDX запрос возвращаем pretty_feedback
+    """
+    mdx_query = mdx_query.upper()
+    measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
+    cube_p = re.compile(r'(?<=FROM \[)\w*')
+    members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
+
+    measure_value = measure_p.search(mdx_query).group()
+    cube = cube_p.search(mdx_query).group()
+
+    dims_vals = []
+    for member in members_p.findall(mdx_query):
+        member = member.split('.')
+        dims_vals.append(
+            {
+                'dim': member[0][1:-1],
+                'val': member[1][1:-1]
+            }
+        )
+
+    # Полные вербальные отражения значений измерений и меры
+    full_verbal_dimensions_value = [get_captions_for_dimensions(i['val'])
+                                    for i in dims_vals]
+    full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
+
+    # фидбек в удобном виде для конвертации в JSON-объект
+    verbal = {
+        'domain': get_cube_caption(cube),
+        'measure': full_verbal_measure_value,
+        'dims': full_verbal_dimensions_value
+    }
+
+    return BackFeeder.prettify(cube, verbal)
 
 
 def format_numerical(number: float):

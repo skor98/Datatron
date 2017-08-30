@@ -34,6 +34,7 @@ class TextPreprocessing(object):
     """
 
     default_params = {
+        'no_lem': _mc_get("normalization_no_lem_default"),
         'delete_digits': _mc_get("normalization_delete_digits_default"),
         'delete_question_words': _mc_get("normalization_delete_question_words_default"),
         'delete_repeatings': _mc_get("normalization_delete_repeatings_default"),
@@ -64,13 +65,21 @@ class TextPreprocessing(object):
         self.stop_words = TextPreprocessing.default_stop_words
 
         self.params = TextPreprocessing.default_params.copy()
-        for param in kwargs:
-            val = kwargs[param]
+        for param, val in kwargs.items():
             if param in self.params and isinstance(val, bool):
                 self.params[param] = val
+            elif param == 'stop_words':
+                if isinstance(val, str):
+                    val = val.split()
+                if isinstance(val, (list, set, tuple)):
+                    self.stop_words = set(val)
 
-        self.lemmatize = TextPreprocessing._pymorphy_lem
-        self.lemmatizer_name = 'pymorphy/nltk'
+        if not self.no_lem:
+            self.lemmatizer = TextPreprocessing._pymorphy_lem
+            self.lemmatizer_name = 'pymorphy/nltk'
+        else:
+            self.lemmatizer = nlp_utils.advanced_tokenizer
+            self.lemmatizer_name = 'nltk'
 
         if self.log:
             logging.info(self.setup_str)
@@ -88,7 +97,7 @@ class TextPreprocessing(object):
         text = TextPreprocessing._filter_symbols(text)
 
         # Токенизируем и лемматизируем
-        tokens = self.lemmatize(text)
+        tokens = self.lemmatizer(text)
 
         # Парсинг всего
         if self.combined_parser is not None:
@@ -149,11 +158,23 @@ class TextPreprocessing(object):
         af_str = 'дополнительные фильтры неактивны'
         if self.active_params:
             af_str = 'активные фильтры — {}'.format(', '.join(self.active_params))
-        return '[TextPP {}] Параметры: NLP ведётся через {}; {}'.format(
+
+        if not self.stop_words:
+            cust_sw_str = 'нет фильтрации стоп-слов'
+        elif self.stop_words != self.default_stop_words:
+            cust_sw_str = 'список стоп-слов задан отдельно ({} элементов)'.format(len(self.stop_words))
+        else:
+            cust_sw_str = 'список стоп-слов загружен из nltk'
+
+        return '[TextPP {}] Параметры: NLP ведётся через {}; {}; {}'.format(
             self.u_name,
             self.lemmatizer_name,
+            cust_sw_str,
             af_str
         )
+        
+    def __repr__(self):
+        return '<{}>'.format(self.setup_str)
 
     def __getattr__(self, attr):
         res = self.params.get(attr, None)
@@ -201,7 +222,7 @@ class TextPreprocessing(object):
             '%': 'процент',
             '$': 'доллар',
             '€': 'евро',
-            '£': 'фунт стерлинглв',
+            '£': 'фунт стерлингов',
             '₽': 'рубль',
         }
         for symb, repl in symbols.items():

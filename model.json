@@ -21,6 +21,7 @@
     "model_cube_clf_type": "GradientBoosting",
     "model_cube_or_minfin_clf_reg": 10,
     "model_cube_or_minfin_clf_type": "SVM",
+    "normalization_no_lem_default": false,
     "normalization_delete_digits_default": false,
     "normalization_delete_question_words_default": true,
     "normalization_delete_repeatings_default": true,

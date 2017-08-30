@@ -83,10 +83,10 @@ last_re = r'(?P<last> (?:поза[-\s_]?)* (?:{}))'.format('|'.join(last_kw))
 next_re = r'(?P<next_> (?:после[-\s_]?)* (?:{}))'.format('|'.join(next_kw))
 rel_re = r'''
     (?: {}[\s_])?
-    (?:{}|{}|{})[\s_]
-    (?P<unit>{})
+    (?: {}|{}|{})[\s_]
+    (?: (?P<unit>{}) | (?P<month>{}) | (?P<season>{}) )
     '''.format(
-    points_re, current_re, last_re, next_re, anyunit)
+    points_re, current_re, last_re, next_re, anyunit, anymonth, anyseason)
 
 interval_re = r'''
     (?P<pr>через[\s_])?
@@ -103,7 +103,7 @@ _yearformat = r'''
     (?: [\s_] год)?'''
 
 dateformat_re = r'''
-    (?:{}|{}) [.,/_\s\-]
+    (?:{} \s | {} [.,/_\s\-] )?
     {} [.,/_\s\-]
     {}
     '''.format(points_re, _dayformat, _monthformat, _yearformat)
@@ -123,9 +123,10 @@ shortyear_re = r'(?P<month>{}) [\s_] (?P<year>\d\d)'.format(anymonth)
 
 
 @time_tp.set_handler(ReHandler, regexp=rel_re, flags=98)
-def rel_h(point, begin, last, next_, unit):
-    u_len = unit_lens.get(unit, 1)
+def rel_h(point, begin, last, next_, unit, month, season):
     begin = begin is not None
+    u_len = unit_lens.get(unit, 12)
+
     newdate = datetime.today()
     if last is not None:
         sum_len = u_len * (last.count('поза') + 1)
@@ -133,7 +134,17 @@ def rel_h(point, begin, last, next_, unit):
     elif next_ is not None:
         sum_len = u_len * (next_.count('после') + 1)
         newdate = mod_date(newdate, sum_len)
+
+    if season is not None:
+        month = season_h(season, begin)
+        begin = False
+    if month is not None:
+        month = norm_months.index(month) + 1
+        newdate = datetime(year=newdate.year, month=month, day=1)
+        u_len = 1
+        
     newdate = process_units(newdate, u_len, begin)
+    
     nomonth = u_len == 12 and point is None
     return date_to_text(newdate, nomonth=nomonth)
 
@@ -191,7 +202,7 @@ def date_h(day, month, year, begin):
         month = norm_months.index(month) + 1
     begin = begin is not None
     if not begin:
-        begin = day and day <= 15
+        begin = day is not None and day <= 15
     year = max(min(year, 3000), 1)
     newdate = datetime(month=month, year=year, day=1)
     newdate = process_units(newdate, 1, begin)
