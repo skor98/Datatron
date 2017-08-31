@@ -89,6 +89,14 @@ class DataRetrieving:
                 clf.predict_proba(core_answer.user_request)
             )[0]
 
+            # ручная проверка, актуальная для вопросов по pretty_feedback
+            clf_status, cube = DataRetrieving._manual_cube_classification(
+                core_answer.user_request
+            )
+
+            if clf_status:
+                best_prediction = (cube, 1)
+
             cube_answers, cube_confidence = CubeProcessor.get_data(cube_data, best_prediction)
 
             logging.info(
@@ -238,6 +246,14 @@ class DataRetrieving:
         clf = CubeOrMinfinClassifier.inst()
         prediction = tuple(clf.predict_proba(user_request))[0]
         ans_type = prediction[0].lower()
+
+        # ручная проверка, актуальная для вопросов по pretty_feedback
+        clf_status, cube = DataRetrieving._manual_cube_classification(
+            user_request
+        )
+
+        if clf_status:
+            ans_type = 'cube'
 
         if all_answers[0].type != ans_type:
             for elem in list(all_answers):
@@ -440,3 +456,23 @@ class DataRetrieving:
                 len(more_cube_answers),
                 len(more_minfin_answers)
             ))
+
+    @staticmethod
+    def _manual_cube_classification(user_request: str):
+        key_words_to_cube = {
+            "Основные показатели субъектов РФ": "CLDO02",
+            "Источники финансирования": "FSYR01",
+            "Оперативные расходы": "EXDO01",
+            "Годовые расходы": "EXYR03",
+            "Оперативные доходы": "INDO01",
+            "Основные характеристики федерального бюджета": "CLDO01",
+            "Годовые доходы": "INYR03",
+            "Госдолг РФ": "CLMR02"
+        }
+
+        for key, value in key_words_to_cube.items():
+            if user_request.startswith(key):
+                return True, value
+
+        return False, None
+
