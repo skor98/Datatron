@@ -500,8 +500,6 @@ def callback_inline(call):
         process_look_also_request(call, 4)
     elif call.data == 'look_also_5':
         process_look_also_request(call, 5)
-    elif call.data == 'process_look_also':
-        pass
 
 
 def send_admin_messages():
@@ -666,10 +664,7 @@ def process_minfin_questions(
     else:
         confidence = 'Возможно, вы хотели спросить: '
 
-    low_user_request = minfin_result.user_request.lower().replace('?', '')
-    low_minfin_question = minfin_result.question.lower().replace('?', '')
-
-    if low_user_request == low_minfin_question:
+    if request_equality(minfin_result):
         confidence = ''
         feedback = ''
     else:
@@ -749,6 +744,30 @@ def process_minfin_questions(
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
         bot.send_message(message.chat.id, 'Score: {}'.format(minfin_result.score))
+
+
+def request_equality(minfin_result):
+    """
+    Равенство заданного и найденного вопроса
+    """
+
+    chars_to_replace = {
+        '?': '',
+        ',': '',
+        '"': '',
+        '.': '',
+        '!': '',
+        'ё': 'е'
+    }
+
+    low_user_request = minfin_result.user_request.lower()
+    low_minfin_question = minfin_result.question.lower()
+
+    for key, value in chars_to_replace.items():
+        low_user_request = low_user_request.replace(key, value)
+        low_minfin_question = low_minfin_question.replace(key, value)
+
+    return bool(low_user_request == low_minfin_question)
 
 
 def form_feedback(
