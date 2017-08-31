@@ -824,7 +824,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
     return '*{}*\n`{}`'.format(title, verbal_str)
 
 
-def loof_also_for_cube(cube_result):
+def look_also_for_cube(cube_result):
     feedback = cube_result.feedback.get('pretty_feedback', '...')
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -841,7 +841,7 @@ def loof_also_for_cube(cube_result):
 
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
-        return loof_also_for_cube(answer)
+        return look_also_for_cube(answer)
     else:
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             return '{} ({}: {})'.format(
