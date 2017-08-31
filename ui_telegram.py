@@ -149,14 +149,14 @@ def send_help(message):
 def get_query_examples(message):
     try:
         possible_queries = get_good_queries(count=5)
-        message_str = "Вы *можете спросить*\n{}"
-        possible_queries = ['- {}\n'.format(query) for query in possible_queries]
 
         bot.send_message(
             message.chat.id,
-            message_str.format(''.join(possible_queries)),
+            "Вы *можете спросить:*",
             parse_mode='Markdown',
-            reply_markup=see_more_buttons_dynamic(5)
+            reply_markup=idea_dynamic_buttons(
+                possible_queries
+            )
         )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
@@ -475,29 +475,21 @@ def callback_inline(call):
             'https://youtu.be/swok2pcFtNI'
         )
     elif call.data == 'correct_response':
-        request_id = call.message.text.split()[-1]
         bot.answer_callback_query(
             callback_query_id=call.id,
             show_alert=False,
             text=constants.MSG_USER_SAID_CORRECT_ANSWER
         )
 
-        logging.info('Query_ID: {}\tКорректность: {}'.format(
-            request_id,
-            '+'
-        ))
+        logging.info('Корректность: {}'.format('+'))
     elif call.data == 'incorrect_response':
-        request_id = call.message.text.split()[-1]
         bot.answer_callback_query(
             callback_query_id=call.id,
             show_alert=False,
             text=constants.MSG_USER_SAID_INCORRECT_ANSWER
         )
 
-        logging.info('Query_ID: {}\tКорректность: {}'.format(
-            request_id,
-            '-'
-        ))
+        logging.info('Корректность: {}'.format('-'))
     elif call.data == 'look_also_1':
         process_look_also_request(call, 1)
     elif call.data == 'look_also_2':
@@ -508,6 +500,8 @@ def callback_inline(call):
         process_look_also_request(call, 4)
     elif call.data == 'look_also_5':
         process_look_also_request(call, 5)
+    elif call.data == 'process_look_also':
+        pass
 
 
 def send_admin_messages():
@@ -891,6 +885,24 @@ def see_more_buttons_dynamic(number_of_questions):
 
     return json.dumps({
         'inline_keyboard': [buttons]
+    })
+
+
+def idea_dynamic_buttons(questions: list):
+    """Динамическая клавиатура для смотри также"""
+
+    buttons = []
+    for idx, question in enumerate(questions):
+        buttons.append(
+            [{
+                'text': question
+            }]
+        )
+
+    buttons.append([{'text': '/idea'}])
+
+    return json.dumps({
+        'keyboard': buttons
     })
 
 
