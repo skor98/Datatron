@@ -17,15 +17,20 @@ class BackFeeder(object):
     @staticmethod
     def prettify(cube, verbal_feedback):
         mask = CubeMasks.get_mask(cube)
-        prepr_feedback = BackFeeder._preprocess_fb(verbal_feedback)
+        prepr_feedback = BackFeeder._preprocess_fb(cube, verbal_feedback)
         pretty = BackFeeder._make_phrase(mask, prepr_feedback)
-        logging.info('Обратная связь для ответа из куба {}: {}'.format(
-                cube, pretty.replace('\n', '\t')
-        ))
+
+        # logging.info(
+        #     'Обратная связь для ответа из куба {}: {}'.format(
+        #         cube,
+        #         pretty.replace('\n', '\t')
+        #     )
+        # )
+
         return pretty
 
     @staticmethod
-    def _preprocess_fb(verbal_feedback):
+    def _preprocess_fb(cube, verbal_feedback):
         """
         Преобразование для дальнейшего парсинга словаря с вербальными значениями измерений.
         Здесь же обрабатываются замены отдельных значений на более удобные.
@@ -41,14 +46,19 @@ class BackFeeder(object):
             res['мера'] = None
         else:
             res['мера'] = verbal_feedback.get('measure')
+            
+        if 'месяц' not in res and cube == 'CLDO02':
+            if str(res.get('год')) == '2017':
+                res['месяц'] = 'июль'
+            else:
+                res['месяц'] = 'декабрь'
 
-        if 'месяц' in res and 'год' in res:
-            res['месгод'] = '{} {} года'.format(
-                res.get('месяц'), res.get('год'))
+        if 'месяц' in res:
+            if 'год' not in res:
+                res['год'] = '2017'
+            res['месгод'] = '{} {} года'.format(res.get('месяц'), res.get('год'))
         elif 'год' in res:
             res['месгод'] = '{} год'.format(res.get('год'))
-        elif 'месяц' in res:
-            res['месгод'] = res.get('месяц')
 
         return {key: Phrase(res[key]) for key in res if res[key] is not None}
 

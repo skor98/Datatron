@@ -31,7 +31,7 @@ from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
 import logs_helper
 from model_manager import MODEL_CONFIG
-from model_manager import save_default_model, set_default_model, restore_default_model
+from model_manager import set_default_model, restore_default_model
 
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)

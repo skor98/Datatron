@@ -149,14 +149,14 @@ def send_help(message):
 def get_query_examples(message):
     try:
         possible_queries = get_good_queries(count=5)
-        message_str = "Вы *можете спросить*\n{}"
-        possible_queries = ['- {}\n'.format(query) for query in possible_queries]
 
         bot.send_message(
             message.chat.id,
-            message_str.format(''.join(possible_queries)),
+            "Вы *можете спросить:*",
             parse_mode='Markdown',
-            reply_markup=see_more_buttons_dynamic(5)
+            reply_markup=idea_dynamic_buttons(
+                possible_queries
+            )
         )
     except Exception as err:
         catch_bot_exception(message, "/idea", err)
@@ -181,6 +181,8 @@ def get_queries_logs(message):
     """
     Возвращает запросы к ядру текущего пользователя
     """
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         time_span = None
         try:
@@ -222,6 +224,8 @@ def get_all_queries_logs(message):
     """
     Возвращает все запросы к ядру
     """
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         time_span = None
         try:
@@ -260,12 +264,17 @@ def get_all_queries_logs(message):
 
 @bot.message_handler(commands=['getlog'])
 def get_all_logs(message):
+    """Отправляет файл с логами"""
+    if not is_has_admin_rights(message.chat.id):
+        return
     with open(LOGS_PATH, 'rb') as log_file:
         bot.send_document(message.chat.id, data=log_file)
 
 
 @bot.message_handler(commands=['getsessionlog'])
 def get_session_logs(message):
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         time_span = None
         try:
@@ -304,6 +313,8 @@ def get_session_logs(message):
 
 @bot.message_handler(commands=['getinfolog'])
 def get_all_info_logs(message):
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         send_log(message, "info", "/getinfolog")
     except Exception as err:
@@ -312,6 +323,8 @@ def get_all_info_logs(message):
 
 @bot.message_handler(commands=['getwarninglog'])
 def get_all_warning_logs(message):
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         send_log(message, "warning", "/getwarninglog")
     except Exception as err:
@@ -353,6 +366,8 @@ def leave_feedback(message):
 
 @bot.message_handler(commands=['getfeedback'])
 def get_user_feedbacks(message):
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         fbs = get_feedbacks()
         if fbs:
@@ -369,6 +384,8 @@ def what_cube_handler(message):
     Позволяет протестировать как ведёт себя классификатор типов кубов на сервере
     /whatcube Цели разработки бюджетного прогноза РФ
     """
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         clf = CubeClassifier.inst()
         req = " ".join(message.text.split()[1:])
@@ -387,6 +404,8 @@ def what_type_handler(message):
     Позволяет протестировать как ведёт себя классификатор куб/минфин на сервере
     /whattype Цели разработки бюджетного прогноза РФ
     """
+    if not is_has_admin_rights(message.chat.id):
+        return
     try:
         clf = CubeOrMinfinClassifier.inst()
         req = " ".join(message.text.split()[1:])
@@ -456,29 +475,21 @@ def callback_inline(call):
             'https://youtu.be/swok2pcFtNI'
         )
     elif call.data == 'correct_response':
-        request_id = call.message.text.split()[-1]
         bot.answer_callback_query(
             callback_query_id=call.id,
             show_alert=False,
             text=constants.MSG_USER_SAID_CORRECT_ANSWER
         )
 
-        logging.info('Query_ID: {}\tКорректность: {}'.format(
-            request_id,
-            '+'
-        ))
+        logging.info('Корректность: {}'.format('+'))
     elif call.data == 'incorrect_response':
-        request_id = call.message.text.split()[-1]
         bot.answer_callback_query(
             callback_query_id=call.id,
             show_alert=False,
             text=constants.MSG_USER_SAID_INCORRECT_ANSWER
         )
 
-        logging.info('Query_ID: {}\tКорректность: {}'.format(
-            request_id,
-            '-'
-        ))
+        logging.info('Корректность: {}'.format('-'))
     elif call.data == 'look_also_1':
         process_look_also_request(call, 1)
     elif call.data == 'look_also_2':
@@ -489,6 +500,8 @@ def callback_inline(call):
         process_look_also_request(call, 4)
     elif call.data == 'look_also_5':
         process_look_also_request(call, 5)
+    elif call.data == 'process_look_also':
+        pass
 
 
 def send_admin_messages():
@@ -503,6 +516,11 @@ def send_admin_messages():
                     admin_id
                 )
             )
+
+
+def is_has_admin_rights(user_id):
+    """Проверяет, что у пользователя есть права администратора"""
+    return user_id in SETTINGS.TELEGRAM.ADMIN_IDS
 
 
 def process_response(message, input_format='text', file_content=None):
@@ -739,7 +757,7 @@ def form_feedback(
 ):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nID зароса: {query_id}'
+        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}'
     )
     separator = ''
     expert_str = ''
@@ -778,7 +796,6 @@ def form_feedback(
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
         time_data_relevance=data_relevance,
-        query_id=request_id,
         pretty_feed=pretty_feed
     )
 
@@ -825,7 +842,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
     return '*{}*\n`{}`'.format(title, verbal_str)
 
 
-def loof_also_for_cube(cube_result):
+def look_also_for_cube(cube_result):
     feedback = cube_result.feedback.get('pretty_feedback', '...')
 
     if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
@@ -842,7 +859,7 @@ def loof_also_for_cube(cube_result):
 
 def answer_to_look_also_format(answer):
     if answer.type == 'cube':
-        return loof_also_for_cube(answer)
+        return look_also_for_cube(answer)
     else:
         if SETTINGS.TELEGRAM.ENABLE_ADMIN_MESSAGES:
             return '{} ({}: {})'.format(
@@ -868,6 +885,24 @@ def see_more_buttons_dynamic(number_of_questions):
 
     return json.dumps({
         'inline_keyboard': [buttons]
+    })
+
+
+def idea_dynamic_buttons(questions: list):
+    """Динамическая клавиатура для смотри также"""
+
+    buttons = []
+    for idx, question in enumerate(questions):
+        buttons.append(
+            [{
+                'text': question
+            }]
+        )
+
+    buttons.append([{'text': '/idea'}])
+
+    return json.dumps({
+        'keyboard': buttons
     })
 
 

@@ -14,8 +14,9 @@ from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
 from core.support_library import FunctionExecutionErrorNoMembers
 import core.support_library as csl
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
+
+import logs_helper  # pylint: disable=unused-import
 
 
 class CubeProcessor:
@@ -24,7 +25,7 @@ class CubeProcessor:
     """
 
     @staticmethod
-    def get_data(cube_data: CubeData, correct_cube: tuple=None):
+    def get_data(cube_data: CubeData, correct_cube: tuple = None):
         """API метод к работе с документами по кубам в ядре"""
         # уверенность ответа по кубам
         confidence = True
@@ -44,6 +45,15 @@ class CubeProcessor:
         cube_data_list = []
 
         if cube_data:
+            # проверка на правдоподобность найденного уровня бюджета
+            csl.check_real_bglevel_existence(cube_data)
+
+            # проверка на правдоподобность найденной территории
+            csl.check_real_territory_existence(cube_data)
+
+            # удаление из найденных документов маловероятных
+            csl.ignore_improbable_members(cube_data)
+
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
@@ -65,15 +75,14 @@ class CubeProcessor:
                 # доработка вариантов
                 for item in cube_data_list:
                     csl.select_measure_for_selected_cube(item)
+                    csl.preprocess_bglevels_member(item)
+                    csl.preprocess_territory_member(item)
                     csl.score_cube_question(item)
 
                 cube_data_list = CubeProcessor._take_best_cube_data(
                     cube_data_list, correct_cube[0])
 
                 for item in cube_data_list:
-                    # предобработка территорий
-                    csl.preprocess_territory_member(item)
-
                     # обработка связанных значений
                     csl.process_with_members(item)
 
@@ -172,8 +181,6 @@ class CubeProcessor:
                 reverse=True
             )
 
-
-
     @staticmethod
     def _get_several_cube_answers(cube_data: CubeData):
         """Формирование нескольких ответов по кубам"""
@@ -264,7 +271,6 @@ class CubeProcessor:
 
             feedback = csl.form_feedback(
                 item.mdx_query,
-                cube,
                 item.user_request
             )
 

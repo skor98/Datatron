@@ -40,14 +40,8 @@ class DataRetrieving:
 
     TPP = TextPreprocessing(label='DATRET', delete_question_words=False)
 
-    # номер потенциально верного ответа по Минфину
-    _exact_minfin_answer_number = 0
-
     # хранение данных в памяти
     _minfin_auto_wrong_data = None
-
-    # уверенность
-    _confidence = True
 
     @staticmethod
     def get_data(user_request: str, request_id: str):
@@ -55,6 +49,8 @@ class DataRetrieving:
 
         core_answer = CoreAnswer()
         core_answer.user_request = user_request
+
+        correct_answer_num = 0
 
         if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
@@ -64,7 +60,6 @@ class DataRetrieving:
             for key in minfin_auto_wrong_tests.keys():
                 if set(user_request.split()) == set(key.split()):
                     correct_answer_num = minfin_auto_wrong_tests.get(key, 0)
-                    DataRetrieving._exact_minfin_answer_number = correct_answer_num
 
         norm_user_request = DataRetrieving._preprocess_user_request(
             core_answer.user_request,
@@ -83,6 +78,7 @@ class DataRetrieving:
             minfin_docs, cube_data = group_documents(
                 solr_response['docs'],
                 core_answer.user_request,
+                norm_user_request,
                 request_id
             )
 
@@ -94,7 +90,6 @@ class DataRetrieving:
             )[0]
 
             cube_answers, cube_confidence = CubeProcessor.get_data(cube_data, best_prediction)
-            DataRetrieving._confidence = cube_confidence
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -104,9 +99,18 @@ class DataRetrieving:
                 )
             )
 
-            answers = DataRetrieving._sort_answers(minfin_answers, cube_answers)
+            answers = DataRetrieving._sort_answers(
+                minfin_answers,
+                cube_answers,
+                correct_answer_num
+            )
 
-            DataRetrieving._format_core_answer(answers, request_id, core_answer)
+            DataRetrieving._format_core_answer(
+                answers,
+                request_id,
+                core_answer,
+                cube_confidence
+            )
         else:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
@@ -123,7 +127,7 @@ class DataRetrieving:
                 TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
             )
 
-            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8-sig') as file:
+            with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
                 DataRetrieving._minfin_auto_wrong_data = json.loads(file.read())
 
         return DataRetrieving._minfin_auto_wrong_data
@@ -197,7 +201,7 @@ class DataRetrieving:
         return norm_user_request
 
     @staticmethod
-    def _sort_answers(minfin_answers: list, cube_answers: list):
+    def _sort_answers(minfin_answers: list, cube_answers: list, correct_answer_num: str):
         """Совокупное ранжирование ответов по кубам и минфину"""
 
         # Если по минфину найден только 1 ответ
@@ -219,7 +223,10 @@ class DataRetrieving:
             DataRetrieving._first_place_right_type(all_answers)
 
             if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
-                DataRetrieving._first_place_exact_minfin_answer(all_answers)
+                DataRetrieving._first_place_exact_minfin_answer(
+                    all_answers,
+                    correct_answer_num
+                )
 
         return all_answers
 
@@ -254,8 +261,7 @@ class DataRetrieving:
             )
 
     @staticmethod
-    def _first_place_exact_minfin_answer(all_answers: list):
-        correct_number = DataRetrieving._exact_minfin_answer_number
+    def _first_place_exact_minfin_answer(all_answers: list, correct_number: str):
         if correct_number:
             for answer in list(all_answers):
                 if (answer.type == 'minfin' and
@@ -286,7 +292,12 @@ class DataRetrieving:
                     break
 
     @staticmethod
-    def _format_core_answer(answers: list, request_id: str, core_answer: CoreAnswer):
+    def _format_core_answer(
+            answers: list,
+            request_id: str,
+            core_answer: CoreAnswer,
+            cube_confidence: str
+    ):
         """Формирование структуры финального ответа"""
 
         # Предельное количество "смотри также"
@@ -296,7 +307,8 @@ class DataRetrieving:
             DataRetrieving._process_main_answer(
                 core_answer,
                 answers,
-                request_id
+                request_id,
+                cube_confidence
             )
 
             starting_from = 1
@@ -316,7 +328,8 @@ class DataRetrieving:
     def _process_main_answer(
             core_answer: CoreAnswer,
             answers: list,
-            request_id: str
+            request_id: str,
+            cube_confidence: str
     ):
         """Форматирование главного ответа"""
 
@@ -326,7 +339,7 @@ class DataRetrieving:
         # Если главный ответ по кубам
         if isinstance(core_answer.answer, CubeAnswer):
             core_answer.status = True
-            core_answer.confidence = DataRetrieving._confidence
+            core_answer.confidence = cube_confidence
 
             logging.info(
                 "Query_ID: {}\tMessage: Главный ответ - "

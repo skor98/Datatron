@@ -5,10 +5,11 @@
 Специфическое для классификатора типов кубов
 """
 import re
-from itertools import chain
+import logging
 
-from config import TEST_PATH_CUBE, FEEDBACK_TESTS_FOLDER
+from config import TEST_PATH_CUBE, LOG_LEVEL
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model
+from core.support_library import get_pretty_feedback
 import logs_helper
 
 
@@ -60,12 +61,12 @@ def _get_cubes_tests_data():
 
     res = []
     CubesMap = {}
-    for line in chain(get_folder_lines(TEST_PATH_CUBE), get_folder_lines(FEEDBACK_TESTS_FOLDER)):
+    for line in get_folder_lines(TEST_PATH_CUBE):
         if line.startswith('*'):
             continue
 
-        req, answer = " ".join(line.split(':')[:-1]), line.split(':')[-1]
-        answer = CUBE_RE.search(answer).group()
+        req, mdx_query = " ".join(line.split(':')[:-1]), line.split(':')[-1]
+        answer = CUBE_RE.search(mdx_query).group()
 
         if answer not in CubesMap:
             if not CubesMap:
@@ -76,6 +77,19 @@ def _get_cubes_tests_data():
         answer = CubesMap[answer]
         req = preprocess(req)
         res.append((req, answer))
+
+        # Добавим также красивый фидбек данного запроса
+        try:
+            # логгирование лучше выключить, иначе будет мусор
+            logging.getLogger().setLevel(logging.ERROR)
+            pretty_feedback = get_pretty_feedback(mdx_query)
+
+            # Фидбек относится к тому же кубу, что и исходные данные, добавляем
+            res.append((pretty_feedback, answer))
+        except:
+            logging.error("Не могу получить красивый фидбек по {}".format(mdx_query))
+        finally:
+            logging.getLogger().setLevel(logs_helper.string_to_log_level(LOG_LEVEL))
     BackCubesMap = {CubesMap[i]: i for i in CubesMap}
     return tuple(res), BackCubesMap
 
@@ -93,6 +107,6 @@ def select_best_cube_clf():
     select_best_model(
         data,
         ind_to_class,
-        kfolds=40,
+        kfolds=30,
         config_prefix=CONFIG_PREFIX
     )

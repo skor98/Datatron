@@ -6,9 +6,12 @@ Created on Fri Aug 18 01:02:02 2017
 @author: larousse
 """
 
+import logging
 from itertools import chain, zip_longest
-
+from pymorphy2 import MorphAnalyzer
 from nlp.tonita_parser import TonitaParser, ReHandler
+
+logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
 num_tp = TonitaParser()
 
@@ -16,6 +19,13 @@ num_tp.create_handler(
     ReHandler,
     regexp=r'(\d+)[-–—](\d+)',
     sub=r'\1 \2',
+    flags=98
+)
+
+num_tp.create_handler(
+    ReHandler,
+    regexp=r'(\d*),(\d+)',
+    sub=r'\1.\2',
     flags=98
 )
 
@@ -79,10 +89,9 @@ revdict = dict(
 def _anything(start=0, end=10**13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
-
 _thousands_re = r'''
    (?:
-    (?P<m_num> {} | (\d+ [.,] )?\d+) [\s_] (?: {})
+    (?P<m_num> {} | (\d+ \. )?\d+) [\s_] (?: {})
     | (?P<m> {}))
    '''.format(_anything(1, 20), _anything(1000, 1001), _anything(1000, 9001))
 
@@ -108,21 +117,20 @@ literal_num_re = r'''
 
 bignum_re = r'''
     {}?
-    (?P<num> (\d+[.,])?\d+) [\s_]?
+    (?P<num> (\d+ \. )?\d+) [\s_]?
     (?P<deg>{})
     '''.format(_sign_re, _anything(10**6))
 
 
 @num_tp.set_handler(ReHandler, regexp=literal_num_re, flags=98)
 def literal_num_h(match):
-    if all(i is None for i in match.groups()[1:]):
+    if all(i is None for i in match.groups()[2:]):
         return match.group(0)
     res = 0
     for idx in ('i', 'x', 'xi', 'c', 'm'):
         res += revdict.get(match.group(idx), 0)
     m_num = match.group('m_num')
     if m_num is not None:
-        m_num = m_num.replace(',', '.')
         if m_num.isnumeric():
             res += 1000 * int(m_num)
         elif m_num.replace('.', '').isnumeric():
@@ -169,9 +177,27 @@ def roman_h(full):
     return str(res + rom[-1])
 
 
-num_tp.create_handler(
-    ReHandler,
-    regexp=r'(?P<num>\d+)-?[а-яё]{1,4}',
-    sub=r'\g<num>',
-    flags=98
-)
+contracted_re = r'(?P<num>\d+)-?(?P<post>[а-яё]+)'
+
+@num_tp.set_handler(ReHandler, regexp=contracted_re, flags=98)
+def contracted_h(num, post):
+    forms = wordforms.get(find_last_word(num), [])
+    if any(form.endswith(post) for form in forms):
+        return str(num)
+    return ' '.join((str(num), post))
+
+
+def find_last_word(num):
+    if num in numdict:
+        return num
+    if num < min(numdict) or num > max(numdict):
+        return None
+    options = [num % (10**n) for n in range(1, 5)]
+    options = [i for i in options if i != 0 and i in numdict]
+    if not options:
+        return None
+    return options[-1]
+
+morph = MorphAnalyzer()
+
+wordforms = {num: set(chain.from_iterable([form.word for form in morph.parse(word)[0].lexeme] for word in verb)) for num, verb in numdict.items()}
