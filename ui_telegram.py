@@ -739,7 +739,7 @@ def form_feedback(
 ):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}\n\nID зароса: {query_id}'
+        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}'
     )
     separator = ''
     expert_str = ''
@@ -778,7 +778,6 @@ def form_feedback(
         verbal_fb=verbal_str,
         answer=cube_result.formatted_response,
         time_data_relevance=data_relevance,
-        query_id=request_id,
         pretty_feed=pretty_feed
     )
 
