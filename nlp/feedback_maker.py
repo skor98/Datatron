@@ -19,9 +19,14 @@ class BackFeeder(object):
         mask = CubeMasks.get_mask(cube)
         prepr_feedback = BackFeeder._preprocess_fb(verbal_feedback)
         pretty = BackFeeder._make_phrase(mask, prepr_feedback)
-        logging.info('Обратная связь для ответа из куба {}: {}'.format(
-                cube, pretty.replace('\n', '\t')
-        ))
+
+        # logging.info(
+        #     'Обратная связь для ответа из куба {}: {}'.format(
+        #         cube,
+        #         pretty.replace('\n', '\t')
+        #     )
+        # )
+
         return pretty
 
     @staticmethod
