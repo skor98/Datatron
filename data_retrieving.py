@@ -9,8 +9,7 @@ import logging
 from os import path
 import json
 
-
-from constants import ERROR_NO_DOCS_FOUND
+from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from config import SETTINGS
 from config import TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
 
@@ -66,6 +65,18 @@ class DataRetrieving:
             request_id
         )
 
+        # обработка плохих слов
+        if '<censored>' in norm_user_request:
+            core_answer.message = ERROR_REQUEST_CONTAINS_BAD_WORD
+
+            logging.info(
+                'Query_ID: {}\tMessage: Запрос содержал плохое слов(о/а)'.format(
+                    request_id
+                )
+            )
+
+            return core_answer
+
         # получение результатов поиска от Apache Solr в JSON-строке
         solr_response = Solr.get_data(
             norm_user_request,
@@ -89,6 +100,17 @@ class DataRetrieving:
                 clf.predict_proba(core_answer.user_request)
             )[0]
 
+            ans_type = None
+
+            # ручная проверка, актуальная для вопросов по pretty_feedback
+            clf_status, cube = DataRetrieving._manual_cube_classification(
+                norm_user_request
+            )
+
+            if clf_status:
+                best_prediction = (cube, 0.99)
+                ans_type = 'cube'
+
             cube_answers, cube_confidence = CubeProcessor.get_data(cube_data, best_prediction)
 
             logging.info(
@@ -102,7 +124,8 @@ class DataRetrieving:
             answers = DataRetrieving._sort_answers(
                 minfin_answers,
                 cube_answers,
-                correct_answer_num
+                correct_answer_num,
+                ans_type
             )
 
             DataRetrieving._format_core_answer(
@@ -201,7 +224,12 @@ class DataRetrieving:
         return norm_user_request
 
     @staticmethod
-    def _sort_answers(minfin_answers: list, cube_answers: list, correct_answer_num: str):
+    def _sort_answers(
+            minfin_answers: list,
+            cube_answers: list,
+            correct_answer_num: str,
+            ans_type: str
+    ):
         """Совокупное ранжирование ответов по кубам и минфину"""
 
         # Если по минфину найден только 1 ответ
@@ -220,7 +248,10 @@ class DataRetrieving:
         )
 
         if all_answers:
-            DataRetrieving._first_place_right_type(all_answers)
+            DataRetrieving._first_place_right_type(
+                all_answers,
+                ans_type
+            )
 
             if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
                 DataRetrieving._first_place_exact_minfin_answer(
@@ -231,13 +262,14 @@ class DataRetrieving:
         return all_answers
 
     @staticmethod
-    def _first_place_right_type(all_answers: list):
+    def _first_place_right_type(all_answers: list, ans_type: str):
 
-        user_request = all_answers[0].user_request
+        if not ans_type:
+            user_request = all_answers[0].user_request
 
-        clf = CubeOrMinfinClassifier.inst()
-        prediction = tuple(clf.predict_proba(user_request))[0]
-        ans_type = prediction[0].lower()
+            clf = CubeOrMinfinClassifier.inst()
+            prediction = tuple(clf.predict_proba(user_request))[0]
+            ans_type = prediction[0].lower()
 
         if all_answers[0].type != ans_type:
             for elem in list(all_answers):
@@ -440,3 +472,22 @@ class DataRetrieving:
                 len(more_cube_answers),
                 len(more_minfin_answers)
             ))
+
+    @staticmethod
+    def _manual_cube_classification(user_request: str):
+        key_words_to_cube = {
+            "основной показатель субъект РФ": "CLDO02",
+            "источник финансирование": "FSYR01",
+            "оперативный расход": "EXDO01",
+            "годовой расход": "EXYR03",
+            "оперативный доход": "INDO01",
+            "основной характеристика федеральный бюджет": "CLDO01",
+            "годовой доход": "INYR03",
+            "госдолг РФ": "CLMR02"
+        }
+
+        for key, value in key_words_to_cube.items():
+            if user_request.startswith(key):
+                return True, value
+
+        return False, None
