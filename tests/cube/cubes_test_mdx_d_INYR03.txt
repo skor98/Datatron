@@ -1,7 +1,7 @@
 Исполнение по доходам консолидированного бюджета Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS][09-12], [MARKS].[03-2])
 Доходы бюджета субъекта Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-12], [MARKS].[03-2])
 Покажите сумму исполнения по доходам бюджета субъекта Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-12], [MARKS].[03-2])
-Доходы бюджета субъекта Вологодской области на 01.01.2016 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-12], [MARKS].[03-2])
+Доходы бюджета субъекта Вологодской области в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-12], [MARKS].[03-2])
 Доходы бюджетов районов Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-5], [MARKS].[03-2])
 Доходы бюджетов поселений Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-6], [MARKS].[03-2])
 Объем доходов городских округов Вологодской области в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2015], [TERRITORIES].[08-67674], [BGLEVELS].[09-15], [MARKS].[03-2])
