@@ -365,8 +365,15 @@ def process_cube_answer(cube_answer, value):
     value_format = get_representation_format(cube_answer.mdx_query)
 
     # TODO: костыль процентного формата ответа для элементов измерения
-    if ('KDPERCENT' in cube_answer.mdx_query or
-                'EXPERCENT' in cube_answer.mdx_query):
+    percent_measures = (
+        'PFPERCENTEX',
+        'KDPERCENT',
+        'EXPERCENT',
+        'FORECASTPERCENT',
+        'CURYPREDYDIVFACT'
+    )
+
+    if any(measure in cube_answer.mdx_query for measure in percent_measures):
         value_format = 1
 
     # Добавление форматированного результата
@@ -997,6 +1004,10 @@ def check_real_territory_existence(cube_data: CubeData):
 
         if not count:
             cube_data.terr_member = None
+            logging.info(
+                'Query_ID: {}\tMessage: Найденная территория '
+                'была удалена'.format(cube_data.request_id)
+            )
 
 
 def check_real_bglevel_existence(cube_data: CubeData):
