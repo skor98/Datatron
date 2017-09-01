@@ -47,7 +47,7 @@ class BackFeeder(object):
         else:
             res['мера'] = verbal_feedback.get('measure')
             
-        if 'месяц' not in res and cube == 'CLDO02':
+        if 'месяц' not in res and cube == 'CLMR02':
             if str(res.get('год')) == '2017':
                 res['месяц'] = 'июль'
             else:
