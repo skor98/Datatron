@@ -204,7 +204,10 @@ def format_numerical(number: float):
         num_len -= 1
 
     if num_len <= 6:
-        res = str_num
+        if num_len > 3:
+            res = '{} {}'.format(str_num[:-3], str_num[-3:])
+        else:
+            res = str_num
     elif 6 < num_len <= 9:
         res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
     elif 9 < num_len <= 12:
