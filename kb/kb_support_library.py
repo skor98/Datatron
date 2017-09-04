@@ -298,7 +298,7 @@ def get_good_queries(count=0):
 
     if not get_good_queries.queries:
         good_cube_query_re = re.compile(r"\d*\.\s+\+\s+(.+)")
-        good_mifin_query_re = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает корректно')
+        # good_mifin_query_re = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает корректно')
         get_good_queries.queries = []
 
         test_paths = listdir(TEST_PATH_RESULTS)
@@ -312,15 +312,21 @@ def get_good_queries(count=0):
             encoding="utf-8"
         ).read())
 
-        try:
-            latest_mifin_path = max(filter(lambda x: x.startswith("minfin"), test_paths))
-        except ValueError:
-            logging.error("Нет тестов по минфину!")
+        # try:
+        #     latest_mifin_path = max(filter(lambda x: x.startswith("minfin"), test_paths))
+        # except ValueError:
+        #     logging.error("Нет тестов по минфину!")
+        #
+        # get_good_queries.queries += good_mifin_query_re.findall(open(
+        #     path.join(TEST_PATH_RESULTS, latest_mifin_path),
+        #     encoding="utf-8"
+        # ).read())
 
-        get_good_queries.queries += good_mifin_query_re.findall(open(
-            path.join(TEST_PATH_RESULTS, latest_mifin_path),
-            encoding="utf-8"
-        ).read())
+        # только эталонные вопросы по минфину
+        _, data = read_minfin_data()
+        get_good_queries.queries.extend(
+            pd.concat(data)['question'].tolist()
+        )
 
         # А теперь поставим везде заглавной первую букву
         for ind, val in enumerate(get_good_queries.queries):
