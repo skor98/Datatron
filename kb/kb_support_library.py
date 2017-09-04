@@ -332,3 +332,12 @@ def get_good_queries(count=0):
 
 
 get_good_queries.queries = None
+
+
+# def write_synonyms(key_word: str, synonyms: list):
+#     for member in dbc.Member.select().where(dbc.Member.lem_caption.contains(key_word)):
+#         new_synonyms = '{} {}'.format(member.lem_synonyms, ' '.join(synonyms))
+#         dbc.Member.update(lem_synonyms=new_synonyms).where(dbc.Member.id == member.id).execute()
+#
+#
+# write_synonyms('научный', ['наука'])
