@@ -51,9 +51,6 @@ class CubeProcessor:
             # проверка на правдоподобность найденной территории
             csl.check_real_territory_existence(cube_data)
 
-            # удаление из найденных документов маловероятных
-            csl.ignore_improbable_members(cube_data)
-
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 

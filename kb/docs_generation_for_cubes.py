@@ -21,6 +21,7 @@ from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
 from kb.kb_support_library import get_measure_lem_key_words
 from kb.kb_support_library import get_with_member_to_given_member
+from kb.kb_support_library import TOO_LONG_ELEMS, USELESS_BGLEVELS
 import pycurl
 
 
@@ -111,24 +112,25 @@ class CubeDocsGeneration:
         for cube in dbc.Cube.select():
             for dim_cub in dbc.CubeDimension.select().where(dbc.CubeDimension.cube_id == cube.id):
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
-                    if dimension.cube_value not in ('YEARS', 'TERRITORIES'):
+                    if dimension.cube_value not in ('YEARS', 'TERRITORIES', 'KIF'):
                         for dimension_value in dbc.DimensionMember.select().where(
                                         dbc.DimensionMember.dimension_id == dimension.id
                         ):
                             for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
-                                other_values.append({
-                                    'type': 'dim_member',
-                                    'cube': cube.name,
-                                    'dimension': dimension.cube_value,
-                                    'lem_member_caption': member.lem_caption,
-                                    'lem_member_caption_len': len(member.lem_caption.split()),
-                                    'lem_key_words': member.lem_synonyms,
-                                    'member_caption': member.caption,
-                                    'cube_value': member.cube_value,
-                                    'hierarchy_level': member.hierarchy_level,
-                                    'connected_value': get_with_member_to_given_member(member.id),
-                                    'inner_id': uuid4().hex
-                                })
+                                if member.cube_value not in (TOO_LONG_ELEMS + USELESS_BGLEVELS):
+                                    other_values.append({
+                                        'type': 'dim_member',
+                                        'cube': cube.name,
+                                        'dimension': dimension.cube_value,
+                                        'lem_member_caption': member.lem_caption,
+                                        'lem_member_caption_len': len(member.lem_caption.split()),
+                                        'lem_key_words': member.lem_synonyms,
+                                        'member_caption': member.caption,
+                                        'cube_value': member.cube_value,
+                                        'hierarchy_level': member.hierarchy_level,
+                                        'connected_value': get_with_member_to_given_member(member.id),
+                                        'inner_id': uuid4().hex
+                                    })
 
         return year_values + territory_values + other_values
 
