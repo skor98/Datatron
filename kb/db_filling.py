@@ -9,7 +9,12 @@ from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
 
 
-TPP = TextPreprocessing(label='DBFILL')
+TPP = TextPreprocessing(
+    label='DBFILL',
+    parse_nums=False,
+    parse_time=False,
+    parse_obsc=False
+)
 
 class KnowledgeBaseSupport:
     def __init__(self, data_source_file, db_file):
