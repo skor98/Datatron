@@ -587,11 +587,18 @@ def process_response(message, input_format='text', file_content=None):
             user_request = '*Ваш вопрос*\n"{}"\n\n'
             user_request = user_request.format(result.user_request)
 
-        bot.send_message(
-            message.chat.id,
-            user_request + constants.ERROR_NO_DOCS_FOUND,
-            parse_mode='Markdown'
-        )
+        if result.bad_content:
+            bot.send_message(
+                message.chat.id,
+                user_request + constants.ERROR_REQUEST_CONTAINS_BAD_WORD,
+                parse_mode='Markdown'
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                user_request + constants.ERROR_NO_DOCS_FOUND,
+                parse_mode='Markdown'
+            )
 
         extra_results = look_further(result)
         if extra_results:
