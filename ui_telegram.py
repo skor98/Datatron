@@ -679,7 +679,7 @@ def process_minfin_questions(
     if ans_confidence:
         confidence = '*Вопрос после обработки*\n'
     else:
-        confidence = 'Возможно, вы хотели спросить: '
+        confidence = '*Возможно, вы хотели спросить*\n'
 
     if request_equality(minfin_result):
         confidence = ''
@@ -799,7 +799,7 @@ def form_feedback(
     expert_str = ''
     verbal_str = ''
 
-    confidence = '*Вопрос после обработки*\n"{}"'
+    confidence = '*Вопрос после обработки*\n{}'
 
     if not ans_confidence:
         confidence = 'Возможно, вы хотели спросить: {}'
