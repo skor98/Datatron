@@ -9,8 +9,7 @@ import logging
 from os import path
 import json
 
-
-from constants import ERROR_NO_DOCS_FOUND
+from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from config import SETTINGS
 from config import TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
 
@@ -65,6 +64,19 @@ class DataRetrieving:
             core_answer.user_request,
             request_id
         )
+
+        # обработка плохих слов
+        if '<censored>' in norm_user_request:
+            core_answer.bad_content = True
+            core_answer.message = ERROR_REQUEST_CONTAINS_BAD_WORD
+
+            logging.info(
+                'Query_ID: {}\tMessage: Запрос содержал плохое слов(о/а)'.format(
+                    request_id
+                )
+            )
+
+            return core_answer
 
         # получение результатов поиска от Apache Solr в JSON-строке
         solr_response = Solr.get_data(

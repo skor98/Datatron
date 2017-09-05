@@ -19,7 +19,10 @@ from text_preprocessing import TextPreprocessing
 TPP = TextPreprocessing(
     label='KBSL',
     delete_digits=True,
-    delete_question_words=True
+    delete_question_words=True,
+    parse_nums=False,
+    parse_time=False,
+    parse_obsc=False
 )
 
 

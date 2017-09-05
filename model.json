@@ -31,6 +31,7 @@
     "parser_nums_default": true,
     "parser_syns_default": true,
     "parser_time_default": true,
+    "parser_obsc_default": true,
     "process_misspellings": false,
     "relevant_minfin_main_answer_threshold": 20,
     "repetition_num_for_short_request": 2,

@@ -11,6 +11,7 @@ import json
 class CoreAnswer:
     def __init__(self, message='', error=''):
         self.user_request = ''
+        self.bad_content = False
         self.confidence = True
         self.status = False
         self.answer = None
@@ -25,6 +26,7 @@ class CoreAnswer:
 
     def toJSON_API(self):
         keys_to_return = (
+            'bad_content',
             'status',
             'confidence',
             'answer',
