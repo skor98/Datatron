@@ -164,7 +164,12 @@ def _refactor_data(data):
     return docs
 
 
-_refactor_data.TPP = TextPreprocessing(label='MFDG', delete_question_words=False)
+_refactor_data.TPP = TextPreprocessing(
+    label='MFDG',
+    delete_question_words=False,
+    parse_time=False,
+    parse_obsc=False
+)
 
 
 def _write_data(data):
