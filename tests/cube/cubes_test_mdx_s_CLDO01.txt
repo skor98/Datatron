@@ -1,4 +1,4 @@
-﻿Доходы с начала 2017 года администрируемые ФТС России:SELECT {[Measures].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-3])
+Доходы с начала 2017 года администрируемые ФТС России:SELECT {[Measures].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-3])
 Нефтегазовые доходы с начала текущего года:SELECT {[Measures].[FACTBGYEAR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-4])
 Процент исполнения нефтегазовых доходов в текущем году:SELECT {[Measures].[PFPERCENTYR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-4])
 Процент исполнения ненефтегазовых доходов в текущем году:SELECT {[Measures].[PFPERCENTYR]} ON COLUMNS FROM [CLDO01.DB] WHERE ([BIFB].[25-5])

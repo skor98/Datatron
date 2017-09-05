@@ -431,6 +431,19 @@ def check_if_year_is_current(cube_data: CubeData):
     return bool(given_year == datetime.datetime.now().year)
 
 
+def get_measure_choice_threshold(cube_data: CubeData):
+    """Адаптирует порог в зависимости от куба"""
+    # чем больше у куба мер, тем ниже порог
+    thresholds = {
+        "CLDO01": 7,
+        "CLDO02": 3,
+        "CLMR02": 2
+    }
+
+    multiplier = thresholds.get(cube_data.selected_cube['cube'], 0)
+    return MODEL_CONFIG["measure_matching_threshold"] - multiplier * 0.35
+
+
 def select_measure_for_selected_cube(cube_data: CubeData):
     """Фильтрация мер по принадлежности к выбранному кубу"""
 
@@ -444,7 +457,7 @@ def select_measure_for_selected_cube(cube_data: CubeData):
             # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
             # для повышения скора
             if (cube_data.measures[0]['score'] >
-                    MODEL_CONFIG["measure_matching_threshold"]):
+                    get_measure_choice_threshold(cube_data)):
                 cube_data.selected_measure = cube_data.measures[0]
 
                 # TODO: костыль для куба CLDO01 при запросах со словом "процент"
@@ -610,6 +623,7 @@ def score_cube_question(cube_data: CubeData):
     if score_model == 'sum':
         sum_scoring()
 
+
 def preprocess_bglevels_member(cube_data: CubeData):
     """
     Дополнительный фильтры на уровень бюджета
@@ -619,6 +633,7 @@ def preprocess_bglevels_member(cube_data: CubeData):
         for member in list(cube_data.members):
             if member['cube_value'] == '09-12':
                 cube_data.members.remove(member)
+
 
 def preprocess_territory_member(cube_data: CubeData):
     """
@@ -998,6 +1013,12 @@ def check_real_territory_existence(cube_data: CubeData):
         for word in words_for_replacement:
             lem_territory = lem_territory.replace(word, '')
 
+        # добавление ключевых слов для территорий через дефис
+        if '-' in lem_territory:
+            lem_territory += ' {}'.format(
+                ' '.join(lem_territory.split('-'))
+            )
+
         lem_territory += ' {}'.format(lem_key_words)
 
         count = 0
@@ -1020,15 +1041,15 @@ def check_real_bglevel_existence(cube_data: CubeData):
     """
     key_words_for_bglevels = {
         '09-1': ('федеральный', 'федбюджет', 'фб', 'фед-бюджет'),
-        '09-2': ('тгвф', ),
-        '09-4': ('район', ),
-        '09-5': ('район', ),
-        '09-7': ('внебюджетный', ),
-        '09-8': ('пенсионный', ),
-        '09-9': ('страхование', ),
+        '09-2': ('тгвф',),
+        '09-4': ('район',),
+        '09-5': ('район',),
+        '09-7': ('внебюджетный',),
+        '09-8': ('пенсионный',),
+        '09-9': ('страхование',),
         '09-10': ('медицинский', 'омс', 'страхование',),
         '09-11': ('медицинский', 'омс', 'страхование',),
-        '09-20': ('фонд', ),
+        '09-20': ('фонд',),
         '09-24': ('поселение', 'село')
     }
 

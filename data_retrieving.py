@@ -60,6 +60,7 @@ class DataRetrieving:
 
         # обработка плохих слов
         if '<censored>' in norm_user_request:
+            core_answer.bad_content = True
             core_answer.message = ERROR_REQUEST_CONTAINS_BAD_WORD
 
             logging.info(

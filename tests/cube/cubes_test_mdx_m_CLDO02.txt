@@ -1,4 +1,4 @@
-﻿Процент исполнения текущего бюджета по доходам:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-0], [MARKS].[03-1])
+Процент исполнения текущего бюджета по доходам:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-0], [MARKS].[03-1])
 Процент исполнения текущего бюджета по налоговым и неналоговым доходам в 2017 году:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-0], [MARKS].[03-3])
 Процент текущего исполнения бюджета по доходам с налога на прибыль:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-0], [MARKS].[03-5])
 Процент исполнения текущего бюджета по доходам с налога на доходы физических лиц:SELECT {[Measures].[PCT_EXECUTION]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-0], [MARKS].[03-6])

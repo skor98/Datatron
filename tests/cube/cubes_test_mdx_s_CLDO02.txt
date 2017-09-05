@@ -1,4 +1,4 @@
-﻿Дефицит бюджета Московской области в 2017 году:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19100])
+Дефицит бюджета Московской области в 2017 году:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19100])
 Дефицит бюджета ЦФО в 2017 году:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19099])
 Дефицит ЦФО в текущем году:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19099])
 Дефицит Центрального федеральнога округа в текущем году:SELECT {[MEASURES].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([MARKS].[03-19],[BGLEVELS].[09-12],[TERRITORIES].[08-19099])
@@ -7,3 +7,6 @@
 Плановый дефицит Московской области:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])
 Плановый дефицит Московской области по оперативным данным:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])
 Плановый дефицит Московской области в этом году:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-19],[Territories].[08-19100])
+Налоговые и неналоговые доходы Московской области:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-3],[Territories].[08-19100])
+Доходы Санкт-Петербурга с налога на прибыль:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-5],[Territories].[08-11755])
+Доходы Москвы по налогу на доход физических лиц:SELECT {[Measures].[PLAN_ONYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLevels].[09-12],[Marks].[03-6],[Territories].[08-23783])

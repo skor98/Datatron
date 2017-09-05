@@ -1,4 +1,4 @@
-﻿Еврооблигационные займы России в мае 17 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE([MONTHS].[04-5], [YEARS].[2017], [MARKS].[33-5])
+Еврооблигационные займы России в мае 17 года:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE([MONTHS].[04-5], [YEARS].[2017], [MARKS].[33-5])
 Внешний долг в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-1])
 Внутренний долг в 2014 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2014], [MARKS].[33-9])
 Внутренняя задолженность:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-9])

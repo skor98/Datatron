@@ -1,4 +1,4 @@
-﻿Доходы Ярославской области по налогу на прибыль:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])
+Доходы Ярославской области по налогу на прибыль:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])
 Доходы Ярославской области по налогу на прибыль в этом году:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])
 Доходы Ярославской области по налогу на прибыль в текущем году:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])
 Доходы Ярославской области по налогу на прибыль в 2017 году:SELECT {[MEASURES].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([KDGROUPS].[05-19],[BGLEVELS].[09-12],[MARKS].[03-2],[TERRITORIES].[08-67713])

@@ -51,7 +51,7 @@ class TextPreprocessing(object):
         'не такой сейчас'.split(),
         question_words
     ).union(
-        'также иной да нет'.split()
+        'также иной да нет сколько'.split()
     ).union(
         "подсказать показать рассказать сказать пояснить объяснить".split()
     ).union(

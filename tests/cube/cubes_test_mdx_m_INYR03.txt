@@ -1,4 +1,4 @@
-﻿Налоговые и неналоговые доходы бюджета РФ в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KDGROUPS].[05-82], [MARKS].[03-2])
+Налоговые и неналоговые доходы бюджета РФ в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KDGROUPS].[05-82], [MARKS].[03-2])
 Безвозмездные поступления в госбюджет в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KDGROUPS].[05-81], [MARKS].[03-2])
 Налоговые доходы в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KDGROUPS].[05-12], [MARKS].[03-2])
 Неналоговые доходы в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-0], [KDGROUPS].[05-13], [MARKS].[03-2])

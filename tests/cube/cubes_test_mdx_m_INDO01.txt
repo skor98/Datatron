@@ -1,4 +1,4 @@
-﻿Текущие налоговые и неналоговые доходы Крымского федерального округа:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [KDGROUPS].[05-82], [MARKS].[03-2], [TERRITORIES].[08-91128])
+Текущие налоговые и неналоговые доходы Крымского федерального округа:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [KDGROUPS].[05-82], [MARKS].[03-2], [TERRITORIES].[08-91128])
 Доходы Приволжского федерального округа:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-3417])
 Доходы у Северо-Западного федерального округа в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-10249])
 Доходы Северо-Кавказского федерального округа в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [INDO01.DB] WHERE ([BGLEVELS].[09-12], [MARKS].[03-2], [TERRITORIES].[08-24604])

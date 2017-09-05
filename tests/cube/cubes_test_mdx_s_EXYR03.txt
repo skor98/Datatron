@@ -1,4 +1,4 @@
-﻿Расходы на общегосударственные вопросы в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-848223], [MARKS].[03-4], [YEARS].[2015])
+Расходы на общегосударственные вопросы в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-848223], [MARKS].[03-4], [YEARS].[2015])
 Расходы РФ на судебную систему в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-413275], [MARKS].[03-4], [YEARS].[2015])
 Расходы РФ на обеспечение деятельности финансовых, налоговых и таможенных органов и органов финансового надзора в 2015:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-8362], [MARKS].[03-4], [YEARS].[2015])
 Расходы РФ на обеспечение деятельности финансовых, налоговых и таможенных органов и органов финансового надзора в 2016:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([BGLEVELS].[09-0], [RZPR].[14-8362], [MARKS].[03-4], [YEARS].[2016])
