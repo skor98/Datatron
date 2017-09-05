@@ -118,7 +118,7 @@ def form_feedback(mdx_query: str, user_request: str):
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
-        get_captions_for_dimensions(i['val']) for i in members
+        get_captions_for_dimensions(i['val'], cube) for i in members
         ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
@@ -170,7 +170,7 @@ def get_pretty_feedback(mdx_query: str):
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
-        get_captions_for_dimensions(i['val']) for i in members
+        get_captions_for_dimensions(i['val'], cube) for i in members
         ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 

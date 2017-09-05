@@ -164,23 +164,31 @@ def get_cube_caption(cube_name):
     return dbc.Cube.get(dbc.Cube.name == cube_name).caption
 
 
-def get_captions_for_dimensions(cube_value):
+def get_captions_for_dimensions(cube_value, cube_name):
     """
     Возвращает вербальное описание элемента измерения:
     - понятное пользователю название измерения
     - понятное пользователю элемента измерения
     """
 
-    value = dbc.Member.get(dbc.Member.cube_value == cube_value)
+    member = (dbc.Member
+               .select()
+               .join(dbc.DimensionMember)
+               .join(dbc.Dimension)
+               .join(dbc.CubeDimension)
+               .join(dbc.Cube)
+               .where(dbc.Member.cube_value == cube_value, dbc.Cube.name == cube_name)
+               )[0]
 
-    dim = (dbc.Dimension
-           .select()
-           .join(dbc.DimensionMember)
-           .join(dbc.Member)
-           .where(dbc.Member.cube_value == cube_value))[0]
+    dimension = (dbc.Dimension
+                 .select()
+                 .join(dbc.DimensionMember)
+                 .join(dbc.Member)
+                 .where(dbc.Member.id == member.id)
+                 )[0]
 
-    return {'dimension_caption': dim.caption,
-            'member_caption': value.caption}
+    return {'dimension_caption': dimension.caption,
+            'member_caption': member.caption}
 
 
 def create_cube_lem_key_words():
