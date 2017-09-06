@@ -4,10 +4,8 @@ Created on 24 Aug 2017
 @author: larousse
 '''
 
-import logging
 import re
 
-import logs_helper  # pylint: disable=unused-import
 from nlp import nlp_utils
 from nlp.phrase_processor import Phrase
 from nlp.tonita_parser import ReHandler
@@ -19,13 +17,6 @@ class BackFeeder(object):
         mask = CubeMasks.get_mask(cube)
         prepr_feedback = BackFeeder._preprocess_fb(cube, verbal_feedback)
         pretty = BackFeeder._make_phrase(mask, prepr_feedback)
-
-        # logging.info(
-        #     'Обратная связь для ответа из куба {}: {}'.format(
-        #         cube,
-        #         pretty.replace('\n', '\t')
-        #     )
-        # )
 
         return pretty
 
@@ -47,7 +38,7 @@ class BackFeeder(object):
         else:
             res['мера'] = verbal_feedback.get('measure')
             
-        if 'месяц' not in res and cube == 'CLDO02':
+        if 'месяц' not in res and cube == 'CLMR02':
             if str(res.get('год')) == '2017':
                 res['месяц'] = 'июль'
             else:

@@ -1,4 +1,4 @@
-﻿Расходы ФБ на образование в 2017 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-1], [RZPR].[14-848266], [MARKS].[03-4])
+Расходы ФБ на образование в 2017 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [BGLEVELS].[09-1], [RZPR].[14-848266], [MARKS].[03-4])
 Расходы консолидированы бюджетов субъектов Российской Федерации на образование в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-2], [BGLEVELS].[09-12], [RZPR].[14-848266], [MARKS].[03-4])
 Расходы Архангельской области в 2016 году на охрану окружающей среды:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67678], [BGLEVELS].[09-12], [RZPR].[14-1203414], [MARKS].[03-4])
 Расходы бюджета Архангельской области в 2016 году на охрану окружающей среды:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [EXYR03.DB] WHERE ([YEARS].[2016], [TERRITORIES].[08-67678], [BGLEVELS].[09-12], [RZPR].[14-1203414], [MARKS].[03-4])

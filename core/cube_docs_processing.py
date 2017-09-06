@@ -51,9 +51,6 @@ class CubeProcessor:
             # проверка на правдоподобность найденной территории
             csl.check_real_territory_existence(cube_data)
 
-            # удаление из найденных документов маловероятных
-            csl.ignore_improbable_members(cube_data)
-
             # получение нескольких возможных вариантов
             cube_data_list = CubeProcessor._get_several_cube_answers(cube_data)
 
@@ -75,7 +72,7 @@ class CubeProcessor:
                 # доработка вариантов
                 for item in cube_data_list:
                     csl.select_measure_for_selected_cube(item)
-                    csl.preprocess_bglevels_member(item)
+                    # csl.preprocess_bglevels_member(item)
                     csl.preprocess_territory_member(item)
                     csl.score_cube_question(item)
 
@@ -293,7 +290,7 @@ class CubeProcessor:
         Актуальность данных по кубам
         """
 
-        date_of_update = '16.08.2017'
+        date_of_update = '30.08.2017'
         updates = {
             'CLDO01': date_of_update,
             'CLDO02': date_of_update,

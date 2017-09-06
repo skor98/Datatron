@@ -152,8 +152,13 @@ class MessengerManager:
             if get_jaccard(tokens, cur_set) > JACCARD_SIMILARITY_THRESHOLD:
                 return random.choice(constants.WHO_IS_YOUR_CREATOR_ANSWER)
 
-        if text in constants.EASTER_EGGS.keys():
-            return random.choice(constants.EASTER_EGGS[text])
+        for key in constants.EASTER_EGGS.keys():
+            if set(key.split()) == tokens:
+                return random.choice(constants.EASTER_EGGS[key])
+
+        for thank_you_word in constants.THANK_YOU:
+            if thank_you_word in text:
+                return random.choice(constants.THANK_YOU_ANSWER)
 
     @staticmethod
     def _querying(user_request_string, request_id):

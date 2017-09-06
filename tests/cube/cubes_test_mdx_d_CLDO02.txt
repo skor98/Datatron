@@ -1,4 +1,4 @@
-﻿Доходы консолидированного бюджета Российской Федерации и государственных внебюджетных фондов по оперативным данным 2017 года:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-20],[TERRITORIES].[08--1], [MARKS].[03-1])
+Доходы консолидированного бюджета Российской Федерации и государственных внебюджетных фондов по оперативным данным 2017 года:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-20],[TERRITORIES].[08--1], [MARKS].[03-1])
 Доходы консолидированного бюджета Российской Федерации в 2017 году:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-20],[TERRITORIES].[08--1], [MARKS].[03-1])
 Доходы консолидированного бюджета Российской Федерации в текущем году:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-20],[TERRITORIES].[08--1], [MARKS].[03-1])
 Доходы консолидированного бюджета Российской Федерации без фондов в текущем финансовом году:SELECT {[Measures].[FACT_BGYEAR]} ON COLUMNS FROM [CLDO02.DB] WHERE ([BGLEVELS].[09-20],[TERRITORIES].[08--1], [MARKS].[03-1]) 

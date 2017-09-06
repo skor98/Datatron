@@ -118,7 +118,7 @@ def form_feedback(mdx_query: str, user_request: str):
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
-        get_captions_for_dimensions(i['val']) for i in members
+        get_captions_for_dimensions(i['val'], cube) for i in members
         ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
@@ -170,7 +170,7 @@ def get_pretty_feedback(mdx_query: str):
 
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
-        get_captions_for_dimensions(i['val']) for i in members
+        get_captions_for_dimensions(i['val'], cube) for i in members
         ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
@@ -204,7 +204,10 @@ def format_numerical(number: float):
         num_len -= 1
 
     if num_len <= 6:
-        res = str_num
+        if num_len > 3:
+            res = '{} {}'.format(str_num[:-3], str_num[-3:])
+        else:
+            res = str_num
     elif 6 < num_len <= 9:
         res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
     elif 9 < num_len <= 12:
@@ -365,8 +368,15 @@ def process_cube_answer(cube_answer, value):
     value_format = get_representation_format(cube_answer.mdx_query)
 
     # TODO: костыль процентного формата ответа для элементов измерения
-    if ('KDPERCENT' in cube_answer.mdx_query or
-                'EXPERCENT' in cube_answer.mdx_query):
+    percent_measures = (
+        'PFPERCENTEX',
+        'KDPERCENT',
+        'EXPERCENT',
+        'FORECASTPERCENT',
+        'CURYPREDYDIVFACT'
+    )
+
+    if any(measure in cube_answer.mdx_query for measure in percent_measures):
         value_format = 1
 
     # Добавление форматированного результата
@@ -421,6 +431,19 @@ def check_if_year_is_current(cube_data: CubeData):
     return bool(given_year == datetime.datetime.now().year)
 
 
+def get_measure_choice_threshold(cube_data: CubeData):
+    """Адаптирует порог в зависимости от куба"""
+    # чем больше у куба мер, тем ниже порог
+    thresholds = {
+        "CLDO01": 7,
+        "CLDO02": 3,
+        "CLMR02": 2
+    }
+
+    multiplier = thresholds.get(cube_data.selected_cube['cube'], 0)
+    return MODEL_CONFIG["measure_matching_threshold"] - multiplier * 0.35
+
+
 def select_measure_for_selected_cube(cube_data: CubeData):
     """Фильтрация мер по принадлежности к выбранному кубу"""
 
@@ -434,7 +457,7 @@ def select_measure_for_selected_cube(cube_data: CubeData):
             # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
             # для повышения скора
             if (cube_data.measures[0]['score'] >
-                    MODEL_CONFIG["measure_matching_threshold"]):
+                    get_measure_choice_threshold(cube_data)):
                 cube_data.selected_measure = cube_data.measures[0]
 
                 # TODO: костыль для куба CLDO01 при запросах со словом "процент"
@@ -600,6 +623,7 @@ def score_cube_question(cube_data: CubeData):
     if score_model == 'sum':
         sum_scoring()
 
+
 def preprocess_bglevels_member(cube_data: CubeData):
     """
     Дополнительный фильтры на уровень бюджета
@@ -609,6 +633,7 @@ def preprocess_bglevels_member(cube_data: CubeData):
         for member in list(cube_data.members):
             if member['cube_value'] == '09-12':
                 cube_data.members.remove(member)
+
 
 def preprocess_territory_member(cube_data: CubeData):
     """
@@ -988,6 +1013,12 @@ def check_real_territory_existence(cube_data: CubeData):
         for word in words_for_replacement:
             lem_territory = lem_territory.replace(word, '')
 
+        # добавление ключевых слов для территорий через дефис
+        if '-' in lem_territory:
+            lem_territory += ' {}'.format(
+                ' '.join(lem_territory.split('-'))
+            )
+
         lem_territory += ' {}'.format(lem_key_words)
 
         count = 0
@@ -997,6 +1028,10 @@ def check_real_territory_existence(cube_data: CubeData):
 
         if not count:
             cube_data.terr_member = None
+            logging.info(
+                'Query_ID: {}\tMessage: Найденная территория '
+                'была удалена'.format(cube_data.request_id)
+            )
 
 
 def check_real_bglevel_existence(cube_data: CubeData):
@@ -1006,15 +1041,15 @@ def check_real_bglevel_existence(cube_data: CubeData):
     """
     key_words_for_bglevels = {
         '09-1': ('федеральный', 'федбюджет', 'фб', 'фед-бюджет'),
-        '09-2': ('тгвф', ),
-        '09-4': ('район', ),
-        '09-5': ('район', ),
-        '09-7': ('внебюджетный', ),
-        '09-8': ('пенсионный', ),
-        '09-9': ('страхование', ),
+        '09-2': ('тгвф',),
+        '09-4': ('район',),
+        '09-5': ('район',),
+        '09-7': ('внебюджетный',),
+        '09-8': ('пенсионный',),
+        '09-9': ('страхование',),
         '09-10': ('медицинский', 'омс', 'страхование',),
         '09-11': ('медицинский', 'омс', 'страхование',),
-        '09-20': ('фонд', ),
+        '09-20': ('фонд',),
         '09-24': ('поселение', 'село')
     }
 
@@ -1033,117 +1068,3 @@ def check_real_bglevel_existence(cube_data: CubeData):
                         member['cube_value']
                     )
                 )
-
-
-def ignore_improbable_members(cube_data: CubeData):
-    """
-    Удаление из выдачи Solr элементов, которые вряд ли могли интересовать
-    пользователя
-    """
-
-    # элементы с caption более 7 слов
-    TOO_LONG_ELEMS = (
-        "05-15",
-        "05-39",
-        "05-40",
-        "05-41",
-        "05-20",
-        "05-34",
-        "05-36",
-        "05-26",
-        "05-28",
-        "05-37",
-        "05-42",
-        "14-342647",
-        "14-8359",
-        "14-413273",
-        "14-8360",
-        "14-413274",
-        "14-8362",
-        "14-413276",
-        "14-8376",
-        "14-405752",
-        "14-854482",
-        "14-409137",
-        "14-108129",
-        "14-8390",
-        "14-1203368",
-        "14-1203374",
-        "14-8393",
-        "14-853005",
-        "14-8394",
-        "14-850485",
-        "14-8413",
-        "14-872691",
-        "14-1203306",
-        "14-1203226",
-        "14-1203227",
-        "14-8431",
-        "14-8432",
-        "14-349155",
-        "14-1203248",
-        "14-413268",
-        "14-413267",
-        "22-108302",
-        "03-3",
-        "14-413257",
-        "10-153828",
-        "10-153889",
-        "10-153808",
-        "10-153827",
-        "10-155330",
-        "10-155786",
-        "10-153890",
-        "10-153891",
-        "10-153921",
-        "10-153771",
-        "10-154790",
-        "10-155791",
-        "10-153944",
-        "10-154947",
-        "10-154865",
-        "10-155279",
-        "10-154822",
-        "10-154791",
-        "10-155133",
-        "10-154984",
-        "10-154893",
-        "10-155357",
-        "10-154781",
-        "10-154919",
-        "10-154975",
-        "10-153946",
-        "10-154948",
-        "10-154976",
-        "10-154920",
-        "10-154823",
-        "10-154782",
-        "10-155358",
-        "10-154792",
-        "10-154866",
-        "10-155134",
-        "10-154985",
-        "10-155280",
-        "10-154894",
-        "10-155788",
-        "10-153923",
-        "03-5",
-        "03-42"
-    )
-
-    SEVERAL_BGLEVELS = (
-        '09-3',  # бюджет субъекта
-        '09-6',  # бюджет поселения
-        '09-15',  # бюджет городского поселения
-        '09-18',  # бюджет внутригородских муниципальных образований
-        '09-19',  # местный бюджет
-        '09-21',  # бюджет городского округа с внутригородским делением
-        '09-22',  # бюджет внутригородского района
-        '09-23',  # бюджет городского поселения
-    )
-
-    ELEMENTS_TO_IGNORE = TOO_LONG_ELEMS + SEVERAL_BGLEVELS
-
-    for member in list(cube_data.members):
-        if member['cube_value'] in ELEMENTS_TO_IGNORE:
-            cube_data.members.remove(member)

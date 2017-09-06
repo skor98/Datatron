@@ -18,6 +18,7 @@ from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
+from nlp.parsers.obscene_parser import obs_tp
 
 import logs_helper  # pylint: disable=unused-import
 
@@ -41,6 +42,7 @@ class TextPreprocessing(object):
         'parse_syns': _mc_get("parser_syns_default"),
         'parse_nums': _mc_get("parser_nums_default"),
         'parse_time': _mc_get("parser_time_default"),
+        'parse_obsc': _mc_get("parser_obsc_default"),
     }
 
     language = 'russian'
@@ -51,7 +53,7 @@ class TextPreprocessing(object):
         'не такой сейчас'.split(),
         question_words
     ).union(
-        'также иной да нет'.split()
+        'также иной да нет сколько'.split()
     ).union(
         "подсказать показать рассказать сказать пояснить объяснить".split()
     ).union(
@@ -91,8 +93,8 @@ class TextPreprocessing(object):
         """Метод для нормализации текста"""
 
         # Убираем плюсы-ударения
-        if '\\+' in text:
-            text = text.replace('\\+', '')
+        if '+' in text:
+            text = text.replace('+', '')
         if 'ъем' in text:
             text = text.replace('ъем', 'ъём')
 
@@ -146,6 +148,7 @@ class TextPreprocessing(object):
             self.parse_syns,
             self.parse_nums,
             self.parse_time,
+            self.parse_obsc,
         )
 
     @property
@@ -208,6 +211,7 @@ class TextPreprocessing(object):
             parse_syns,
             parse_nums,
             parse_time,
+            parse_obsc
     ):
         parser = None
         if parse_syns:
@@ -216,6 +220,8 @@ class TextPreprocessing(object):
             parser += num_tp
         if parse_time:
             parser += time_tp
+        if parse_obsc:
+            parser += obs_tp
         return parser
 
     @staticmethod

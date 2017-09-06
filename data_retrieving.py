@@ -49,24 +49,18 @@ class DataRetrieving:
         core_answer = CoreAnswer()
         core_answer.user_request = user_request
 
-        correct_answer_num = 0
-
-        if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
-            minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
-            user_request = user_request.lower().replace('?', '')
-
-            # сработает для формулировки с любым порядком слов
-            for key in minfin_auto_wrong_tests.keys():
-                if set(user_request.split()) == set(key.split()):
-                    correct_answer_num = minfin_auto_wrong_tests.get(key, 0)
-
         norm_user_request = DataRetrieving._preprocess_user_request(
             core_answer.user_request,
             request_id
         )
 
+        correct_answer_num = DataRetrieving._process_exact_minfin_answers(
+            user_request
+        )
+
         # обработка плохих слов
         if '<censored>' in norm_user_request:
+            core_answer.bad_content = True
             core_answer.message = ERROR_REQUEST_CONTAINS_BAD_WORD
 
             logging.info(
@@ -142,6 +136,19 @@ class DataRetrieving:
             )
 
         return core_answer
+
+    @staticmethod
+    def _process_exact_minfin_answers(user_request: str):
+        if MODEL_CONFIG["use_local_file_processing_for_minfin"]:
+            minfin_auto_wrong_tests = DataRetrieving._minfin_auto_wrong_questions()
+            user_request = user_request.lower()
+
+            user_request = user_request.replace('?', '')
+
+            # сработает для формулировки с любым порядком слов
+            for key in minfin_auto_wrong_tests.keys():
+                if set(user_request.split()) == set(key.split()):
+                    return minfin_auto_wrong_tests.get(key, 0)
 
     @staticmethod
     def _minfin_auto_wrong_questions():

@@ -361,14 +361,13 @@ class BaseTester:
 
                 for idx, line in enumerate(file_in):
                     line = line.strip()
-                    if not line:
+
+                    if not line or line.startswith('*'):
                         continue
+
                     line = ' '.join(line.split())
-
-                    if line.startswith('*'):
-                        continue
-
                     logging.info(line)
+
                     req, answer = line.split(':')
 
                     if answer.lower() == IDK_STRING:
