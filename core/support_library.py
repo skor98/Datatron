@@ -190,6 +190,9 @@ def format_numerical(number: float):
     Например, 123 111 298 -> 123,1 млн.
     """
 
+    def rounded(num_str: str):
+        return str(round(float(num_str), 2)).replace('.', ',')
+
     str_num = str(number)
 
     # Если число через точку, что должно
@@ -209,11 +212,14 @@ def format_numerical(number: float):
         else:
             res = str_num
     elif 6 < num_len <= 9:
-        res = '{},{} {}'.format(str_num[:-6], str_num[-6], 'млн')
+        num = '{}.{}'.format(str_num[:-6], str_num[-6:-3])
+        res = '{} {}'.format(rounded(num), 'млн')
     elif 9 < num_len <= 12:
-        res = '{},{} {}'.format(str_num[:-9], str_num[-9], 'млрд')
+        num = '{}.{}'.format(str_num[:-9], str_num[-9:-6])
+        res = '{} {}'.format(rounded(num), 'млрд')
     else:
-        res = '{},{} {}'.format(str_num[:-12], str_num[-12], 'трлн')
+        num = '{}.{}'.format(str_num[:-12], str_num[-12:-9])
+        res = '{} {}'.format(rounded(num), 'трлн')
 
     logging.debug("Сконвертировали {} в {}".format(number, res))
 
@@ -754,17 +760,20 @@ def process_with_member_for_territory(cube_data: CubeData):
                     'cube_value': cube_data.terr_member['connected_value.member_cube_value']
                 })
             else:
-                for member in list(cube_data.members):
-                    if (member['dimension'] == connected_dim and
-                                member['score'] < MODEL_CONFIG["member_bglevel_threshold"]):
-                        cube_data.members.remove(member)
+                connected_member = cube_data.terr_member['connected_value.member_cube_value']
+                member_with_found_dim = [
+                    member for member in cube_data.members if member['dimension'] == connected_dim
+                    ][0]
 
-                        cube_data.members.append({
-                            'dimension': connected_dim,
-                            'cube_value': cube_data.terr_member['connected_value.member_cube_value']
-                        })
+                if connected_member != member_with_found_dim['cube_value']:
+                    if member_with_found_dim.get('score', None):
+                        if member_with_found_dim['score'] < MODEL_CONFIG["member_bglevel_threshold"]:
+                            cube_data.members.remove(member_with_found_dim)
 
-                        break
+                            cube_data.members.append({
+                                'dimension': connected_dim,
+                                'cube_value': cube_data.terr_member['connected_value.member_cube_value']
+                            })
 
 
 def process_default_members(cube_data: CubeData):

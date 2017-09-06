@@ -851,7 +851,7 @@ def expert_feedback(cube_result):
 
     expert_str = expert_str.format(
         expert_fb['cube'],
-        expert_fb['measure'],
+        expert_fb['measure'].replace('_', '\_'),
         ', '.join([i['dim'] + ': ' + i['val'] for i in expert_fb['dims']])
     )
 
