@@ -52,6 +52,7 @@ unit_lens = {
 anyunit = '|'.join(unit_lens.keys())
 unitcombo = r'''
     (?: (?: \d+ [\s_] )?
+        (?: \w+?[ыио]й [\s_] )?
         (?:{}) [\s_]? ) +
     '''.format(anyunit)
 
@@ -84,6 +85,7 @@ next_re = r'(?P<next_> (?:после[-\s_]?)* (?:{}))'.format('|'.join(next_kw))
 rel_re = r'''
     (?: {}[\s_])?
     (?: {}|{}|{})[\s_]
+    (?: \w+?[ыио]й [\s_] )?
     (?: (?P<unit>{}) | (?P<month>{}) | (?P<season>{}) )
     '''.format(
     points_re, current_re, last_re, next_re, anyunit, anymonth, anyseason)
@@ -100,7 +102,8 @@ _monthformat = r'(?P<month> 0?[1-9] | 1[012] | {} )'.format(anymonth)
 
 _yearformat = r'''
     (?P<year> (?:19|2\d) \d{2})
-    (?: [\s_] год)?'''
+    (?: (?: [\s_] \w+?[ыио]й )?
+    [\s_] год)?'''
 
 dateformat_re = r'''
     (?:{} \s | {} [.,/_\s\-] )?
@@ -113,6 +116,7 @@ season_re = r'''(?:{} [\s_])?
 
 static_re = r'''(?:{}[\s_])?
                 (?P<num> \d*[1-9]\d*) [\s_]
+                (?: \w+?[ыио]й [\s_] )?
                 (?P<unit>{})'''.format(points_re, anyunit)
 
 statmonth_re = r'''(?:{}|{})[\s_]
