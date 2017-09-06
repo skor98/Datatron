@@ -574,6 +574,16 @@ def process_response(message, input_format='text', file_content=None):
             )
 
         extra_results = look_further(result)
+
+        # адаптация количество смотри также в зависимости от его длины
+        length = 0
+        for idx, elem in enumerate(extra_results):
+            if length + len(elem) <= 400:
+                length += len(elem)
+            else:
+                extra_results = extra_results[:idx]
+                break
+
         if extra_results:
             bot.send_message(
                 message.chat.id,
@@ -642,7 +652,7 @@ def process_cube_questions(
             user_request = '*Ваш вопрос*\n"{}"\n\n'
             user_request = user_request.format(cube_result.feedback['user_request'])
 
-        feedback = '{}\n*Вопрос после обработки*\n`"{}"`\n\n'.format(
+        feedback = '{}\n*Вопрос после обработки*\n{}\n\n'.format(
             verbal_feedback(cube_result),
             cube_result.feedback['pretty_feedback']
         )
@@ -671,7 +681,7 @@ def process_minfin_questions(
     if ans_confidence:
         confidence = '*Вопрос после обработки*\n'
     else:
-        confidence = 'Возможно, вы хотели спросить: '
+        confidence = '*Возможно, вы хотели спросить*\n'
 
     low_user_request = minfin_result.user_request.lower().replace('?', '')
     low_minfin_question = minfin_result.question.lower().replace('?', '')
@@ -680,7 +690,7 @@ def process_minfin_questions(
         confidence = ''
         feedback = ''
     else:
-        feedback = '`"{}"`\n\n'.format(minfin_result.question)
+        feedback = '{}\n\n'.format(minfin_result.question)
 
     bot.send_message(
         message.chat.id,
@@ -764,13 +774,13 @@ def form_feedback(
 ):
     feedback_str = (
         '{user_req}{expert_fb}{separator}{verbal_fb}{separator}'
-        '{pretty_feed}\n\n*Ответ: {answer}*{time_data_relevance}'
+        '{pretty_feed}\n\nОтвет: *{answer}*{time_data_relevance}'
     )
     separator = ''
     expert_str = ''
     verbal_str = ''
 
-    confidence = '*Вопрос после обработки*\n`"{}"`'
+    confidence = '*Вопрос после обработки*\n{}'
 
     if not ans_confidence:
         confidence = 'Возможно, вы хотели спросить: {}'
@@ -792,7 +802,7 @@ def form_feedback(
     data_relevance = CubeProcessor.get_time_data_relevance(cube_result)
     data_relevance = data_relevance if data_relevance else ''
     if data_relevance:
-        data_relevance = '\nАктуальность данных: *{}*'.format(
+        data_relevance = '\nАктуальность данных: {}'.format(
             data_relevance
         )
 
@@ -818,7 +828,7 @@ def expert_feedback(cube_result):
     expert_fb = cube_result.feedback['formal']
 
     expert_str = '*Экспертная обратная связь*\n' \
-                 '`- Куб: {}\n- Мера: {}\n- Измерения: {}\n`'
+                 '- Куб: {}\n- Мера: {}\n- Измерения: {}\n'
 
     expert_str = expert_str.format(
         expert_fb['cube'],
@@ -846,7 +856,7 @@ def verbal_feedback(cube_result, title='Найдено в базе данных'
 
     verbal_str = '{}\n'.format(verbal_fb_list[0])
     verbal_str += ''.join(['- {}\n'.format(elem) for elem in verbal_fb_list[1:]])
-    return '*{}*\n`{}`'.format(title, verbal_str)
+    return '*{}*\n{}'.format(title, verbal_str)
 
 
 def look_also_for_cube(cube_result):

@@ -293,7 +293,7 @@ class CubeProcessor:
         Актуальность данных по кубам
         """
 
-        date_of_update = '16.08.2017'
+        date_of_update = '30.08.2017'
         updates = {
             'CLDO01': date_of_update,
             'CLDO02': date_of_update,
