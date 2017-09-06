@@ -72,7 +72,7 @@ class CubeProcessor:
                 # доработка вариантов
                 for item in cube_data_list:
                     csl.select_measure_for_selected_cube(item)
-                    # csl.preprocess_bglevels_member(item)
+                    csl.preprocess_bglevels_member(item)
                     csl.preprocess_territory_member(item)
                     csl.score_cube_question(item)
 
@@ -94,6 +94,9 @@ class CubeProcessor:
 
                     # создание MDX-запросов
                     csl.create_mdx_query(item)
+
+            # удаление повторяющихся после обработки
+            csl.delete_repetitions(cube_data_list)
 
             # фильтрация по наличие данных возможно только на этом этапе
             # когда собран MDX-запрос

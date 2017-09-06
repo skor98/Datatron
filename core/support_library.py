@@ -629,10 +629,22 @@ def preprocess_bglevels_member(cube_data: CubeData):
     Дополнительный фильтры на уровень бюджета
     """
 
-    if not cube_data.terr_member:
+    if any(dp in cube_data.norm_user_request for dp in ('дефицит', 'профицит')):
+        for member in list(cube_data.members):
+            if member['cube_value'] == '09-3':
+                member['score'] /= 2
+
+    if 'субъектов' in cube_data.user_request:
         for member in list(cube_data.members):
             if member['cube_value'] == '09-12':
-                cube_data.members.remove(member)
+                member['score'] *= 1.5
+
+    cube_data.members = sorted(
+        cube_data.members,
+        key=lambda cube_data_elem:
+        cube_data_elem['score'],
+        reverse=True
+    )
 
 
 def preprocess_territory_member(cube_data: CubeData):
@@ -923,34 +935,42 @@ def delete_repetitions(cube_data_list: list):
     повторяющихся комбинаций
     """
 
-    cube_data_repr = []
-    before_deleting = len(cube_data_list)
+    if cube_data_list:
+        cube_data_repr = []
+        before_deleting = len(cube_data_list)
+        request_id = cube_data_list[0].request_id
 
-    for cube_data in list(cube_data_list):
+        for cube_data in list(cube_data_list):
 
-        elements = [cube_data.selected_cube['cube']]
+            elements = [cube_data.selected_cube['cube']]
 
-        for member in cube_data.members:
-            elements.append(member['member_caption'])
+            for member in cube_data.members:
+                elements.append(member['cube_value'])
 
-        for measure in cube_data.measures:
-            elements.append(measure['member_caption'])
+            for measure in cube_data.measures:
+                elements.append(measure['cube_value'])
 
-        str_cube_data_elems = ''.join(elements)
+            if cube_data.terr_member:
+                elements.append(cube_data.terr_member['cube_value'])
 
-        if str_cube_data_elems in cube_data_repr:
-            cube_data_list.remove(cube_data)
-        else:
-            cube_data_repr.append(str_cube_data_elems)
+            if cube_data.year_member:
+                elements.append(cube_data.year_member['cube_value'])
 
-    after_deleting = len(cube_data_list)
+            str_cube_data_elems = ' '.join(elements)
 
-    logging.info(
-        "Query_ID: {}\tMessage: Удаление {} повторяющихся запросов".format(
-            cube_data_list[0].request_id,
-            before_deleting - after_deleting
+            if str_cube_data_elems in cube_data_repr:
+                cube_data_list.remove(cube_data)
+            else:
+                cube_data_repr.append(str_cube_data_elems)
+
+        after_deleting = len(cube_data_list)
+
+        logging.info(
+            "Query_ID: {}\tMessage: Удаление {} повторяющихся запросов".format(
+                request_id,
+                before_deleting - after_deleting
+            )
         )
-    )
 
 
 def filter_cube_data_without_answer(cube_data_list: list):
