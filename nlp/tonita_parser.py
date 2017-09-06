@@ -116,6 +116,13 @@ class TonitaParser(object):
         if isinstance(other, TonitaParser):
             return TonitaParser(handlers=other.handlers + self.handlers)
         raise TypeError
+        
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            return TonitaParser(handlers=self.handlers[idx])
+        elif isinstance(idx, int):
+            return self.handlers[idx]
+        raise TypeError
 
     def process(self, text):
         if isinstance(text, str):
