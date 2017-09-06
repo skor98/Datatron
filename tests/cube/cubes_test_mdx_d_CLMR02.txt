@@ -38,7 +38,6 @@
 На какую сумму размещены еврооблигации в 2017 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-5])
 На какую сумму размещены еврооблигации в этом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-5])
 На какую сумму размещены еврооблигации:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2017], [MARKS].[33-5])
-На какую сумму размещены еврооблигации в прошлом году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-5])
 Размещение евробондов в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2015], [MARKS].[33-5])
 Размещение евробондов России в 2015 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2015], [MARKS].[33-5])
 Размещение российских евробондов в 2016 году:SELECT {[Measures].[VALUE]} ON COLUMNS FROM [CLMR02.DB] WHERE ([YEARS].[2016], [MARKS].[33-5])
