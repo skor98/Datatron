@@ -46,6 +46,9 @@ class DataRetrieving:
         core_answer = CoreAnswer()
         core_answer.user_request = user_request
 
+        if user_request.lower().startswith("кто будет"):
+            return core_answer
+
         norm_user_request = DataRetrieving._preprocess_user_request(
             core_answer.user_request,
             request_id
