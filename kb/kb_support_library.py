@@ -16,6 +16,7 @@ import logs_helper  # pylint: disable=unused-import
 import pandas as pd
 from text_preprocessing import TextPreprocessing
 
+
 TPP = TextPreprocessing(
     label='KBSL',
     delete_digits=True,

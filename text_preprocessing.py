@@ -166,7 +166,7 @@ class TextPreprocessing(object):
     def setup_str(self):
         af_str = 'дополнительные фильтры неактивны'
         if self.active_params:
-            af_str = 'активные фильтры — {}'.format(', '.join(self.active_params))
+            af_str = 'активные фильтры - {}'.format(', '.join(self.active_params))
 
         if not self.stop_words:
             cust_sw_str = 'нет фильтрации стоп-слов'
