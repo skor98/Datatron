@@ -33,6 +33,7 @@ import logs_helper
 from model_manager import MODEL_CONFIG
 from model_manager import set_default_model, restore_default_model
 
+
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
 

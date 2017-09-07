@@ -14,9 +14,8 @@ from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
 from core.support_library import FunctionExecutionErrorNoMembers
 import core.support_library as csl
-from model_manager import MODEL_CONFIG
-
 import logs_helper  # pylint: disable=unused-import
+from model_manager import MODEL_CONFIG
 
 
 class CubeProcessor:
@@ -25,7 +24,7 @@ class CubeProcessor:
     """
 
     @staticmethod
-    def get_data(cube_data: CubeData, correct_cube: tuple = None):
+    def get_data(cube_data: CubeData, correct_cube: tuple=None):
         """API метод к работе с документами по кубам в ядре"""
         # уверенность ответа по кубам
         confidence = True

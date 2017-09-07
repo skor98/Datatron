@@ -16,17 +16,14 @@ import requests
 from config import SETTINGS
 from config import TECH_CUBE_DOCS_FILE, TECH_MINFIN_DOCS_FILE
 from constants import ERROR_GENERAL, ERROR_NULL_DATA_FOR_SUCH_REQUEST
-
 from kb.kb_support_library import get_caption_for_measure
 from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_default_member_for_dimension
 from kb.kb_support_library import get_representation_format
-
+import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp.feedback_maker import BackFeeder
-
-import logs_helper  # pylint: disable=unused-import
 
 
 class CubeData:

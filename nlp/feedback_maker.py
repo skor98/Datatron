@@ -7,9 +7,9 @@ Created on 24 Aug 2017
 import re
 
 from nlp import nlp_utils
+from nlp.parsers.time_parser import norm_months
 from nlp.phrase_processor import Phrase
 from nlp.tonita_parser import ReHandler
-from nlp.parsers.time_parser import norm_months
 
 
 class BackFeeder(object):
@@ -38,7 +38,7 @@ class BackFeeder(object):
             res['мера'] = None
         else:
             res['мера'] = verbal_feedback.get('measure')
-            
+
         if cube == 'CLMR02':
             year = int(res.get('год', '2017'))
             if 'месяц' not in res:

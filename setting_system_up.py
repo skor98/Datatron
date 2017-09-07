@@ -14,7 +14,6 @@ from os import path
 import sys
 
 from config import SETTINGS, TEST_PATH_RESULTS, DATETIME_FORMAT
-from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
 from core.cube_classifier import train_and_save_cube_clf, select_best_cube_clf
 from core.cube_or_minfin_classifier import select_best_cube_or_minfin_clf, train_and_save_cube_or_minfin_clf
 from kb.db_filling import KnowledgeBaseSupport
@@ -22,6 +21,7 @@ from kb.docs_generation_for_cubes import CubeDocsGeneration
 from kb.docs_generation_for_minfin import set_up_minfin_data
 import logs_helper
 from manual_testing import get_results
+from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
 
 
 CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')

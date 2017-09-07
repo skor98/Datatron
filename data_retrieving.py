@@ -5,14 +5,13 @@
 Управление классами ядра системы
 """
 
+import json
 import logging
 from os import path
-import json
 
-from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from config import SETTINGS
 from config import TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
-
+from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from core.answer_object import CoreAnswer
 from core.cube_classifier import CubeClassifier
 from core.cube_docs_processing import CubeAnswer
@@ -24,11 +23,9 @@ from core.support_library import group_documents
 from core.support_library import process_cube_answer
 from core.support_library import process_server_response
 from core.support_library import send_request_to_server
-
+import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
-
-import logs_helper  # pylint: disable=unused-import
 
 
 class DataRetrieving:

@@ -9,19 +9,19 @@ import datetime
 import json
 from os import path
 import subprocess
-from uuid import uuid4
 
 from peewee import fn
 import requests
+from uuid import uuid4
 
 from config import SETTINGS, TECH_CUBE_DOCS_FILE
-from model_manager import MODEL_CONFIG
 import kb.kb_db_creation as dbc
+from kb.kb_support_library import TOO_LONG_ELEMS, USELESS_BGLEVELS
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
 from kb.kb_support_library import get_measure_lem_key_words
 from kb.kb_support_library import get_with_member_to_given_member
-from kb.kb_support_library import TOO_LONG_ELEMS, USELESS_BGLEVELS
+from model_manager import MODEL_CONFIG
 import pycurl
 
 

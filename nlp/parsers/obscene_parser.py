@@ -6,8 +6,10 @@ Created on Tue Sep  5 02:43:14 2017
 @author: larousse
 """
 
-from nlp.tonita_parser import TonitaParser, ReHandler
 import re
+
+from nlp.tonita_parser import TonitaParser, ReHandler
+
 
 def _process_file(filename, bnop_in=True, bnop_out=True):
     res = []
@@ -73,9 +75,9 @@ _regexp_unifier = TonitaParser(handlers=[
 _preparser = _variations + _regexp_unifier
 
 _multigroup_re = re.compile(r'\(([^()]*?)\)')
-            
+
 def _word_preproc(word):
-    if len(word) >= 5 and word != 'комми': 
+    if len(word) >= 5 and word != 'комми':
         word = _preparser(word)
     else:
         word = _preparser[1:](word)
@@ -96,7 +98,7 @@ def _word_preproc(word):
 
 
 _obs_words = _process_file('nlp/obscene.txt')
-        
+
 _obs_re = '(' + '|'.join(_obs_words) + ')'
 
 obs_tp = TonitaParser()

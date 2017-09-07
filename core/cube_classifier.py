@@ -4,8 +4,8 @@
 """
 Специфическое для классификатора типов кубов
 """
-import re
 import logging
+import re
 
 from config import TEST_PATH_CUBE, LOG_LEVEL
 from core.ml_helper import BaseTextClassifier, get_folder_lines, preprocess, select_best_model

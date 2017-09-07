@@ -30,8 +30,9 @@ from dbs.user_support_library import get_feedbacks
 from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
-from speechkit import text_to_speech, speech_to_text
 from speechkit import SpeechException
+from speechkit import text_to_speech, speech_to_text
+
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)

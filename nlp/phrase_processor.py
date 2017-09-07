@@ -6,8 +6,9 @@ Created on Mon Jul 24 13:13:08 2017
 @author: larousse
 """
 
-from nlp import nlp_utils
 from pymorphy2 import MorphAnalyzer
+
+from nlp import nlp_utils
 
 
 class Word(object):
@@ -144,7 +145,7 @@ class Word(object):
                 self.verbal,
                 self.normal,
                 ', '.join(self.deriv_tags),
-                '/'.join(self.infl_tags), )
+                '/'.join(self.infl_tags),)
 
 
 class Phrase(object):

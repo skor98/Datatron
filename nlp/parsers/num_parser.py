@@ -6,10 +6,13 @@ Created on Fri Aug 18 01:02:02 2017
 @author: larousse
 """
 
-import logging
 from itertools import chain, zip_longest
+import logging
+
 from pymorphy2 import MorphAnalyzer
+
 from nlp.tonita_parser import TonitaParser, ReHandler
+
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -76,9 +79,9 @@ numdict = {
     7000: ['семитысячный', 'семитысячное'],
     8000: ['восьмитысячный', 'восьмитысячное'],
     9000: ['девятитысячный', 'девятитысячное'],
-    10**6: ['миллион', 'млн', 'лям', 'миллионный', 'миллионное'],
-    10**9: ['миллиард', 'млрд', 'лярд', 'миллиардный', 'миллиардное'],
-    10**12: ['триллион', 'трлн', 'триллионный', 'триллионное'],
+    10 ** 6: ['миллион', 'млн', 'лям', 'миллионный', 'миллионное'],
+    10 ** 9: ['миллиард', 'млрд', 'лярд', 'миллиардный', 'миллиардное'],
+    10 ** 12: ['триллион', 'трлн', 'триллионный', 'триллионное'],
 }
 
 revdict = dict(
@@ -86,7 +89,7 @@ revdict = dict(
         v, [k], fillvalue=k) for k, v in numdict.items())))
 
 
-def _anything(start=0, end=10**13):
+def _anything(start=0, end=10 ** 13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
 _thousands_re = r'''
@@ -119,7 +122,7 @@ bignum_re = r'''
     {}?
     (?P<num> (\d+ \. )?\d+) [\s_]?
     (?P<deg>{})
-    '''.format(_sign_re, _anything(10**6))
+    '''.format(_sign_re, _anything(10 ** 6))
 
 
 @num_tp.set_handler(ReHandler, regexp=literal_num_re, flags=98)
@@ -192,7 +195,7 @@ def find_last_word(num):
         return num
     if num < min(numdict) or num > max(numdict):
         return None
-    options = [num % (10**n) for n in range(1, 5)]
+    options = [num % (10 ** n) for n in range(1, 5)]
     options = [i for i in options if i != 0 and i in numdict]
     if not options:
         return None

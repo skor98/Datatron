@@ -4,9 +4,7 @@ import logging
 from core.answer_object import CoreAnswer
 from core.cube_docs_processing import CubeAnswer, CubeProcessor
 from core.minfin_docs_processing import MinfinAnswer
-
 from enums.recognition_accuracy import RecognitionAccuracy
-
 from models.responses.link_model import LinkModel
 from models.responses.question_model import QuestionModel
 
