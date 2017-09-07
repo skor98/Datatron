@@ -11,6 +11,7 @@ import logging
 import os
 import random
 import string
+from time import sleep
 
 from flask import Flask, request, abort
 import requests
@@ -947,9 +948,8 @@ def get_look_also_question_by_num(message: str, num: int):
     """
     Возвращает запрос из смотри также под заданным номером
     """
-    message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
-               for msg in message.split('\n')
-               ]
+    message = [msg[msg.find('.') + 1:msg.rfind('(')].strip('\t ')
+               for msg in message.split('\n')]
 
     return message[num]
 
@@ -1053,7 +1053,11 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
 def long_polling():
     bot.remove_webhook()
     send_admin_messages()
-    bot.polling(none_stop=True)
+    try:
+        bot.polling(none_stop=True)
+    except ConnectionError as err:
+        sleep(10)
+        long_polling()
 
 
 # polling cycle
