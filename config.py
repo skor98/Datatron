@@ -7,8 +7,8 @@
 НЕ место для хранения какого-либо содержательного контента, типа сообщений пользователю.
 """
 
-import json
 from os import path
+import json
 
 
 class SettingsStorer:

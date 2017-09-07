@@ -10,8 +10,8 @@ import logging
 import requests
 
 from config import SETTINGS
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
+import logs_helper  # pylint: disable=unused-import
 
 
 class Solr:

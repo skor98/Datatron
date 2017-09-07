@@ -6,9 +6,9 @@
 Поддерживает голос, текст и возвращает список документов по минфину
 """
 
+from os import path, makedirs
 import json
 import logging
-from os import path, makedirs
 
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
@@ -18,11 +18,11 @@ from config import SETTINGS
 from kb.kb_support_library import get_good_queries
 from kb.kb_support_library import read_minfin_data
 from logs_helper import time_with_message
-import logs_helper
 from messenger_manager import MessengerManager
 from models.responses.text_response_model import TextResponseModel
-import pandas as pd
 from utils.resource_helper import ResourceHelper
+import logs_helper
+import pandas as pd
 
 
 # pylint: disable=unused-import

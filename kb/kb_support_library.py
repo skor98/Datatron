@@ -5,16 +5,16 @@
 Поддерживающие скрипты к базе знаний
 """
 
-import logging
 from os import listdir, path
+import logging
 import random
 import re
 
 from config import SETTINGS, TEST_PATH_RESULTS
+from text_preprocessing import TextPreprocessing
 import kb.kb_db_creation as dbc
 import logs_helper  # pylint: disable=unused-import
 import pandas as pd
-from text_preprocessing import TextPreprocessing
 
 
 TPP = TextPreprocessing(

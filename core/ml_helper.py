@@ -27,10 +27,10 @@ from sklearn.svm import SVC
 
 from config import DATA_PATH
 from kb.kb_db_creation import Member
-import logs_helper
 from model_manager import MODEL_CONFIG, save_default_model
-import numpy as np
 from text_preprocessing import TextPreprocessing
+import logs_helper
+import numpy as np
 
 
 TPP = TextPreprocessing(

@@ -5,9 +5,9 @@
 Взаимодействие с Yandex SpeechKit
 """
 
+from urllib.parse import quote
 import logging
 import subprocess
-from urllib.parse import quote
 
 from ffmpy import FFmpeg
 import httplib2

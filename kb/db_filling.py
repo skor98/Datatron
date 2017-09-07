@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import json
 from os import remove, path
+import json
 
-import kb.kb_db_creation as dbc
 from kb.kb_support_library import create_automative_cube_description
 from text_preprocessing import TextPreprocessing
+import kb.kb_db_creation as dbc
 
 
 TPP = TextPreprocessing(

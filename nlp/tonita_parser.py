@@ -10,8 +10,8 @@ Created on Thu Aug  3 06:39:36 2017
 
 from functools import partial
 from inspect import getfullargspec
-import re
 from typing import Iterable
+import re
 
 from nlp.nlp_utils import try_int
 

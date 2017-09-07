@@ -5,13 +5,13 @@
 Бот телеграма для Datatron
 """
 
+from time import sleep
 import datetime
 import json
 import logging
 import os
 import random
 import string
-from time import sleep
 
 from flask import Flask, request, abort
 import requests
@@ -20,7 +20,6 @@ import uuid
 
 from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
-import constants
 from core.cube_classifier import CubeClassifier
 from core.cube_docs_processing import CubeProcessor
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
@@ -33,6 +32,7 @@ from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
 from speechkit import SpeechException
 from speechkit import text_to_speech, speech_to_text
+import constants
 
 
 # pylint: disable=broad-except
