@@ -505,6 +505,13 @@ def callback_inline(call):
 
 def send_admin_messages(text, crit=False):
     """Безопасная отправка уведомлений администраторам"""
+    
+    if crit:
+        logging.critical("TG_ADMIN_ALERT:\t{}".format(text))
+        msg = "ADMIN_ALERT: {}".format(text)
+    else:
+        logging.info('TG_ADMIN_INFO:\t{}'.format(text))
+        msg = "ADMIN_INFO: {}".format(text)
 
     if crit:
         logging.critical("TG_ADMIN_ALERT:\t{}".format(text))
