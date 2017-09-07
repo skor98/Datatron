@@ -8,6 +8,8 @@
 from json import dumps
 
 
+CUBE_UPDATE_DATE = '31.08.2017'
+
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
 
 TELEGRAM_START_MSG = '''Я – экспертная система Datatron!

@@ -9,6 +9,7 @@ import copy
 import logging
 
 from config import SETTINGS
+from constants import CUBE_UPDATE_DATE
 from core.graph import Graph
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
@@ -294,12 +295,11 @@ class CubeProcessor:
         Актуальность данных по кубам
         """
 
-        date_of_update = '30.08.2017'
         updates = {
-            'CLDO01': date_of_update,
-            'CLDO02': date_of_update,
-            'INDO01': date_of_update,
-            'EXDO01': date_of_update
+            'CLDO01': CUBE_UPDATE_DATE,
+            'CLDO02': CUBE_UPDATE_DATE,
+            'INDO01': CUBE_UPDATE_DATE,
+            'EXDO01': CUBE_UPDATE_DATE,
         }
 
         return updates.get(cube_answer.feedback['formal']['cube'], None)
