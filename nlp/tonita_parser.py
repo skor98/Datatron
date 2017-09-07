@@ -8,11 +8,12 @@ Created on Thu Aug  3 06:39:36 2017
 
 # pylint: disable=missing-docstring
 
-from typing import Iterable
 from functools import partial
 from inspect import getfullargspec
-from nlp.nlp_utils import try_int
 import re
+from typing import Iterable
+
+from nlp.nlp_utils import try_int
 
 
 class TonitaHandler(object):
@@ -22,13 +23,28 @@ class TonitaHandler(object):
 
 
 class ReplaceHandler(TonitaHandler):
-    def __init__(self, substr, repl):
-        super().__init__(process=lambda text: text.replace(substr, repl),
-                         check=lambda text: substr in text)
+    def __init__(self, repl, substr, *,
+                 sep_left=True,
+                 sep_right=True):
+
+        if sep_left:
+            substr = ' ' + substr
+            repl = ' ' + repl
+        if sep_right:
+            substr += ' '
+            repl += ' '
+
+        self.substr = substr
+        self.repl = repl
+
+        def process(text): return ' '.join(['', text, '']).replace(self.substr, self.repl)[1:-1]
+        def check(text): return self.substr in ' '.join(['', text, ''])
+
+        super().__init__(process=process, check=check)
 
     @staticmethod
-    def fromdict(repl_dict):
-        return [ReplaceHandler(k, v) for k, v in repl_dict.items()]
+    def fromdict(repl_dict, **kwargs):
+        return [ReplaceHandler(substr=k, repl=v, **kwargs) for k, v in repl_dict.items()]
 
 
 class ReHandler(TonitaHandler):
@@ -116,7 +132,7 @@ class TonitaParser(object):
         if isinstance(other, TonitaParser):
             return TonitaParser(handlers=other.handlers + self.handlers)
         raise TypeError
-        
+
     def __getitem__(self, idx):
         if isinstance(idx, slice):
             return TonitaParser(handlers=self.handlers[idx])
