@@ -14,9 +14,9 @@ from core.graph import Graph
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
 from core.support_library import FunctionExecutionErrorNoMembers
+from model_manager import MODEL_CONFIG
 import core.support_library as csl
 import logs_helper  # pylint: disable=unused-import
-from model_manager import MODEL_CONFIG
 
 
 class CubeProcessor:

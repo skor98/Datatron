@@ -12,14 +12,14 @@
 Если Результат = idk, то считается, что система не должна что-либо возвращать
 """
 
+from math import isnan
+from os import path, listdir, makedirs
+from statistics import mean, StatisticsError
 import argparse
 import datetime
 import json
 import logging
-from math import isnan
-from os import path, listdir, makedirs
 import re
-from statistics import mean, StatisticsError
 import time
 
 import uuid
@@ -29,9 +29,9 @@ from config import TEST_PATH_CUBE, TEST_PATH_MINFIN, TEST_PATH_RESULTS
 from config import WRONG_AUTO_MINFIN_TESTS_FILE
 from data_retrieving import DataRetrieving
 from logs_helper import string_to_log_level
-import logs_helper
 from model_manager import MODEL_CONFIG
 from model_manager import set_default_model, restore_default_model
+import logs_helper
 
 
 # Иначе много мусора по соединениям

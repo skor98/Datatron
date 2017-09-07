@@ -13,13 +13,13 @@ from nltk.corpus import stopwords
 from pymorphy2 import MorphAnalyzer
 import uuid
 
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
 from nlp.parsers.obscene_parser import obs_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
+import logs_helper  # pylint: disable=unused-import
 
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)

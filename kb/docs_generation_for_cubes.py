@@ -5,23 +5,23 @@
 Генерация документов по кубам
 """
 
+from os import path
 import datetime
 import json
-from os import path
 import subprocess
 
 from peewee import fn
-import requests
 from uuid import uuid4
+import requests
 
 from config import SETTINGS, TECH_CUBE_DOCS_FILE
-import kb.kb_db_creation as dbc
 from kb.kb_support_library import TOO_LONG_ELEMS, USELESS_BGLEVELS
 from kb.kb_support_library import get_cube_dimensions
 from kb.kb_support_library import get_default_cube_measure
 from kb.kb_support_library import get_measure_lem_key_words
 from kb.kb_support_library import get_with_member_to_given_member
 from model_manager import MODEL_CONFIG
+import kb.kb_db_creation as dbc
 import pycurl
 
 

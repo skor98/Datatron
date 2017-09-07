@@ -5,10 +5,10 @@
 Вспомогательные методы для работы с кубами
 """
 
+from os import path
 import datetime
 import json
 import logging
-from os import path
 import re
 
 import requests
@@ -21,9 +21,9 @@ from kb.kb_support_library import get_captions_for_dimensions
 from kb.kb_support_library import get_cube_caption
 from kb.kb_support_library import get_default_member_for_dimension
 from kb.kb_support_library import get_representation_format
-import logs_helper  # pylint: disable=unused-import
 from model_manager import MODEL_CONFIG
 from nlp.feedback_maker import BackFeeder
+import logs_helper  # pylint: disable=unused-import
 
 
 class CubeData:

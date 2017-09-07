@@ -8,8 +8,8 @@
 одного логгера.
 """
 
-import datetime
 from logging import FileHandler, StreamHandler
+import datetime
 import logging
 import re
 import sys
