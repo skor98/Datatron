@@ -43,7 +43,6 @@ logsRetriever = LogsRetriever(LOGS_PATH)
 
 user_name_str = '{} {}'
 
-
 def get_random_id(id_len=4):
     """
     Генерируем случайную буквенно-цифровую последовательность из id_len символов
@@ -504,18 +503,21 @@ def callback_inline(call):
         process_look_also_request(call, 5)
 
 
-def send_admin_messages():
+def send_admin_messages(text, crit=False):
     """Безопасная отправка уведомлений администраторам"""
+    
+    if crit:
+        logging.critical("TG_ADMIN_ALERT:\t{}".format(text))
+        msg = "ADMIN_ALERT: {}".format(text)
+    else:
+        logging.info("TG_ADMIN_INFO:\t{}".format(text))
+        msg = "ADMIN_INFO: {}".format(text)
 
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
         try:
-            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+            bot.send_message(admin_id, msg)
         except telebot.apihelper.ApiException:
-            logging.critical(
-                "Админ {} недоступен для отправки сообщения!".format(
-                    admin_id
-                )
-            )
+            logging.critical("Админ {} недоступен для отправки сообщения!".format(admin_id))
 
 
 def is_has_admin_rights(user_id):
@@ -1030,9 +1032,6 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     )
 
 
-    # send_admin_messages()
-
-
     @app.route('/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
@@ -1050,14 +1049,18 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
             abort(403)
 
 
-def long_polling():
+def long_polling(attempt=0):
     bot.remove_webhook()
-    send_admin_messages()
+    send_admin_messages(constants.TELEGRAM_ADMIN['START'], crit=False)
     try:
         bot.polling(none_stop=True)
     except ConnectionError as err:
-        sleep(10)
-        long_polling()
+        send_admin_messages(constants.TELEGRAM_ADMIN['CONNECTION_ERROR'], crit=True)
+        if attempt < 5:
+            sleep(10)
+            long_polling(attempt=attempt + 1)
+        else:
+            send_admin_messages(constants.TELEGRAM_ADMIN['FAILURE'], crit=True)
 
 
 # polling cycle

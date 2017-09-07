@@ -8,9 +8,15 @@
 from json import dumps
 
 
-CUBE_UPDATE_DATE = '31.08.2017'
+CUBE_UPDATE_DATE = "31.08.2017"
 
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
+
+TELEGRAM_ADMIN = {
+    'START': "Бот запущен",
+    'CONNECTION_ERROR': "Нет подключения к серверу! Повторная попытка через 10 секунд...",
+    'FAILURE': "Перезапустить бота не удалось, необходим ручной перезапуск",
+}
 
 TELEGRAM_START_MSG = '''Я – экспертная система Datatron!
 
