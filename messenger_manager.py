@@ -5,13 +5,13 @@ import logging
 import random
 import re
 
-import constants
 from core.answer_object import CoreAnswer
 from data_retrieving import DataRetrieving
 from dbs.query_db import log_query_to_db
+from manual_testing import get_jaccard
 from speechkit import SpeechException
 from speechkit import speech_to_text
-from manual_testing import get_jaccard
+import constants
 
 
 def log_user_query(request_id, user_id, user_name, platform, query, query_type):

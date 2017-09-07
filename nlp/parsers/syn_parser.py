@@ -8,6 +8,7 @@ Created on Tue Aug 15 15:07:15 2017
 
 from nlp.tonita_parser import TonitaParser, ReHandler
 
+
 syn_tp = TonitaParser()
 
 # распространённые канцелярские сокращения, с точкой/пробелом и без
@@ -34,7 +35,7 @@ russland_names = (
     'русь',
     'наш[\s_]страна',
     'этот?[\s_]страна',
-    'держава', )
+    'держава',)
 syn_tp.handlers.extend(
     ReHandler.fromdict(
         dict.fromkeys(russland_names, 'РФ'),
@@ -46,7 +47,7 @@ syn_tp.handlers.extend(
 minfin_names = (
     'мф',
     'министерство[\s_]финанс(?:ы|овый)?',
-    'финанс(?:ы|овый)?[\s_]министерство', )
+    'финанс(?:ы|овый)?[\s_]министерство',)
 syn_tp.handlers.extend(
     ReHandler.fromdict(
         dict.fromkeys(minfin_names, 'минфин'),

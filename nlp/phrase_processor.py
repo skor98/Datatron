@@ -6,8 +6,9 @@ Created on Mon Jul 24 13:13:08 2017
 @author: larousse
 """
 
-from nlp import nlp_utils
 from pymorphy2 import MorphAnalyzer
+
+from nlp import nlp_utils
 
 
 class Word(object):
@@ -29,12 +30,14 @@ class Word(object):
     @property
     def verbal(self):
         res = self.original.word if not self.noproc else self.original
+        # TODO: выпилить костыль
         if 'высочайш' in res:
             res = res.replace('очай', '')
+
         if self.caps == 'upper':
             return res.upper()
         if self.caps == 'title':
-            return res.capitalize()
+            return '-'.join(w.capitalize() for w in res.split('-'))
         return res.lower()
 
     @property
@@ -142,7 +145,7 @@ class Word(object):
                 self.verbal,
                 self.normal,
                 ', '.join(self.deriv_tags),
-                '/'.join(self.infl_tags), )
+                '/'.join(self.infl_tags),)
 
 
 class Phrase(object):

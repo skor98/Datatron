@@ -10,6 +10,7 @@ from datetime import datetime
 
 from nlp.tonita_parser import TonitaParser, ReHandler
 
+
 time_tp = TonitaParser()
 
 norm_months = [
@@ -146,9 +147,9 @@ def rel_h(point, begin, last, next_, unit, month, season):
         month = norm_months.index(month) + 1
         newdate = datetime(year=newdate.year, month=month, day=1)
         u_len = 1
-        
+
     newdate = process_units(newdate, u_len, begin)
-    
+
     nomonth = u_len == 12 and point is None
     return date_to_text(newdate, nomonth=nomonth)
 

@@ -5,14 +5,13 @@
 Управление классами ядра системы
 """
 
-import logging
 from os import path
 import json
+import logging
 
-from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from config import SETTINGS
 from config import TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE
-
+from constants import ERROR_NO_DOCS_FOUND, ERROR_REQUEST_CONTAINS_BAD_WORD
 from core.answer_object import CoreAnswer
 from core.cube_classifier import CubeClassifier
 from core.cube_docs_processing import CubeAnswer
@@ -24,10 +23,8 @@ from core.support_library import group_documents
 from core.support_library import process_cube_answer
 from core.support_library import process_server_response
 from core.support_library import send_request_to_server
-
 from model_manager import MODEL_CONFIG
 from text_preprocessing import TextPreprocessing
-
 import logs_helper  # pylint: disable=unused-import
 
 
@@ -59,13 +56,15 @@ class DataRetrieving:
         )
 
         # обработка плохих слов
-        if '<censored>' in norm_user_request:
+        badcount = norm_user_request.count('<censored>')
+        if badcount > 0:
             core_answer.bad_content = True
             core_answer.message = ERROR_REQUEST_CONTAINS_BAD_WORD
 
             logging.info(
-                'Query_ID: {}\tMessage: Запрос содержал плохое слов(о/а)'.format(
-                    request_id
+                'Query_ID: {}\tMessage: Запрос содержал {}'.format(
+                    request_id,
+                    'плохое слово' if badcount == 1 else 'плохие слова'
                 )
             )
 

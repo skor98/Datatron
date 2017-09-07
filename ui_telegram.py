@@ -5,6 +5,7 @@
 Бот телеграма для Datatron
 """
 
+from time import sleep
 import datetime
 import json
 import logging
@@ -19,7 +20,6 @@ import uuid
 
 from config import DATE_FORMAT, LOGS_PATH
 from config import SETTINGS
-import constants
 from core.cube_classifier import CubeClassifier
 from core.cube_docs_processing import CubeProcessor
 from core.cube_or_minfin_classifier import CubeOrMinfinClassifier
@@ -30,8 +30,10 @@ from dbs.user_support_library import get_feedbacks
 from kb.kb_support_library import get_good_queries
 from logs_helper import LogsRetriever
 from messenger_manager import MessengerManager
-from speechkit import text_to_speech, speech_to_text
 from speechkit import SpeechException
+from speechkit import text_to_speech, speech_to_text
+import constants
+
 
 # pylint: disable=broad-except
 bot = telebot.TeleBot(SETTINGS.TELEGRAM.API_TOKEN)
@@ -40,7 +42,6 @@ app = None
 logsRetriever = LogsRetriever(LOGS_PATH)
 
 user_name_str = '{} {}'
-
 
 def get_random_id(id_len=4):
     """
@@ -502,18 +503,21 @@ def callback_inline(call):
         process_look_also_request(call, 5)
 
 
-def send_admin_messages():
+def send_admin_messages(text, crit=False):
     """Безопасная отправка уведомлений администраторам"""
+    
+    if crit:
+        logging.critical("TG_ADMIN_ALERT:\t{}".format(text))
+        msg = "ADMIN_ALERT: {}".format(text)
+    else:
+        logging.info("TG_ADMIN_INFO:\t{}".format(text))
+        msg = "ADMIN_INFO: {}".format(text)
 
     for admin_id in SETTINGS.TELEGRAM.ADMIN_IDS:
         try:
-            bot.send_message(admin_id, "ADMIN_INFO: Бот запущен")
+            bot.send_message(admin_id, msg)
         except telebot.apihelper.ApiException:
-            logging.critical(
-                "Админ {} недоступен для отправки сообщения!".format(
-                    admin_id
-                )
-            )
+            logging.critical("Админ {} недоступен для отправки сообщения!".format(admin_id))
 
 
 def is_has_admin_rights(user_id):
@@ -946,9 +950,8 @@ def get_look_also_question_by_num(message: str, num: int):
     """
     Возвращает запрос из смотри также под заданным номером
     """
-    message = [msg.rsplit('(', 1)[0].replace(str(num) + '.', '')
-               for msg in message.split('\n')
-               ]
+    message = [msg[msg.find('.') + 1:msg.rfind('(')].strip('\t ')
+               for msg in message.split('\n')]
 
     return message[num]
 
@@ -1029,9 +1032,6 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     )
 
 
-    # send_admin_messages()
-
-
     @app.route('/', methods=['GET', 'HEAD'])
     def main():
         """Тестовая страница"""
@@ -1049,10 +1049,18 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
             abort(403)
 
 
-def long_polling():
+def long_polling(attempt=0):
     bot.remove_webhook()
-    send_admin_messages()
-    bot.polling(none_stop=True)
+    send_admin_messages(constants.TELEGRAM_ADMIN['START'], crit=False)
+    try:
+        bot.polling(none_stop=True)
+    except ConnectionError as err:
+        send_admin_messages(constants.TELEGRAM_ADMIN['CONNECTION_ERROR'], crit=True)
+        if attempt < 5:
+            sleep(10)
+            long_polling(attempt=attempt + 1)
+        else:
+            send_admin_messages(constants.TELEGRAM_ADMIN['FAILURE'], crit=True)
 
 
 # polling cycle

@@ -5,22 +5,23 @@
 Генерация документов по Минфину
 """
 
+from os import listdir, path
 import json
 import logging
 import math
-from os import listdir, path
 import subprocess
 import sys
+
 from uuid import uuid4
 
 from config import SETTINGS, TEST_PATH_MINFIN, TECH_MINFIN_DOCS_FILE
 from kb.kb_support_library import read_minfin_data
 from model_manager import MODEL_CONFIG
+from text_preprocessing import TextPreprocessing
+import logs_helper  # pylint: disable=unused-import
 import pandas as pd
 import pycurl
-from text_preprocessing import TextPreprocessing
 
-import logs_helper  # pylint: disable=unused-import
 
 # Название файла с готовой структурой данных
 # по вопросам Минфина для последующей индексации в Apache Solr

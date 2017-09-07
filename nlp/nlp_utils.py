@@ -105,15 +105,15 @@ def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):
         if TokenTypes.in_type(token, 'whitespace'):
             if not with_spaces:
                 token = None
-            tokens[idx] = (token, )
+            tokens[idx] = (token,)
             continue
         if TokenTypes.in_type(token, 'punctuation'):
             if not with_punct:
                 token = None
-            tokens[idx] = (token, )
+            tokens[idx] = (token,)
             continue
         if TokenTypes.in_type(token, ('null', 'word')):
-            tokens[idx] = (token, )
+            tokens[idx] = (token,)
             continue
 
         newtokens = nltk.word_tokenize(token)
@@ -121,7 +121,7 @@ def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):
             newtoken = re_strip(
                 TokenTypes.type_re('punctuation'), newtoken, only_text=False)
             if not with_punct:
-                newtoken = (newtoken[1], )
+                newtoken = (newtoken[1],)
             else:
                 newtoken = [
                     i[0] if isinstance(i, tuple) else i for i in newtoken

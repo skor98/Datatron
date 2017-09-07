@@ -16,11 +16,11 @@ import uuid
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
 from nlp.parsers.num_parser import num_tp
+from nlp.parsers.obscene_parser import obs_tp
 from nlp.parsers.syn_parser import syn_tp
 from nlp.parsers.time_parser import time_tp
-from nlp.parsers.obscene_parser import obs_tp
-
 import logs_helper  # pylint: disable=unused-import
+
 
 logging.getLogger("pymorphy2").setLevel(logging.ERROR)
 
@@ -94,7 +94,10 @@ class TextPreprocessing(object):
 
         # Убираем плюсы-ударения
         if '+' in text:
+            text = text.replace('\\+', '')
             text = text.replace('+', '')
+
+        # TODO: убрать костыль
         if 'ъем' in text:
             text = text.replace('ъем', 'ъём')
 
@@ -163,7 +166,7 @@ class TextPreprocessing(object):
     def setup_str(self):
         af_str = 'дополнительные фильтры неактивны'
         if self.active_params:
-            af_str = 'активные фильтры — {}'.format(', '.join(self.active_params))
+            af_str = 'активные фильтры - {}'.format(', '.join(self.active_params))
 
         if not self.stop_words:
             cust_sw_str = 'нет фильтрации стоп-слов'
@@ -178,7 +181,7 @@ class TextPreprocessing(object):
             cust_sw_str,
             af_str
         )
-        
+
     def __repr__(self):
         return '<{}>'.format(self.setup_str)
 
