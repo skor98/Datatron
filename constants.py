@@ -7,9 +7,6 @@
 
 from json import dumps
 
-
-CUBE_UPDATE_DATE = "19.09.2017"
-
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
 
 TELEGRAM_ADMIN = {
