@@ -1026,10 +1026,7 @@ if SETTINGS.TELEGRAM.ENABLE_WEBHOOK:
     WEBHOOK_URL_PATH = "/{}/".format(SETTINGS.TELEGRAM.API_TOKEN)
 
     bot.remove_webhook()
-    bot.set_webhook(
-        url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
-        certificate=open(SETTINGS.WEB_SERVER.PATH_TO_PEM_CERTIFICATE, 'r')
-    )
+    bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH)
 
 
     @app.route('/', methods=['GET', 'HEAD'])
