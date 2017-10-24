@@ -2,7 +2,7 @@
     "best_cube_data_threshold": 5,
     "cube_answers_scoring_model": "sum",
     "cube_boosting_threshold": 25,
-    "cube_update_date": "30.09.2017",
+    "cube_update_date": "05.10.2017",
     "cube_weight_in_sum_scoring_model": 1.25,
     "delete_repeating_words_in_request": true,
     "enable_idea_command_from_db": false,

@@ -1057,7 +1057,7 @@ def long_polling(attempt=0):
     except ConnectionError as err:
         send_admin_messages(constants.TELEGRAM_ADMIN['CONNECTION_ERROR'], crit=True)
         if attempt < 5:
-            sleep(10)
+            sleep(20)
             long_polling(attempt=attempt + 1)
         else:
             send_admin_messages(constants.TELEGRAM_ADMIN['FAILURE'], crit=True)
