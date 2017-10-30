@@ -126,7 +126,8 @@ def time_with_message(message, level="INFO", critical_seconds=None):
 
                 if time_delta > critical_td:
                     warning_template = 'ПРЕВЫШЕНО критическое время "{}" реальное: {}'
-                    logging.warning(warning_template.format(message, time_delta))
+                    logging.warning(
+                        warning_template.format(message, time_delta))
 
             return func_result
 
@@ -212,11 +213,13 @@ class LogsRetriever:
                 query_text = query_text.strip()
 
                 line_splitted = line.split()
-                line_dt = LogsRetriever._get_dt_from_line(line_splitted[0] + " " + line_splitted[1])
+                line_dt = LogsRetriever._get_dt_from_line(
+                    line_splitted[0] + " " + line_splitted[1])
                 if line_dt + time_delta < dt_now:
                     # слишком старое
                     continue
-                possible_querie_res.append(re.compile(query_pattern.format(query_id)))
+                possible_querie_res.append(
+                    re.compile(query_pattern.format(query_id)))
 
                 logs.append("{} {}".format(query_id, query_text))
             except:
@@ -240,7 +243,8 @@ class LogsRetriever:
         for line in open(self.path_to_log_file, encoding='utf-8'):
             try:
                 line_splitted = line.split()
-                line_dt = LogsRetriever._get_dt_from_line(line_splitted[0] + " " + line_splitted[1])
+                line_dt = LogsRetriever._get_dt_from_line(
+                    line_splitted[0] + " " + line_splitted[1])
                 if line_dt + time_delta < dt_now:
                     # слишком старое
                     continue

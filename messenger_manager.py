@@ -37,7 +37,8 @@ def log_user_query(request_id, user_id, user_name, platform, query, query_type):
     ))
 
     # Сохраняем в базе
-    log_query_to_db(request_id, user_id, user_name, platform, query, query_type)
+    log_query_to_db(request_id, user_id, user_name,
+                    platform, query, query_type)
 
 
 class MessengerManager:

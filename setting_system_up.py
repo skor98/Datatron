@@ -24,7 +24,9 @@ from model_manager import MODEL_CONFIG, set_default_model, restore_default_model
 import logs_helper
 
 
-CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(
+    ' ', '_').replace(':', '-').replace('.', '-')
+
 
 @logs_helper.time_with_message("set_up_db", "info")
 def set_up_db():

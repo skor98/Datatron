@@ -21,7 +21,6 @@ import json
 import logging
 import re
 import time
-
 import uuid
 
 from config import DATETIME_FORMAT, LOG_LEVEL
@@ -37,7 +36,8 @@ import logs_helper
 # Иначе много мусора по соединениям
 logging.getLogger("requests").setLevel(logging.WARNING)
 
-CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(' ', '_').replace(':', '-').replace('.', '-')
+CURRENT_DATETIME_FORMAT = DATETIME_FORMAT.replace(
+    ' ', '_').replace(':', '-').replace('.', '-')
 
 # Если система не должна выдавать ответа, "я не знаю"
 IDK_STRING = "idk"
@@ -100,13 +100,15 @@ class QualityTester:
             is_need_logging=False
     ):
         if not is_need_cube and not is_need_minfin:
-            raise Exception("Пустое тестирование! Нужно указать хотя бы чтот-то")
+            raise Exception(
+                "Пустое тестирование! Нужно указать хотя бы чтот-то")
 
         self._testers = {}
         if is_need_cube:
             self._testers["cube"] = CubeTester(is_need_logging=is_need_logging)
         if is_need_minfin:
-            self._testers["minfin"] = MinfinTester(is_need_logging=is_need_logging)
+            self._testers["minfin"] = MinfinTester(
+                is_need_logging=is_need_logging)
         self._is_need_logging = is_need_logging
 
     def run(self):
@@ -119,13 +121,15 @@ class QualityTester:
 
         if "cube" in self._testers:
             cube_res = self._testers["cube"].run()
-            cube_total = cube_res["true"] + cube_res["wrong"] + cube_res["error"]
+            cube_total = cube_res["true"] + \
+                cube_res["wrong"] + cube_res["error"]
             cube_score = float(cube_res["true"]) / cube_total
             cube_res["score"] = cube_score
 
         if "minfin" in self._testers:
             minfin_res = self._testers["minfin"].run()
-            minfin_total = minfin_res["true"] + minfin_res["wrong"] + minfin_res["error"]
+            minfin_total = minfin_res["true"] + \
+                minfin_res["wrong"] + minfin_res["error"]
             minfin_score = float(minfin_res["true"]) / minfin_total
             minfin_res["score"] = minfin_score
 
@@ -243,7 +247,7 @@ class BaseTester:
             "MAC": safe_mean(self.get_absolute_confidences()),
             "time": {
                 per: self._seconds[round(len(self._seconds) * per / 100.)] for per in self._percentiles
-                }
+            }
         }
 
     def get_log_filename_pattern(self):
@@ -407,8 +411,10 @@ class BaseTester:
         # по минфину обновляться не будут
         if not MODEL_CONFIG["use_local_file_processing_for_minfin"]:
             if isinstance(self, MinfinTester):
-                bad_mifin_query = re.compile(r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
-                should_get_number = re.compile(r'должны получать:(\d+(\.\d+)+)')
+                bad_mifin_query = re.compile(
+                    r'Запрос\s*"(.+)"\s*отрабатывает некорректно')
+                should_get_number = re.compile(
+                    r'должны получать:(\d+(\.\d+)+)')
 
                 type_of_test = 0
                 only_wrong_manual_tests = {}
@@ -422,10 +428,13 @@ class BaseTester:
                         if type_of_test:
                             questions = bad_mifin_query.findall(res)
                             if questions:
-                                question = questions[0].lower().replace('?', '')
-                                only_wrong_manual_tests[question] = should_get_number.search(res).group(1)
+                                question = questions[0].lower(
+                                ).replace('?', '')
+                                only_wrong_manual_tests[question] = should_get_number.search(
+                                    res).group(1)
 
-                log_filename = path.join(TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
+                log_filename = path.join(
+                    TEST_PATH_RESULTS, WRONG_AUTO_MINFIN_TESTS_FILE)
                 with open(log_filename, 'w', encoding='utf-8') as file_out:
                     file_out.write(json.dumps(
                         only_wrong_manual_tests,
@@ -433,7 +442,8 @@ class BaseTester:
                         indent=4
                     ))
 
-        logging.info("{} takes {} seconds".format(self.__class__.__name__, time_delta))
+        logging.info("{} takes {} seconds".format(
+            self.__class__.__name__, time_delta))
 
         restore_default_model()  # Возвращаем данные модели
 
@@ -570,7 +580,8 @@ class CubeTester(BaseTester):
 
         measure_p = re.compile(r'(?<=\[MEASURES\]\.\[)\w*')
         cube_p = re.compile(r'(?<=FROM \[)\w*')
-        members_p = re.compile(r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
+        members_p = re.compile(
+            r'(\[\w+(?<!MEASURES)\]\.(?:\[[0-9-]*\]|\[\w+\]))')
 
         def get_measure(mdx_query):
             """Получение регуляркой меры"""
@@ -715,11 +726,13 @@ class MinfinTester(BaseTester):
 
         try:
             nearest_result = self._get_nearest_result(system_answer)
-            absolute_confidence = system_answer['answer']['score'] - nearest_result
+            absolute_confidence = system_answer['answer']['score'] - \
+                nearest_result
             self._add_absolute_confidence(absolute_confidence)
 
             self._add_threshold_confidence(
-                system_answer['answer']['score'] - MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
+                system_answer['answer']['score'] -
+                MODEL_CONFIG["relevant_minfin_main_answer_threshold"]
             )
         except:
             # Для Idk запросов это абсолютно нормально, что у них нет скора

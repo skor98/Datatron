@@ -18,8 +18,8 @@ norm_months = [
     'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
 ]
 time_tp.handlers.extend(ReHandler.fromdict(
-        {m[:3]: m for m in norm_months if len(m) > 3},
-        flags=98
+    {m[:3]: m for m in norm_months if len(m) > 3},
+    flags=98
 ))
 anymonth = '|'.join(norm_months)
 
@@ -61,7 +61,7 @@ begin_kw = ('состояние на', 'канун', 'старт')
 end_kw = ('конец', 'итог', 'финал', 'окончание')
 
 points_re = r'(?P<point> (?P<begin>{}) | (?P<end>{}) )'.format(
-        '|'.join(begin_kw), '|'.join(end_kw))
+    '|'.join(begin_kw), '|'.join(end_kw))
 
 multipoints_re = r'(?: (?: {p}) [\s_] )+ ({p})'.format(
     p='|'.join(begin_kw + end_kw))

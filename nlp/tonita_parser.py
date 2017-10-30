@@ -37,7 +37,9 @@ class ReplaceHandler(TonitaHandler):
         self.substr = substr
         self.repl = repl
 
-        def process(text): return ' '.join(['', text, '']).replace(self.substr, self.repl)[1:-1]
+        def process(text): return ' '.join(
+            ['', text, '']).replace(self.substr, self.repl)[1:-1]
+
         def check(text): return self.substr in ' '.join(['', text, ''])
 
         super().__init__(process=process, check=check)

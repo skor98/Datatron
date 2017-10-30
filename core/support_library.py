@@ -116,7 +116,7 @@ def form_feedback(mdx_query: str, user_request: str):
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
         get_captions_for_dimensions(i['val'], cube) for i in members
-        ]
+    ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
@@ -168,7 +168,7 @@ def get_pretty_feedback(mdx_query: str):
     # Полные вербальные отражения значений измерений и меры
     full_verbal_dimensions_value = [
         get_captions_for_dimensions(i['val'], cube) for i in members
-        ]
+    ]
     full_verbal_measure_value = get_caption_for_measure(measure_value, cube)
 
     # фидбек в удобном виде для конвертации в JSON-объект
@@ -454,7 +454,7 @@ def select_measure_for_selected_cube(cube_data: CubeData):
         cube_data.measures = [
             item for item in cube_data.measures
             if item['cube'] == cube_data.selected_cube['cube']
-            ]
+        ]
 
         if cube_data.measures:
             # Чтобы снизить стремление алгоритма выбрать хоть какую-нибудь меру
@@ -571,7 +571,7 @@ def combine_search_tech_minfin_data(found_minfin_doc: dict):
         needed_doc = [
             doc for doc in data
             if doc['inner_id'] == found_minfin_doc['inner_id']
-            ]
+        ]
 
         for key, value in needed_doc[0].items():
             found_minfin_doc[key] = value
@@ -586,7 +586,7 @@ def combine_search_tech_cube_data(found_cube_doc: dict):
         needed_doc = [
             doc for doc in data
             if doc['inner_id'] == found_cube_doc['inner_id']
-            ]
+        ]
 
         for key, value in needed_doc[0].items():
             found_cube_doc[key] = value
@@ -616,7 +616,8 @@ def score_cube_question(cube_data: CubeData):
         cube_data.score['sum'] = sum((
             MODEL_CONFIG["cube_weight_in_sum_scoring_model"] * cube_score,
             max_member_score if max_member_score else 0,
-            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] * measure_score,
+            MODEL_CONFIG["measure_weight_in_sum_scoring_model"] *
+            measure_score,
             cube_data.terr_member['score'] if cube_data.terr_member else 0
         ))
 
@@ -718,8 +719,8 @@ def process_with_members(cube_data: CubeData):
             # То элемент и связанное значение игнорируется
             if (with_member_dim == 'TERRITORIES' and
                     cube_data.terr_member and
-                        cube_data.terr_member['cube_value'] != '08-2' and
-                        member['score'] < cube_data.terr_member['score']):
+                cube_data.terr_member['cube_value'] != '08-2' and
+                    member['score'] < cube_data.terr_member['score']):
                 cube_data.members.remove(member)
             else:
                 cube_data.members.append({
@@ -760,7 +761,7 @@ def process_with_member_for_territory(cube_data: CubeData):
                 connected_member = cube_data.terr_member['connected_value.member_cube_value']
                 member_with_found_dim = [
                     member for member in cube_data.members if member['dimension'] == connected_dim
-                    ][0]
+                ][0]
 
                 if connected_member != member_with_found_dim['cube_value']:
                     if member_with_found_dim.get('score', None):

@@ -9,7 +9,6 @@ import copy
 import logging
 
 from config import SETTINGS
-from constants import CUBE_UPDATE_DATE
 from core.graph import Graph
 from core.support_library import CubeData
 from core.support_library import FunctionExecutionError
@@ -103,11 +102,13 @@ class CubeProcessor:
             # фильтрация по наличие данных возможно только на этом этапе
             # когда собран MDX-запрос
             if SETTINGS.CHECK_CUBE_DATA_EXISTENCE:
-                confidence = csl.filter_cube_data_without_answer(cube_data_list)
+                confidence = csl.filter_cube_data_without_answer(
+                    cube_data_list)
 
                 # после фильтрации по наличию данных можно выбрать лучший
                 # как с помощью классификатора, так и по умолчанию (то есть по скору)
-                csl.best_answer_depending_on_cube(cube_data_list, correct_cube[0])
+                csl.best_answer_depending_on_cube(
+                    cube_data_list, correct_cube[0])
 
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list
@@ -295,11 +296,13 @@ class CubeProcessor:
         Актуальность данных по кубам
         """
 
+        cube_update_date = MODEL_CONFIG["cube_update_date"]
+
         updates = {
-            'CLDO01': CUBE_UPDATE_DATE,
-            'CLDO02': CUBE_UPDATE_DATE,
-            'INDO01': CUBE_UPDATE_DATE,
-            'EXDO01': CUBE_UPDATE_DATE,
+            'CLDO01': cube_update_date,
+            'CLDO02': cube_update_date,
+            'INDO01': cube_update_date,
+            'EXDO01': cube_update_date,
         }
 
         return updates.get(cube_answer.feedback['formal']['cube'], None)

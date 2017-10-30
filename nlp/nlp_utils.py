@@ -15,8 +15,10 @@ class TokenTypes(object):
         ('complex_num', re.compile(r'([\d\W]+)')),
         ('word', re.compile(r'([a-zа-яё]+)', re.IGNORECASE)),
         ('distorted_word', re.compile(r'([^\s_]+)', re.IGNORECASE)),
-        ('wordset', re.compile(r'((?:[a-zа-яё]+(?:[\s_]|$)+)+)', re.IGNORECASE)),
-        ('text', re.compile(r'((?:(?:(?:\d|[^\s\w])*|[^\s\w_]*[a-zа-яё]+[^\s\w]*)(?:[\s_]|$)+)+)', re.IGNORECASE)),
+        ('wordset', re.compile(
+            r'((?:[a-zа-яё]+(?:[\s_]|$)+)+)', re.IGNORECASE)),
+        ('text', re.compile(
+            r'((?:(?:(?:\d|[^\s\w])*|[^\s\w_]*[a-zа-яё]+[^\s\w]*)(?:[\s_]|$)+)+)', re.IGNORECASE)),
         ('unknown', re.compile(r'.*', re.DOTALL))
     ))
 
@@ -95,7 +97,8 @@ def try_int(obj):
     return int(obj)
 
 
-token_split_re = re.compile(r'((?:[\s_]+)|(?<=[a-zа-яё])/(?=[a-zа-яё]))', re.DOTALL)
+token_split_re = re.compile(
+    r'((?:[\s_]+)|(?<=[a-zа-яё])/(?=[a-zа-яё]))', re.DOTALL)
 
 
 def advanced_tokenizer(text: str, with_punct=False, with_spaces=False):

@@ -185,7 +185,8 @@ def get_data(cube_list):
                 'dimensionName': dimen.name,
                 'rootUniqueName': ''
             }
-            child = requests.post('http://conf.prod.fm.epbs.ru/mdxexpert/Members', child_request)
+            child = requests.post(
+                'http://conf.prod.fm.epbs.ru/mdxexpert/Members', child_request)
             child_json = json.loads(child.text)
             if child_json[0]["childCount"] != 0:
                 ChildArray.append(child_json[0])

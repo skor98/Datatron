@@ -78,7 +78,8 @@ def get_queries(user_id, time_delta):
             (UserQuery.date >= datetime.datetime.now() - time_delta)
         )
     else:
-        db_res = select.where((UserQuery.date >= datetime.datetime.now() - time_delta))
+        db_res = select.where(
+            (UserQuery.date >= datetime.datetime.now() - time_delta))
 
     if user_id:
         return tuple(["{} {}".format(row.date, row.query) for row in db_res])

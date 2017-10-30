@@ -64,6 +64,7 @@ def save_default_model(mdl: ModelManager):
     MODEL_CONFIG.save(MODEL_CONFIG_PATH)
     return MODEL_CONFIG
 
+
 def restore_default_model():
     """Восстанавливает настройки модели из файла"""
     global MODEL_CONFIG

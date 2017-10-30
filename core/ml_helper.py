@@ -103,8 +103,8 @@ class BaseTextClassifier():
                        list(enumerate(res.tolist())),
                        key=lambda x: x[1],
                        reverse=True
-                   )
-                   )
+        )
+        )
 
     def train(self):
         """Полностью инкапсулирует обучение модели"""
@@ -145,7 +145,8 @@ class BaseTextClassifier():
         with open(os.path.join(path, self._get_ind_to_class_name()), "r") as f:
             self._ind_to_class = json.load(f)
         # надо сделать ключи числами:
-        self._ind_to_class = {int(i): self._ind_to_class[i] for i in self._ind_to_class}
+        self._ind_to_class = {
+            int(i): self._ind_to_class[i] for i in self._ind_to_class}
 
     def _save(self, path: str):
         """Сохраняет модель. Не должен вызываться явно."""
@@ -156,7 +157,8 @@ class BaseTextClassifier():
             pickle.dump(self._scaler, f)
 
         with open(os.path.join(path, self._get_words_to_ind_name()), "w") as f:
-            json.dump(self._words_to_ind, f, indent=4, ensure_ascii=False, sort_keys=True)
+            json.dump(self._words_to_ind, f, indent=4,
+                      ensure_ascii=False, sort_keys=True)
 
         with open(os.path.join(path, self._get_ind_to_class_name()), "w") as f:
             json.dump(self._ind_to_class, f, indent=4, ensure_ascii=False)
@@ -271,7 +273,8 @@ def select_best_model(data, ind_to_class, kfolds: int, config_prefix: str):
             y_train_real = np.concatenate((y_train_real, Y_train))
 
             y_test_pred = np.concatenate((y_test_pred, clf.predict(X_test)))
-            y_test_pred_proba = np.concatenate((y_test_pred_proba, clf.predict_proba(X_test)))
+            y_test_pred_proba = np.concatenate(
+                (y_test_pred_proba, clf.predict_proba(X_test)))
             y_test_real = np.concatenate((y_test_real, Y_test))
 
         if log_loss(y_test_real, y_test_pred_proba) < best_log_loss:
@@ -302,15 +305,19 @@ def select_best_model(data, ind_to_class, kfolds: int, config_prefix: str):
         target_names=tuple(ind_to_class.values())
     ))
 
-    logging.info("Сохраняю новые параметры {}-{}".format(best_clf_name, best_params))
+    logging.info(
+        "Сохраняю новые параметры {}-{}".format(best_clf_name, best_params))
     if best_clf_name == "logistic":
         MODEL_CONFIG["{}_type".format(config_prefix)] = "LogisticRegression"
         MODEL_CONFIG["{}_reg".format(config_prefix)] = best_params["C"]
     elif best_clf_name == "GB":
         MODEL_CONFIG["{}_type".format(config_prefix)] = "GradientBoosting"
-        MODEL_CONFIG["{}_gb_estimators".format(config_prefix)] = best_params["n_estimators"]
-        MODEL_CONFIG["{}_gb_learning_rate".format(config_prefix)] = best_params["learning_rate"]
-        MODEL_CONFIG["{}_gb_max_depth".format(config_prefix)] = best_params["max_depth"]
+        MODEL_CONFIG["{}_gb_estimators".format(
+            config_prefix)] = best_params["n_estimators"]
+        MODEL_CONFIG["{}_gb_learning_rate".format(
+            config_prefix)] = best_params["learning_rate"]
+        MODEL_CONFIG["{}_gb_max_depth".format(
+            config_prefix)] = best_params["max_depth"]
     elif best_clf_name == "SVM":
         MODEL_CONFIG["{}_type".format(config_prefix)] = "SVM"
         MODEL_CONFIG["{}_reg".format(config_prefix)] = best_params["C"]
@@ -335,7 +342,8 @@ def _train_model(X, Y, config_prefix):
         clf = LogisticRegression(C=clf_reg, n_jobs=-1)
     elif model_type == "GradientBoosting":
         n_estimators = MODEL_CONFIG["{}_gb_estimators".format(config_prefix)]
-        learning_rate = MODEL_CONFIG["{}_gb_learning_rate".format(config_prefix)]
+        learning_rate = MODEL_CONFIG["{}_gb_learning_rate".format(
+            config_prefix)]
         max_depth = MODEL_CONFIG["{}_gb_max_depth".format(config_prefix)]
         clf = GradientBoostingClassifier(
             n_estimators=n_estimators,
@@ -459,7 +467,8 @@ def preprocess(s: str):
             break
 
     # ToDo: Конечно, надо бы написать какой-нибудь модуль с синонимами, но пока излишне
-    fb_members = [{"фб"}, {"федеральный", "бюджет"}, {"фед", "бюджет"}, {"федбюджет"}]
+    fb_members = [{"фб"}, {"федеральный", "бюджет"},
+                  {"фед", "бюджет"}, {"федбюджет"}]
     for fb in fb_members:
         if fb.issubset(res):
             res = res.difference(fb)
