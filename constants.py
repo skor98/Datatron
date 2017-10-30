@@ -7,13 +7,12 @@
 
 from json import dumps
 
+
 CMD_START_MSG = "Вас приветствует экспертная система Datatron!"
 
-TELEGRAM_ADMIN = {
-    'START': "Бот запущен",
-    'CONNECTION_ERROR': "Нет подключения к серверу! Повторная попытка через 10 секунд...",
-    'FAILURE': "Перезапустить бота не удалось, необходим ручной перезапуск",
-}
+TELEGRAM_STARTUP_ADMIN_MSG = "Бот запущен"
+TELEGRAM_CRITICAL_ADMIN_MSG = "В работе бота возникла ошибка:\n{ex}"
+TELEGRAM_STOP_ADMIN_MSG = "Бот прекратил работу"
 
 TELEGRAM_START_MSG = '''Я – экспертная система Datatron!
 

@@ -10,16 +10,11 @@ from werkzeug.serving import run_simple
 from werkzeug.wsgi import DispatcherMiddleware
 
 from config import SETTINGS, SETTINGS_PATH
-from ui_telegram import app as telegram_app
+from telegram.webhook_api import app as telegram_app
 from ui_web_api import app as web_api_app
 
 
-if telegram_app is None:
-    server_app = web_api_app
-elif web_api_app is None:
-    server_app = telegram_app
-else:
-    server_app = DispatcherMiddleware(web_api_app, {'/telebot': telegram_app})
+server_app = DispatcherMiddleware(web_api_app, {'/telebot': telegram_app})
 
 
 def run_server():
