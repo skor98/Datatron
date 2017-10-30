@@ -92,6 +92,7 @@ revdict = dict(
 def _anything(start=0, end=10 ** 13):
     return '|'.join(i for i in revdict if start <= revdict[i] < end)
 
+
 _thousands_re = r'''
    (?:
     (?P<m_num> {} | (\d+ \. )?\d+) [\s_] (?: {})
@@ -182,6 +183,7 @@ def roman_h(full):
 
 contracted_re = r'(?P<num>\d+)-?(?P<post>[а-яё]+)'
 
+
 @num_tp.set_handler(ReHandler, regexp=contracted_re, flags=98)
 def contracted_h(num, post):
     forms = wordforms.get(find_last_word(num), [])
@@ -201,6 +203,8 @@ def find_last_word(num):
         return None
     return options[-1]
 
+
 morph = MorphAnalyzer()
 
-wordforms = {num: set(chain.from_iterable([form.word for form in morph.parse(word)[0].lexeme] for word in verb)) for num, verb in numdict.items()}
+wordforms = {num: set(chain.from_iterable([form.word for form in morph.parse(
+    word)[0].lexeme] for word in verb)) for num, verb in numdict.items()}

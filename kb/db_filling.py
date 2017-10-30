@@ -16,6 +16,7 @@ TPP = TextPreprocessing(
     parse_obsc=False
 )
 
+
 class KnowledgeBaseSupport:
     def __init__(self, data_source_file, db_file):
         self.data_source_file = data_source_file
@@ -152,7 +153,8 @@ class KnowledgeBaseSupport:
         for cube in dbc.Cube.select().where(dbc.Cube.name in cubes):
             if cube.lem_description == '-':
                 description = create_automative_cube_description(cube.name)
-                dbc.Cube.update(lem_description=description).where(dbc.Cube.name == cube.name).execute()
+                dbc.Cube.update(lem_description=description).where(
+                    dbc.Cube.name == cube.name).execute()
 
 
 class DataSet:

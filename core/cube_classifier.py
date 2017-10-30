@@ -87,7 +87,8 @@ def _get_cubes_tests_data():
             # Фидбек относится к тому же кубу, что и исходные данные, добавляем
             res.append((pretty_feedback, answer))
         except:
-            logging.error("Не могу получить красивый фидбек по {}".format(mdx_query))
+            logging.error(
+                "Не могу получить красивый фидбек по {}".format(mdx_query))
         finally:
             logging.getLogger().setLevel(logs_helper.string_to_log_level(LOG_LEVEL))
     BackCubesMap = {CubesMap[i]: i for i in CubesMap}

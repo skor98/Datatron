@@ -6,16 +6,16 @@
 данных в OLAP-кубах
 """
 
-import schedule
-import time
 import datetime
-import requests
 import logging
+import time
+
+import requests
 
 from model_manager import MODEL_CONFIG
 from model_manager import save_default_model
-
 import logs_helper  # pylint: disable=unused-import
+import schedule
 
 
 def refresh_cube_update_date():

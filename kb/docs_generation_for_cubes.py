@@ -6,12 +6,12 @@
 """
 
 from os import path
+from uuid import uuid4
 import datetime
 import json
 import subprocess
 
 from peewee import fn
-from uuid import uuid4
 import requests
 
 from config import SETTINGS, TECH_CUBE_DOCS_FILE
@@ -34,7 +34,8 @@ class CubeDocsGeneration:
     def __init__(self):
         self.file_name = path.join('kb', 'cube_data_for_indexing.json')
         self.tech_file_name = TECH_CUBE_DOCS_FILE
-        self.search_file_name = path.join('kb', 'search_cube_data_for_indexing.json')
+        self.search_file_name = path.join(
+            'kb', 'search_cube_data_for_indexing.json')
         self.core = SETTINGS.SOLR_MAIN_CORE
 
     def generate_docs(self):
@@ -114,7 +115,7 @@ class CubeDocsGeneration:
                 for dimension in dbc.Dimension.select().where(dbc.Dimension.id == dim_cub.dimension_id):
                     if dimension.cube_value not in ('YEARS', 'TERRITORIES', 'KIF'):
                         for dimension_value in dbc.DimensionMember.select().where(
-                                        dbc.DimensionMember.dimension_id == dimension.id
+                            dbc.DimensionMember.dimension_id == dimension.id
                         ):
                             for member in dbc.Member.select().where(dbc.Member.id == dimension_value.member_id):
                                 if member.cube_value not in (TOO_LONG_ELEMS + USELESS_BGLEVELS):
@@ -328,12 +329,12 @@ class CubeDocsGeneration:
         )
         pycrl.setopt(pycrl.URL, curl_addr.format(self.core))
         pycrl.setopt(pycrl.HTTPPOST,
-                 [
-                     ('fileupload',
-                      (pycrl.FORM_FILE, indexed_file,
-                       pycrl.FORM_CONTENTTYPE, 'application/json')
-                      ),
-                 ])
+                     [
+                         ('fileupload',
+                          (pycrl.FORM_FILE, indexed_file,
+                           pycrl.FORM_CONTENTTYPE, 'application/json')
+                          ),
+                     ])
         pycrl.perform()
         print('Документ {} проиндексирован через CURL'.format(
             indexed_file

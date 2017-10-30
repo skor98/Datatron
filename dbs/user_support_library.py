@@ -45,6 +45,7 @@ def get_feedbacks():
     feedbacks = []
     for feedback in Feedback.select():
         for user in User.select().where(User.id == feedback.user_id):
-            fb_string = '{} {} {}'.format(feedback.time, user.full_user_name, feedback.feedback)
+            fb_string = '{} {} {}'.format(
+                feedback.time, user.full_user_name, feedback.feedback)
             feedbacks.append(fb_string)
     return '\n'.join(feedbacks)

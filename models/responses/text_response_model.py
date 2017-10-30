@@ -53,7 +53,8 @@ class TextResponseModel:
 
         return json.dumps(
             result_dict,
-            default=lambda obj: getattr(obj, 'to_reduced_api_object', lambda: None)(),
+            default=lambda obj: getattr(
+                obj, 'to_reduced_api_object', lambda: None)(),
             ensure_ascii=False,
         ).encode("utf-8")
 
@@ -100,7 +101,8 @@ class TextResponseModel:
             text_response.short_answer = formatted_response
             text_response.full_answer = formatted_response
 
-        time_data_relevance = CubeProcessor.get_time_data_relevance(response.answer)
+        time_data_relevance = CubeProcessor.get_time_data_relevance(
+            response.answer)
         if time_data_relevance is not None:
             text_response.time_data_relevance = time_data_relevance
 
@@ -113,9 +115,12 @@ class TextResponseModel:
             text_response.question = response.answer.question
             text_response.full_answer = response.answer.full_answer
             text_response.short_answer = response.answer.short_answer
-            text_response.document_links = TextResponseModel.get_document_links(response)
-            text_response.image_links = TextResponseModel.get_image_links(response)
-            text_response.http_ref_links = TextResponseModel.get_gttp_ref_links(response)
+            text_response.document_links = TextResponseModel.get_document_links(
+                response)
+            text_response.image_links = TextResponseModel.get_image_links(
+                response)
+            text_response.http_ref_links = TextResponseModel.get_gttp_ref_links(
+                response)
 
         return text_response
 
@@ -130,7 +135,8 @@ class TextResponseModel:
                 question = minfin_answer_list[minfin_answer_counter].question
                 minfin_answer_counter += 1
             else:
-                question = cube_answer_list[cube_answer_counter].feedback.get('pretty_feedback')
+                question = cube_answer_list[cube_answer_counter].feedback.get(
+                    'pretty_feedback')
                 cube_answer_counter += 1
 
             associated_quesions_items.append(QuestionModel(question))
@@ -145,7 +151,8 @@ class TextResponseModel:
         # формирование блока списка документов
         if response.answer.document is not None:
             document_links = []
-            document_link = LinkModel('document', response.answer.document_caption[0], response.answer.document[0])
+            document_link = LinkModel(
+                'document', response.answer.document_caption[0], response.answer.document[0])
             document_links.append(document_link)
             return document_links
         else:
@@ -156,7 +163,8 @@ class TextResponseModel:
         # формирование блока списка изображений
         if response.answer.picture is not None:
             image_links = []
-            image_link = LinkModel('image', response.answer.picture_caption[0], response.answer.picture[0])
+            image_link = LinkModel(
+                'image', response.answer.picture_caption[0], response.answer.picture[0])
             image_links.append(image_link)
             return image_links
         else:
@@ -167,7 +175,8 @@ class TextResponseModel:
         # формирование блока списка http ссылок
         if response.answer.link is not None:
             http_ref_links = []
-            http_ref_link = LinkModel('http_ref', response.answer.link_name[0], response.answer.link[0])
+            http_ref_link = LinkModel(
+                'http_ref', response.answer.link_name[0], response.answer.link[0])
             http_ref_links.append(http_ref_link)
             return http_ref_links
         else:

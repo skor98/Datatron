@@ -13,7 +13,8 @@ from peewee import Model, SqliteDatabase, IntegerField, CharField, ForeignKeyFie
 from config import SETTINGS
 
 
-database = SqliteDatabase(SETTINGS.PATH_TO_USER_DB)  # pylint: disable=invalid-name
+database = SqliteDatabase(
+    SETTINGS.PATH_TO_USER_DB)  # pylint: disable=invalid-name
 
 
 class BaseModel(Model):

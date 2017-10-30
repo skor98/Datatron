@@ -7,12 +7,12 @@
 """
 
 from os import path, makedirs
+from uuid import uuid4
 import json
 import logging
 
 from flask import Flask, request, make_response
 from flask_restful import reqparse, abort, Api, Resource
-from uuid import uuid4
 
 from config import SETTINGS
 from kb.kb_support_library import get_good_queries
@@ -90,7 +90,8 @@ class VoiceQuery(Resource):
         args = parser.parse_args()
 
         if not is_valid_api_key(args["apikey"]):
-            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+            abort(403, message="API key {} is NOT valid".format(
+                args["apikey"]))
 
         if 'file' not in request.files:
             abort(400, message='You need "file" parameter"')
@@ -110,7 +111,8 @@ class VoiceQuery(Resource):
         new_file_name = uuid4().hex[:10]
 
         # Сохранения полученного файла под новым именем в папку для хранения временных файлов
-        file_path = path.join(save_path, '{}.{}'.format(new_file_name, file_extension))
+        file_path = path.join(save_path, '{}.{}'.format(
+            new_file_name, file_extension))
 
         logging.debug("Создали новый временный файл {}".format(file_path))
         voice_file.save(file_path)
@@ -140,7 +142,8 @@ class TextQuery(Resource):
         logging.info(args)
 
         if not is_valid_api_key(args["apikey"]):
-            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+            abort(403, message="API key {} is NOT valid".format(
+                args["apikey"]))
 
         request_text = args['query']
         request_id = uuid4().hex
@@ -174,7 +177,8 @@ class VoiceQueryV2(Resource):
         args = parser.parse_args()
 
         if not is_valid_api_key(args["apikey"]):
-            abort(403, message="API key {} is NOT valid".format(args["apikey"]))
+            abort(403, message="API key {} is NOT valid".format(
+                args["apikey"]))
 
         if 'file' not in request.files:
             abort(400, message='You need "file" parameter"')
@@ -194,7 +198,8 @@ class VoiceQueryV2(Resource):
         new_file_name = uuid4().hex[:10]
 
         # Сохранения полученного файла под новым именем в папку для хранения временных файлов
-        file_path = path.join(save_path, '{}.{}'.format(new_file_name, file_extension))
+        file_path = path.join(save_path, '{}.{}'.format(
+            new_file_name, file_extension))
 
         logging.debug("Создали новый временный файл {}".format(file_path))
         voice_file.save(file_path)

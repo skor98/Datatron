@@ -42,14 +42,22 @@ class Graph(nx.DiGraph):
             {'name': 'Игнор тек. года', 'function': cf.ignore_current_year},
             {'name': 'НЕ игнор тек. года', 'function': cf.not_ignore_current_year},
             {'name': 'ГОД важнее КУБА', 'function': cf.define_year_privilege_over_cube},
-            {'name': 'ГОД НЕ важнее КУБА', 'function': cf.define_cube_privilege_over_year},
-            {'name': 'ТЕРРИТОРИЯ важнее КУБА', 'function': cf.define_territory_privilege_over_cube},
-            {'name': 'ТЕРРИТОРИЯ НЕ важнее КУБА', 'function': cf.define_cube_privilege_over_territory},
-            {'name': 'Иерархия элем. измерений', 'function': cf.form_members_in_hierachy_by_score},
-            {'name': 'Выбор элементов из lv.1', 'function': cf.all_members_from_first_hierarchy_level},
-            {'name': 'Выбор элементов из lv.2', 'function': cf.all_members_from_second_hierarchy_level},
-            {'name': 'Выбор элементов из lv.3', 'function': cf.all_members_from_third_hierarchy_level},
-            {'name': 'Выбор элементов из lv.4', 'function': cf.all_members_from_forth_hierarchy_level},
+            {'name': 'ГОД НЕ важнее КУБА',
+                'function': cf.define_cube_privilege_over_year},
+            {'name': 'ТЕРРИТОРИЯ важнее КУБА',
+                'function': cf.define_territory_privilege_over_cube},
+            {'name': 'ТЕРРИТОРИЯ НЕ важнее КУБА',
+                'function': cf.define_cube_privilege_over_territory},
+            {'name': 'Иерархия элем. измерений',
+                'function': cf.form_members_in_hierachy_by_score},
+            {'name': 'Выбор элементов из lv.1',
+                'function': cf.all_members_from_first_hierarchy_level},
+            {'name': 'Выбор элементов из lv.2',
+                'function': cf.all_members_from_second_hierarchy_level},
+            {'name': 'Выбор элементов из lv.3',
+                'function': cf.all_members_from_third_hierarchy_level},
+            {'name': 'Выбор элементов из lv.4',
+                'function': cf.all_members_from_forth_hierarchy_level},
             {'name': 'Конец', 'function': cf.tree_end}
         )
 
@@ -79,7 +87,8 @@ class Graph(nx.DiGraph):
         }
 
         self.add_weighted_edges_from([
-            (0, 1, WEIGHTS['w0.1']), (0, 2, WEIGHTS['w0.2']), (0, 3, WEIGHTS['w0.3']), (0, 4, WEIGHTS['w0.4']),
+            (0, 1, WEIGHTS['w0.1']), (0, 2, WEIGHTS['w0.2']
+                                      ), (0, 3, WEIGHTS['w0.3']), (0, 4, WEIGHTS['w0.4']),
             (1, 5, WEIGHTS['w1.5']), (1, 6, WEIGHTS['w1.6']),
             (2, 5, WEIGHTS['w2.5']), (2, 6, WEIGHTS['w2.6']),
             (3, 5, WEIGHTS['w3.5']), (3, 6, WEIGHTS['w3.6']),

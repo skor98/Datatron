@@ -6,13 +6,12 @@
 """
 
 from os import listdir, path
+from uuid import uuid4
 import json
 import logging
 import math
 import subprocess
 import sys
-
-from uuid import uuid4
 
 from config import SETTINGS, TEST_PATH_MINFIN, TECH_MINFIN_DOCS_FILE
 from kb.kb_support_library import read_minfin_data
@@ -79,9 +78,9 @@ def _refactor_data(data):
         # Дефис вместо тире
         doc.short_answer = (
             row.short_answer
-                .replace(' - ', ' — ')
-                .replace(' − ', ' — ')
-                .replace(' – ', ' — ')
+            .replace(' - ', ' — ')
+            .replace(' − ', ' — ')
+            .replace(' – ', ' — ')
         )
 
         # индексируемое поле
@@ -92,9 +91,9 @@ def _refactor_data(data):
         # Дефис вместо тире
         doc.full_answer = (
             row.full_answer
-                .replace(' - ', ' — ')
-                .replace(' − ', ' — ')
-                .replace(' – ', ' — ')
+            .replace(' - ', ' — ')
+            .replace(' − ', ' — ')
+            .replace(' – ', ' — ')
         )
 
         # индексируемое поле
@@ -112,7 +111,7 @@ def _refactor_data(data):
             lem_synonym_questions = [
                 _refactor_data.TPP(question, request_id)
                 for question in synonym_questions
-                ]
+            ]
 
         lem_full_answer = _only_long_words(
             _refactor_data.TPP(row.full_answer, request_id)
@@ -135,7 +134,8 @@ def _refactor_data(data):
         # Может быть несколько
         if row.link_name:
             if ';' in row.link_name:
-                doc.link_name = [elem.strip() for elem in row.link_name.split(';')]
+                doc.link_name = [elem.strip()
+                                 for elem in row.link_name.split(';')]
                 doc.link = [elem.strip() for elem in row.link.split(';')]
             else:
                 doc.link_name = [row.link_name.strip()]
@@ -144,7 +144,8 @@ def _refactor_data(data):
         # Может быть несколько
         if row.picture_caption:
             if ';' in row.picture_caption:
-                doc.picture_caption = [elem.strip() for elem in row.picture_caption.split(';')]
+                doc.picture_caption = [elem.strip()
+                                       for elem in row.picture_caption.split(';')]
                 doc.picture = [elem.strip() for elem in row.picture.split(';')]
             else:
                 doc.picture_caption = [row.picture_caption.strip()]
@@ -155,8 +156,9 @@ def _refactor_data(data):
             if ';' in row.document_caption:
                 doc.document_caption = [
                     elem.strip() for elem in row.document_caption.split(';')
-                    ]
-                doc.document = [elem.strip() for elem in row.document.split(';')]
+                ]
+                doc.document = [elem.strip()
+                                for elem in row.document.split(';')]
             else:
                 doc.document_caption = [row.document_caption.strip()]
                 doc.document = [row.document.strip()]
@@ -186,14 +188,16 @@ def _write_data(data):
         with open(tech_docs_file, 'w', encoding='utf-8') as file:
             file.write(
                 '[{}]'.format(
-                    ','.join([element.to_tech_json_object() for element in data])
+                    ','.join([element.to_tech_json_object()
+                              for element in data])
                 )
             )
 
         with open(search_docs_file, 'w', encoding='utf-8') as file:
             file.write(
                 '[{}]'.format(
-                    ','.join([element.to_search_json_object() for element in data])
+                    ','.join([element.to_search_json_object()
+                              for element in data])
                 )
             )
 
@@ -217,7 +221,7 @@ def _only_words(text: str):
 
     tokens = [
         word for word in text.split() if not word.isdigit() and not isfloat(word)
-        ]
+    ]
     return ' '.join(tokens)
 
 
@@ -249,7 +253,8 @@ def _get_manual_synonym_questions(question_number):
 
         return f.endswith('.txt') and port_num in f and 'manual' in f
 
-    file_with_portion = [f for f in listdir(TEST_PATH_MINFIN) if is_portion_func(f)]
+    file_with_portion = [f for f in listdir(
+        TEST_PATH_MINFIN) if is_portion_func(f)]
 
     # Если такого файла еще нет, так как его не успели написать
     if not file_with_portion:
@@ -405,7 +410,8 @@ def _calculate_matrix(documents):
 
     # сортировка элементов в словаре в порядке убывания индекса TF-IDF
     for document_id in score:
-        score[document_id] = sorted(score[document_id], key=lambda d: d['tfidf'], reverse=True)
+        score[document_id] = sorted(
+            score[document_id], key=lambda d: d['tfidf'], reverse=True)
 
     return score
 

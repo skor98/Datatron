@@ -29,7 +29,8 @@ class CubeOrMinfinClassifier(BaseTextClassifier):
     def inst(is_train=False, params=None):
         """Реализует Синглтон"""
         if CubeOrMinfinClassifier.__instance is None:
-            CubeOrMinfinClassifier.__instance = CubeOrMinfinClassifier(is_train, params)
+            CubeOrMinfinClassifier.__instance = CubeOrMinfinClassifier(
+                is_train, params)
         return CubeOrMinfinClassifier.__instance
 
     def _get_path_prefix(self):
@@ -82,7 +83,8 @@ def _get_cube_or_minfin_tests_data():
                     # Фидбек относится к тому же кубу, что и исходные данные, добавляем
                     res.append((pretty_feedback, answer))
                 except:
-                    logging.error("Не могу получить pretty_feedback: {}".format(mdx_query))
+                    logging.error(
+                        "Не могу получить pretty_feedback: {}".format(mdx_query))
                 finally:
                     logging.getLogger().setLevel(logs_helper.string_to_log_level(LOG_LEVEL))
 

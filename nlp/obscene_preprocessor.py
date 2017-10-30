@@ -17,7 +17,8 @@ def process_file(filename, bnop_in=True, bnop_out=True):
     if bnop_in:
         lines = [line.encode('cp1251').decode('koi8-r') for line in lines]
     regular = set(line.strip('!\t ') for line in lines if line.startswith('!'))
-    comp_regs = [re.compile(r'(^|\s){}($|\s)'.format(r), flags=34) for r in regular]
+    comp_regs = [re.compile(r'(^|\s){}($|\s)'.format(r), flags=34)
+                 for r in regular]
 
     output = []
     all_words = set()
@@ -46,10 +47,10 @@ def process_file(filename, bnop_in=True, bnop_out=True):
 
 
 _letternames = {'б': 'бэ', 'в': 'вэ', 'г': 'гэ', 'д': 'дэ', 'ж': 'жэ',
-               'з': 'зэ', 'к': 'к(а/э)', 'л': '(эл(ь)?/лэ)', 'м': '(эм/мэ)',
-               'н': '(эн/нэ)', 'п': 'пэ', 'р': '(эр/рэ)', 'с': '(эс/сэ)',
-               'т': 'тэ', 'ф': '(эф/фэ)', 'х': 'х(а/э)', 'ц': 'цэ', 'ч': 'че',
-               'ш': 'ш(а/э)', 'щ': 'щ(а/е)'}
+                'з': 'зэ', 'к': 'к(а/э)', 'л': '(эл(ь)?/лэ)', 'м': '(эм/мэ)',
+                'н': '(эн/нэ)', 'п': 'пэ', 'р': '(эр/рэ)', 'с': '(эс/сэ)',
+                'т': 'тэ', 'ф': '(эф/фэ)', 'х': 'х(а/э)', 'ц': 'цэ', 'ч': 'че',
+                'ш': 'ш(а/э)', 'щ': 'щ(а/е)'}
 
 _endings = {'ать': 'ан(и|ь)е', 'ять': 'ен(и|ь)е',
             'яться': 'ен(и|ь)е', 'аться': 'ан(и|ь)е',
@@ -58,10 +59,12 @@ _endings = {'ать': 'ан(и|ь)е', 'ять': 'ен(и|ь)е',
 
 _variations = [
     (lambda ab: '({}|{}|{})'.format(ab,
-         ''.join(_letternames.get(l, l) for l in ab),
-         ' '.join(_letternames.get(l, l) for l in ab)), r'<(?P<ab>\w+)>'),
+                                    ''.join(_letternames.get(l, l)
+                                            for l in ab),
+                                    ' '.join(_letternames.get(l, l) for l in ab)), r'<(?P<ab>\w+)>'),
     ('(е/ё)', 'ё'),
-    (lambda end: '({}|{})'.format(end, _endings.get(end, end)), '_(?P<end>[^_]*?)(?=$|\)|\s)'),
+    (lambda end: '({}|{})'.format(end, _endings.get(
+        end, end)), '_(?P<end>[^_]*?)(?=$|\)|\s)'),
     (' ', '  +')
 ]
 _variations = TonitaParser(handlers=[
@@ -82,6 +85,7 @@ _regexp_unifier = TonitaParser(handlers=[
 _preparser = _variations + _regexp_unifier
 
 _multigroup_re = re.compile(r'\(([^()]*?)\)')
+
 
 def _word_preproc(word):
     word = _preparser(word)

@@ -102,11 +102,13 @@ class CubeProcessor:
             # фильтрация по наличие данных возможно только на этом этапе
             # когда собран MDX-запрос
             if SETTINGS.CHECK_CUBE_DATA_EXISTENCE:
-                confidence = csl.filter_cube_data_without_answer(cube_data_list)
+                confidence = csl.filter_cube_data_without_answer(
+                    cube_data_list)
 
                 # после фильтрации по наличию данных можно выбрать лучший
                 # как с помощью классификатора, так и по умолчанию (то есть по скору)
-                csl.best_answer_depending_on_cube(cube_data_list, correct_cube[0])
+                csl.best_answer_depending_on_cube(
+                    cube_data_list, correct_cube[0])
 
         answers = CubeProcessor._format_final_cube_answer(
             cube_data_list

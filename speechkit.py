@@ -8,11 +8,11 @@
 from urllib.parse import quote
 import logging
 import subprocess
+import uuid
 
 from ffmpy import FFmpeg
 import httplib2
 import requests
-import uuid
 
 from config import SETTINGS
 import logs_helper  # pylint: disable=unused-import

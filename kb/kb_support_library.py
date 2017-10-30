@@ -120,7 +120,8 @@ def get_default_cube_measure(cube_name):
     """Получение меры для куба по умолчанию"""
 
     cube = dbc.Cube.get(dbc.Cube.name == cube_name)
-    default_measure = dbc.Measure.get(dbc.Measure.id == cube.default_measure_id)
+    default_measure = dbc.Measure.get(
+        dbc.Measure.id == cube.default_measure_id)
     return default_measure.cube_value
 
 
@@ -176,13 +177,13 @@ def get_captions_for_dimensions(cube_value, cube_name):
     """
 
     member = (dbc.Member
-               .select()
-               .join(dbc.DimensionMember)
-               .join(dbc.Dimension)
-               .join(dbc.CubeDimension)
-               .join(dbc.Cube)
-               .where(dbc.Member.cube_value == cube_value, dbc.Cube.name == cube_name)
-               )[0]
+              .select()
+              .join(dbc.DimensionMember)
+              .join(dbc.Dimension)
+              .join(dbc.CubeDimension)
+              .join(dbc.Cube)
+              .where(dbc.Member.cube_value == cube_value, dbc.Cube.name == cube_name)
+              )[0]
 
     dimension = (dbc.Dimension
                  .select()
@@ -315,7 +316,8 @@ def get_good_queries(count=0):
 
         test_paths = listdir(TEST_PATH_RESULTS)
         try:
-            latest_cube_path = max(filter(lambda x: x.startswith("cube"), test_paths))
+            latest_cube_path = max(
+                filter(lambda x: x.startswith("cube"), test_paths))
         except ValueError:
             logging.error("Нет тестов по кубам!")
 

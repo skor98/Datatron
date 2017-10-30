@@ -7,11 +7,11 @@
 
 from functools import lru_cache
 import logging
+import uuid
 
 from nltk import FreqDist
 from nltk.corpus import stopwords
 from pymorphy2 import MorphAnalyzer
-import uuid
 
 from model_manager import MODEL_CONFIG
 from nlp import nlp_utils
@@ -166,12 +166,14 @@ class TextPreprocessing(object):
     def setup_str(self):
         af_str = 'дополнительные фильтры неактивны'
         if self.active_params:
-            af_str = 'активные фильтры - {}'.format(', '.join(self.active_params))
+            af_str = 'активные фильтры - {}'.format(
+                ', '.join(self.active_params))
 
         if not self.stop_words:
             cust_sw_str = 'нет фильтрации стоп-слов'
         elif self.stop_words != self.default_stop_words:
-            cust_sw_str = 'список стоп-слов задан отдельно ({} элементов)'.format(len(self.stop_words))
+            cust_sw_str = 'список стоп-слов задан отдельно ({} элементов)'.format(
+                len(self.stop_words))
         else:
             cust_sw_str = 'список стоп-слов загружен из nltk'
 

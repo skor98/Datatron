@@ -107,7 +107,8 @@ class DataRetrieving:
                 best_prediction = (cube, 0.99)
                 ans_type = 'cube'
 
-            cube_answers, cube_confidence = CubeProcessor.get_data(cube_data, best_prediction)
+            cube_answers, cube_confidence = CubeProcessor.get_data(
+                cube_data, best_prediction)
 
             logging.info(
                 "Query_ID: {}\tMessage: Найдено {} докумета(ов) по кубам и {} по Минфину".format(
@@ -134,7 +135,8 @@ class DataRetrieving:
             # Обработка случая, когда документы не найдены
             core_answer.message = ERROR_NO_DOCS_FOUND
             logging.info(
-                'Query_ID: {}\tMessage: Документа не найдены'.format(request_id)
+                'Query_ID: {}\tMessage: Документа не найдены'.format(
+                    request_id)
             )
 
         return core_answer
@@ -160,7 +162,8 @@ class DataRetrieving:
             )
 
             with open(minfin_wrong_auto_tests_file, 'r', encoding='utf-8') as file:
-                DataRetrieving._minfin_auto_wrong_data = json.loads(file.read())
+                DataRetrieving._minfin_auto_wrong_data = json.loads(
+                    file.read())
 
         return DataRetrieving._minfin_auto_wrong_data
 
@@ -306,7 +309,7 @@ class DataRetrieving:
         if correct_number:
             for answer in list(all_answers):
                 if (answer.type == 'minfin' and
-                            answer.number == correct_number):
+                        answer.number == correct_number):
                     all_answers.remove(answer)
                     all_answers.insert(0, answer)
 
@@ -417,7 +420,7 @@ class DataRetrieving:
                         core_answer.answer.number
                     ))
             elif (core_answer.answer.get_score() >=
-                      MODEL_CONFIG["minfin_main_answer_confidence_threshold"]):
+                  MODEL_CONFIG["minfin_main_answer_confidence_threshold"]):
 
                 core_answer.status = True
                 core_answer.confidence = False

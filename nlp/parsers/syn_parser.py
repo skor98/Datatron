@@ -23,7 +23,7 @@ contr = {
 }
 contr = {key + r'\W+': contr[key] + ' ' for key in contr}
 syn_tp.handlers.extend(ReHandler.fromdict(
-        contr, sep_left=True, sep_right=False, flags=98
+    contr, sep_left=True, sep_right=False, flags=98
 ))
 
 # разные варианты указания на Россию
