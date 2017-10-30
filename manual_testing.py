@@ -232,6 +232,10 @@ class BaseTester:
         Считает все базовые статистики. Может быть переопределён для добавления новых
         """
         self._seconds.sort()
+
+        with open('resuls.txt', 'w', encoding='utf-8') as file:
+        	file.write('\n'.join(map(str, self._seconds)))
+
         return {
             "true": self.get_trues(),
             "wrong": self.get_wrongs(),
